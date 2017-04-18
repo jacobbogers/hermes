@@ -1,0 +1,34 @@
+{
+  "files": [
+    "./index.ts",
+    "./tests/all-tests.ts"
+  ],
+  "include": [
+    "lib/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ],
+  "compilerOptions": {
+    "alwaysStrict": true,
+    "declaration": true,
+    
+    "strictNullChecks": true,
+    "noImplicitAny": true,
+    "target": "es5",
+    "jsx": "react",
+    "lib": [
+      "es6",
+      "dom"
+    ],
+    "module": "commonjs",
+    "sourceMap": true,
+    "rootDir": "./",
+    "moduleResolution": "node",
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "experimentalDecorators": true,
+    /*outDir is overriden in the gulp file*/
+    "outDir": "dist/js"
+  }
+}
