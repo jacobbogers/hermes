@@ -1,0 +1,29 @@
+Store, some kind of (partial) abstract class implementation from base EventEmitter
+
+methods:
+regenerate
+load
+createSession
+
+abstract methods referenced:
+get
+destroy
+generate
+
+memoryStore
+has "class member" "sessions" (to keep all sessions)
+
+util.inherits(MemoryStore, Store)
+
+methods:
+all --get all active sessions
+clear --clear all sessions
+destroy --destroy session with associated session id
+get -- get session by given session id
+set -- set session by given session id
+length -- get number of active sessions
+touch -- update expiration --> i see JSON.stringify(current session), 
+				not good
+
+session is stored as a json.string ??? --> "JSON.parse" line 172
+??
