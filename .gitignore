@@ -6,6 +6,9 @@ r-source-trunk/
 TODO
 npm-debug.log*
 
+docs/*.jpg
+docs/*.gif
+
 .*
 !/.gitignore
 
