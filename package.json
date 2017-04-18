@@ -1,0 +1,25 @@
+{
+  "name": "hermes",
+  "version": "1.0.0",
+  "description": "express middleware to manage user signup/login and password reset/account activation",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo test; exit 1;"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jacobbogers/hermes.git"
+  },
+  "keywords": [
+    "login",
+    "activation-email",
+    "password",
+    "reset user-login"
+  ],
+  "author": "jacob bogers",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/jacobbogers/hermes/issues"
+  },
+  "homepage": "https://github.com/jacobbogers/hermes#readme"
+}
