@@ -1,8 +1,8 @@
-# Hermes (general authentication microservice)
+# Hermes (general authentication micro-service)
 
-User subscription management microservice for websites
+User subscription management micro-service for websites
 
-## Installaiton overview
+## Installation overview
 
  1. [Installing/Configuration of PostgreSQL backend and DB objects creation](docs/installing-postgresql96-centos7.md)
 
