@@ -4,7 +4,7 @@ User subscription management microservice for websites
 
 ## Installaiton overview
 
- 1. [Installing/Configuration of PostgreSQL backend and DB objects creation](#docs/installing-postgresql96-centos7.md)
+ 1. [Installing/Configuration of PostgreSQL backend and DB objects creation](docs/installing-postgresql96-centos7.md)
 
  Simple usage
 
