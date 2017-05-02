@@ -1,0 +1,24 @@
+
+
+import * as util from 'util';
+
+type validation = (s: any) => boolean;
+
+
+function validationFactory(v: validation) {
+    return function(exec: Function, obj: any, ...rest: any[]) {
+        if (v(obj)) {
+            let fun = util.format;
+            let m = util.format.apply(fun, rest);
+            return exec(m);
+        }
+    };
+}
+
+
+export const ifNull = validationFactory((s: any) => { return s === null; });
+export const ifUndefined = validationFactory((s: any) => { return s === undefined; });
+export const ifEmptyString = validationFactory((s: any) => { return s === ''; });
+export const ifInvalidPortString = validationFactory((s: any) => {
+    return !(s && /^[0-9]+$/.test(s) && Number.parseInt(s) > 0);
+});

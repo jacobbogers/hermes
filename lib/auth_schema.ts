@@ -1,9 +1,16 @@
-import * as util from 'util';
+//import * as util from 'util';
+
+/*
+let: uid = require('uid-safe');
 
 //types and definitions
 
 export const ipv6RegExp = /(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))/;
 export const ipv4RegExp = /\b((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|$)){4}\b/;
+
+export type PURPOSE = 'SESSION' | 'RESET-PASSWORD' | 'ACTIVATE-ACCOUNT' | 'INVITATION' | 'SESSION_AUTHORIZED';
+export type REVOKE_REASON = 'EXPIRED' | 'NEWER_KEY_USED' | 'NOT_REVOKED' | 'ACTIVATED' | 'INVITATION-CONFIRMED';
+
 
 export interface IUser {
     id: string;
@@ -11,10 +18,85 @@ export interface IUser {
     email: string;
 }
 
+export interface IToken {
+    id: string;
+    purpose: PURPOSE;
+    ipAddress: string;
+    timestampIssuance: number;
+    timestampRevoked: number;
+    timestampExpire: number;
+    revokeReason: REVOKE_REASON;
+
+}
+
+export interface ICookie extends IToken {
+    cookieTemplate: ICookieTemplate;
+}
+
+export interface ICookieTemplate {
+    cookieName: string;
+    path: string;
+    maxAge: number; //ms
+    httpOnly: boolean;
+    secure: boolean;
+    domain: string;
+    sameSite: boolean;
+    refreshMaxAge: boolean;
+}
+
+
+export class User {
+    private usr: IUser;
+    private props: Map<string, string>;
+    constructor(u: IUser) {
+        let id = u.id || uid(24);
+        this.usr = Object.assign({}, u, { id });
+        this.props = new Map(); //copy
+    }
+    hasProp(propName: string): boolean {
+        return this.props.has(propName);
+    }
+    setProp(propName: string, propValue: string) {
+        this.props.set(propName, propValue);
+        return this;
+    }
+    deleteProp(propName: string): boolean {
+        return this.props.delete(propName);
+    }
+}
+
+export class Token {
+    private token: IToken;
+    private props: Map<string, string>;
+    constructor(t: IToken) {
+        let id = t.id || uid(24);
+        this.token = Object.assign({}, t, { id });
+        this.props = new Map<string, string>();
+    }
+    hasProp(propName: string): boolean {
+        return this.props.has(propName);
+    }
+    setProp(propName: string, propValue: string) {
+        this.props.set(propName, propValue);
+        return this;
+    }
+    deleteProp(propName: string): boolean {
+        return this.props.delete(propName);
+    }
+    get isCookie(): boolean {
+        return (this.token as ICookie).cookieTemplate !== undefined;
+    }
+    get template(): ICookieTemplate {
+        return (this.token as ICookie).cookieTemplate;
+    }
+}
+
+//currentTime function must be global, use Symbol
+
 const currentTime = (): number => {
     return Date.now();
 };
-
+/*
 export class User {
     public static createUser(u: IUser) {
         return new User(u.id, u.name, u.email);
@@ -73,6 +155,7 @@ export class User {
 
 
 }
+*/
 
 /*
 create table user_props (
@@ -81,7 +164,7 @@ create table user_props (
    value varchar(60),
    constraint user_props_user_fk FOREIGN KEY (fk_user) REFERENCES auth.user(id)
 )*/
-
+/*
 export interface IUserProp {
     name: string;
     value: string;
@@ -152,7 +235,7 @@ create table issued_keys (
  * key of puprose 'SESSION' 
  * 
  */
-
+/*
 export function isValidIP(ip: string) {
     return ipv6RegExp.test(ip) || ipv4RegExp.test(ip);
 }
@@ -189,8 +272,6 @@ export function isIIssuedKey(o: Partial<IIssuedKey>): boolean {
     return false;
 }
 
-export type PURPOSE = 'SESSION' | 'RESET-PASSWORD' | 'ACTIVATE-ACCOUNT' | 'INVITATION' | 'SESSION_AUTHORIZED';
-export type REVOKED_REASON = 'EXPIRED' | 'NEWER_KEY_USED' | 'NOT_REVOKED' | 'ACTIVATED' | 'INVITATION-CONFIRMED';
 
 export function createEmptyKey(): IIssuedKey {
     return {
@@ -301,3 +382,4 @@ export class IssuedKey {
 
 }
 
+*/

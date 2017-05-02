@@ -11,8 +11,8 @@ SELECT
  revoke_reason,
  timestamp_expire,
  fk_cookie_template_id cookie_template,
- session_prop_name as prop_name,
- session_prop_value as prop_value
+ session_prop_name ,
+ session_prop_value 
 from
    auth.issued_user_tokens S0
    left join auth.session_props S1 on (S0.id = S1.fk_token_id)

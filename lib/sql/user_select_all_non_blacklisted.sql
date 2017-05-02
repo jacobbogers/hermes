@@ -4,8 +4,8 @@ select
   u.name user_name,
   u.email user_email,
   --
-  up.name user_prop_name,
-  up.value user_prop_value
+  up.prop_name,
+  up.prop_value 
 from
   auth.user u
   left join auth.user_props up on (u.id = up.fk_user)

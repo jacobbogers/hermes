@@ -1,18 +1,19 @@
 create schema auth 
 create table auth.user (
-   id bigserial,
+   id bigserial, 
    name varchar(30),  --nick of user, other user attributes in "user_props" table	
    email varchar(120), --unique
-   constraint pk_user primary key (id)
+   constraint pk_user primary key (id) 
 ) 
-CREATE unique INDEX user_name_udx ON auth.user (name) 
-create unique index user_email_udx on auth.user (email) 
+CREATE unique INDEX user_name_udx ON auth.user (name)  
+create unique index user_email_udx on auth.user (email)  
 --
 create table user_props (  
    fk_user bigint,  
-   name varchar(30),  
-   value varchar(60),  
-   constraint user_props_user_fk FOREIGN KEY (fk_user) REFERENCES auth.user(id) on delete cascade 
+   prop_name varchar(30),  
+   prop_value varchar(60),  
+   constraint user_props_user_fk 
+     FOREIGN KEY (fk_user) REFERENCES auth.user(id) on delete cascade 
 )
 create UNIQUE index user_props_user_udx on auth.user_props(fk_user, name)  
 create index user_props_user_name_idx on auth.user_props(name, fk_user)  
