@@ -4,14 +4,10 @@ select
   u.name user_name,
   u.email user_email,
   --
-  up.prop_name ,
-  up.prop_value
+  up.prop_name,
+  up.prop_value 
 from
   auth.user u
   left join auth.user_props up on (u.id = up.fk_user)
 WHERE
-  up.id in 
-  (select SS0.fk_user from user_props SS0 where SS0.name = 'BLACKLISTED')
-
-
-
+  u.id in (select SS0.fk_user from auth.user_props SS0 where SS0.prop_name = 'BLACKLISTED')

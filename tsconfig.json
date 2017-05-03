@@ -27,6 +27,7 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "experimentalDecorators": true,
+    "allowUnreachableCode":true,
     /*outDir is overriden in the gulp file*/
     "outDir": "dist/js"
   }

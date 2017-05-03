@@ -10,4 +10,4 @@ from
   auth.user u
   left join auth.user_props up on (u.id = up.fk_user)
 WHERE
-  up.id NOT in (select SS0.fk_user from user_props SS0 where SS0.name = 'BLACKLISTED')
+  u.id NOT in (select SS0.fk_user from auth.user_props SS0 where SS0.prop_name = 'BLACKLISTED')

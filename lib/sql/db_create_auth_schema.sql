@@ -15,8 +15,8 @@ create table user_props (
    constraint user_props_user_fk 
      FOREIGN KEY (fk_user) REFERENCES auth.user(id) on delete cascade 
 )
-create UNIQUE index user_props_user_udx on auth.user_props(fk_user, name)  
-create index user_props_user_name_idx on auth.user_props(name, fk_user)  
+create UNIQUE index user_props_user_udx on auth.user_props(fk_user, prop_name)  
+create index user_props_user_name_idx on auth.user_props(prop_name, fk_user)  
 --
 create table session_cookies_template ( -- insert a dummy '0' value
   id bigint,
@@ -27,15 +27,14 @@ create table session_cookies_template ( -- insert a dummy '0' value
   secure boolean,
   domain varchar(128),
   same_site boolean,
-  refresh_max_age boolean
- CONSTRAINT session_cookies_template_pk
-   PRIMARY KEY (id)
+  refresh_max_age boolean,
+ CONSTRAINT session_cookies_template_pk PRIMARY KEY (id)
 )
 create unique index sct_pk on session_cookies_template(id)
 --
 create table issued_user_tokens (  
    id varchar(24), -- token id
-   fk_user bigint,
+   fk_user bigint, --user id
    purpose CHAR(4), --CHAR-mnemonic for the purpose of issueing 
    ip_addr inet, -- ip@port of the user agent when this token was issued
    timestamp_issued bigint NOT NULL,  --time of issuance
@@ -44,8 +43,8 @@ create table issued_user_tokens (
    timestamp_expire bigint NOT NULL, -- timestamp when this token expires
    fk_cookie_template_id bigint DEFAULT 0, --more info if this token is a cookie-token, default 0 is a dud template
    CONSTRAINT pk_issued_token PRIMARY KEY (id),
-   CONSTRAINT fk_issued_token_user FOREIGN KEY (fk_user) REFERENCES auth.user(id),
-   CONSTRAINT fk_session_cookie_template FOREIGN KEY (fk_cookie_template_id) REFERENCES auth.session_cookies_template(id) 
+   CONSTRAINT fk_issued_token_user FOREIGN KEY (fk_user) REFERENCES auth.user(id) on delete cascade,
+   CONSTRAINT fk_session_cookie_template FOREIGN KEY (fk_cookie_template_id) REFERENCES auth.session_cookies_template(id) on delete cascade 
 )
 CREATE index issued_token_udx on issued_user_tokens(id)
 CREATE Index issued_token_user_idx on issued_user_tokens(fk_user) 
@@ -60,5 +59,6 @@ create table session_props (
    CONSTRAINT fk_token_id FOREIGN KEY (fk_token_id) REFERENCES auth.issued_user_tokens(id) on delete cascade
 )
 CREATE UNIQUE INDEX session_props_idx ON auth.session_props( fk_token_id, session_prop_name)
+
 
 

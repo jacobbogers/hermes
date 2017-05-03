@@ -82,6 +82,7 @@
     "pg-cursor": "^1.1.0",
     "pg-pool": "^1.7.1",
     "pg-query-stream": "^1.0.0",
+    "tracer": "^0.8.7",
     "uid-safe": "^2.1.4"
   },
   "optionalDependencies": {}

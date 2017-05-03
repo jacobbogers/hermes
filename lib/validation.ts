@@ -6,7 +6,7 @@ type validation = (s: any) => boolean;
 
 
 function validationFactory(v: validation) {
-    return function(exec: Function, obj: any, ...rest: any[]) {
+    return (exec: Function, obj: any, ...rest: any[]) => {
         if (v(obj)) {
             let fun = util.format;
             let m = util.format.apply(fun, rest);
@@ -22,3 +22,9 @@ export const ifEmptyString = validationFactory((s: any) => { return s === ''; })
 export const ifInvalidPortString = validationFactory((s: any) => {
     return !(s && /^[0-9]+$/.test(s) && Number.parseInt(s) > 0);
 });
+
+
+export function staticCast<T>(obj: T | undefined): T {
+    return obj as T;
+}
+
