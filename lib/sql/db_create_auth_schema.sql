@@ -1,8 +1,8 @@
 create schema auth 
 create table auth.user (
    id bigserial, 
-   name varchar(30),  --nick of user, other user attributes in "user_props" table	
-   email varchar(120), --unique
+   name varchar(30) NOT NULL,  --nick of user, other user attributes in "user_props" table	
+   email varchar(120) NOT NULL, --unique
    constraint pk_user primary key (id) 
 ) 
 CREATE unique INDEX user_name_udx ON auth.user (name)  
@@ -20,17 +20,19 @@ create index user_props_user_name_idx on auth.user_props(prop_name, fk_user)
 --
 create table session_cookies_template ( -- insert a dummy '0' value
   id bigint,
-  cookie_name varchar(30) default 'connect.sid', 
+  template_name varchar(30) not null,
+  cookie_name varchar(30), 
   path varchar(128) default '/',
   max_age bigint, -- in ms
   http_only boolean default TRUE,
   secure boolean,
   domain varchar(128),
   same_site boolean,
-  refresh_max_age boolean,
+  rolling boolean,
  CONSTRAINT session_cookies_template_pk PRIMARY KEY (id)
 )
 create unique index sct_pk on session_cookies_template(id)
+create unique index sct_uix on session_cookies_template(template_name)
 --
 create table issued_user_tokens (  
    id varchar(24), -- token id
@@ -59,6 +61,3 @@ create table session_props (
    CONSTRAINT fk_token_id FOREIGN KEY (fk_token_id) REFERENCES auth.issued_user_tokens(id) on delete cascade
 )
 CREATE UNIQUE INDEX session_props_idx ON auth.session_props( fk_token_id, session_prop_name)
-
-
-

@@ -1,4 +1,5 @@
 update auth.issued_user_tokens
-  set timestamp_revoked = $1::bigint,
+  set timestamp_revoked = COALESCE($3::bigint,  extract( epoch from now()) * 1000 ),
       revoke_reason = $2::text
-where id = $3::bigint
+where id = $1::text
+ RETURNING id

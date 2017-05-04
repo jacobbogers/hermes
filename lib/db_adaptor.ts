@@ -6,8 +6,12 @@ import * as url from 'url';
 import * as pg from 'pg';
 import * as EventEmitter from 'events';
 import * as util from 'util';
+import * as UID from 'uid-safe';
+
+
 
 import { logger } from './logger';
+import { makeObjectNull } from './validation';
 
 
 import {
@@ -29,6 +33,36 @@ export interface UsersAndProps {
     userEmail: string;
     propName: string;
     propValue: string;
+}
+
+export interface TokenMessage {
+    tokenId?: string;
+    fkUserId?: number;
+    purpose: string;
+    ipAddr: string;
+    tsIssuance?: number;
+    tsExpire?: number;
+    templateName: string;
+}
+
+export interface ActiveTokens {
+    tokenId: string;
+    fkuserId: number;
+    /*
+    S0.fk_user user_id,
+    S3.name usr_name,
+    S3.email usr_email,
+    s2.fk_user black_listed,
+    purpose,
+    ip_addr,
+    timestamp_issued ts_issuance,
+    timestamp_revoked ts_revoked,
+    revoke_reason,
+    timestamp_expire,
+    fk_cookie_template_id cookie_template,
+    session_prop_name,
+    session_prop_value
+    */
 }
 
 interface SQLFiles {
@@ -77,24 +111,6 @@ const sqlFiles: SQLFiles = {
 };
 
 type SqlFileKeys = keyof SQLFiles;
-
-
-/* url.parse('postgresql://bookbarter:xxxxx@jacob-bogers.com:5432/bookbarter?sslmode=require')
-Url {
-  protocol: 'postgresql:',
-  slashes: true,
-  auth: 'bookbarter:xxxxx',
-  host: 'jacob-bogers.com:5432',
-  port: '5432',
-  hostname: 'jacob-bogers.com',
-  hash: null,
-  search: '?sslmode=require',
-  query: 'sslmode=require',
-  pathname: '/bookbarter',
-  path: '/bookbarter?sslmode=require',
-  href: 'postgresql://bookbarter:bookbarter@jacob-bogers.com:5432/bookbarter?sslmode=require' }
-*/
-
 
 /* state machine , for tear-down and startup of database adaptor */
 /* state machine , for tear-down and startup of database adaptor */
@@ -315,7 +331,7 @@ export class DBAdaptor extends EventEmitter {
             logger.trace('client connected to db [%d]', ++this.nrClients);
         });
         this.pool.on('acquire', (/*client: pg.Client*/) => {
-            logger.trace('client acquire to db');
+            logger.debug('client acquire to db');
         });
         // client has an error while sitting idel
         this.pool.on('error', (err: Error) => {
@@ -437,6 +453,21 @@ export class DBAdaptor extends EventEmitter {
         });
     }
 
+    //  private executeSQL<T>(qcArr: (pg.QueryConfig)[], fn: ResolveResult<T>): Promise<T> {
+    private executeSQLMutation<T>(qcArr: (pg.QueryConfig)[], fn: ResolveResult<T>): Promise<T> {
+
+        return this.executeSQL<T>(qcArr, (res, resolve) => {
+            //no error but did we actually update something
+            if (res.rowCount === 0) {
+                logger.error('Nothing was mutated. %j', res);
+                throw new Error(util.format('Nothing was updated mutated. %j', res));
+            }
+            logger.trace('Success: number of rows mutated %d', res.rowCount);
+            return fn(res, resolve);
+        });
+
+    }
+
     public userCreate(userName: string, email: string): Promise<number> {
 
         logger.trace('Inserting user [%s]/[%s]', userName, email);
@@ -476,6 +507,7 @@ export class DBAdaptor extends EventEmitter {
         });
     }
 
+    //helper
     private selectUserProps(qc: pg.QueryConfig): Promise<UsersAndProps[]> {
         let sqlObject = Object.assign({}, qc) as pg.QueryConfig;
 
@@ -497,6 +529,7 @@ export class DBAdaptor extends EventEmitter {
         });
     }
 
+
     public userSelectAllNONBlackListed(): Promise<UsersAndProps[]> {
         logger.warn('selecting all non-blacklisted users, potential expensive operation');
         let qc = staticCast<pg.QueryConfig>(this.sql.get('sqlUserSelectAllNonBlackListed'));
@@ -515,10 +548,104 @@ export class DBAdaptor extends EventEmitter {
     }
 
 
+    public tokenCreate(token: TokenMessage): Promise<Partial<TokenMessage>> {
 
+        let uid = UID.sync(18);
 
+        let t = Object.assign({}, token);
+        makeObjectNull(t);
+        t.tokenId = t.tokenId || uid,
+
+            logger.trace('creating a new token %j with properties', t);
+
+        let qc = staticCast<pg.QueryConfig>(this.sql.get('sqlTokenCreate'));
+
+        let sqlObject = Object.assign({}, qc, { values: [t.tokenId, t.fkUserId, t.purpose, t.ipAddr, t.tsIssuance, t.tsExpire, t.templateName] }) as pg.QueryConfig;
+
+        return this.executeSQL<Partial<TokenMessage>>([sqlObject], (res, resolve) => {
+            logger.trace('success: query result [%j]', res);
+            let row = res.rows[0];
+            let rc: Partial<TokenMessage> = {
+                tokenId: row['uid'] as string,
+                fkUserId: row['fk_user'] as number,
+                tsIssuance: row['timestamp_issued'],
+                tsExpire: row['timestamp_expire'],
+                templateName: '' + row['fk_cookie_template_id']
+                //    , fk_user,timestamp_issued, timestamp_expire,fk_cookie_template_id
+            };
+            logger.debug('success: "creating token", returned values %j', rc);
+            resolve(rc);
+        });
+    }
+
+    public tokenAddProperty(tokenId: string, propName: string, propValue: string): Promise<boolean> {
+
+        logger.trace('add a property to token %s , propName:%s, propValue:%s', tokenId, propName, propValue);
+        let qc = staticCast<pg.QueryConfig>(this.sql.get('sqlTokenAddProperty'));
+
+        let sqlObject = Object.assign({}, qc, { values: [tokenId, propName, propValue] }) as pg.QueryConfig;
+
+        return this.executeSQL<boolean>([sqlObject], (res, resolve) => {
+            res;
+            logger.trace('success: adding property %s to token %s.', propName, tokenId);
+            resolve(true);
+        });
+
+    }
+
+    public tokenAssociateWithUser(tokenId: string, userId: number): Promise<boolean> {
+
+        logger.trace('assoiate token %s with user %d', tokenId, userId);
+        let qc = staticCast<pg.QueryConfig>(this.sql.get('sqlTokenAssociateWithUser'));
+
+        let sqlObject = Object.assign({}, qc, { values: [userId, tokenId] }) as pg.QueryConfig;
+
+        return this.executeSQLMutation<boolean>([sqlObject], (res, resolve) => {
+            res;
+            logger.trace('success: Token %s associated with user %d.', tokenId, userId);
+            resolve(true);
+        });
+    }
+
+    public tokenDoExpire(tokenId: string, expireReason: string, expireTime?: number | null): Promise<boolean> {
+
+        logger.trace('Expire token %s with reason %s at time %s', tokenId, expireReason, new Date(expireReason).toUTCString());
+
+        let qc = staticCast<pg.QueryConfig>(this.sql.get('sqlTokenDoExpire'));
+
+        if (expireTime === undefined) {
+            expireTime = null;
+        }
+
+        let sqlObject = Object.assign({}, qc, { values: [tokenId, expireReason, expireTime] }) as pg.QueryConfig;
+
+        return this.executeSQLMutation<boolean>([sqlObject], (res, resolve) => {
+            res;
+            logger.trace('success: token %s expired', tokenId);
+            resolve(true);
+        });
+    }
+
+    public tokenGC(deleteBeforeExpireTime: number): Promise<number> {
+
+        if (!deleteBeforeExpireTime) {
+            logger.error('No "deleteBeforeExpireTime" argument given!');
+            return Promise.reject(new Error('no cleanup time given'));
+        }
+        logger.trace('Remove all tokens expired before %s', new Date(deleteBeforeExpireTime).toUTCString());
+
+        let qc = staticCast<pg.QueryConfig>(this.sql.get('sqlTokenGC'));
+
+        let sqlObject = Object.assign({}, qc, { values: [deleteBeforeExpireTime] }) as pg.QueryConfig;
+
+        return this.executeSQL<number>([sqlObject], (res, resolve) => {
+            logger.trace('success: number of tokens expired %d', res.rowCount);
+            resolve(res.rowCount);
+        });
+    }
 
 }
+
 
 
 

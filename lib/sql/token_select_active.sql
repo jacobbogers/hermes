@@ -1,7 +1,7 @@
 with blacklisted_users as (
     Select SS0.id as fk_user from auth.user SS0 where SS0.id in 
       (select SS1.fk_user from auth.user_props SS1 where 
-        SS1.name = 'BLACKLISTED')
+        SS1.prop_name = 'BLACKLISTED')
 )
 SELECT 
  S0.id token_id,
@@ -15,7 +15,7 @@ SELECT
  timestamp_revoked ts_revoked,
  revoke_reason,
  timestamp_expire,
- fk_cookie_template_id cookie_template
+ fk_cookie_template_id cookie_template,
  session_prop_name,
  session_prop_value
 from
@@ -26,8 +26,5 @@ from
 WHERE
   -- s1.revoke_reason is null, i put this here for documentation reasons,, never!!! do this solely
   --   because nulls are not put index (in oracle/postgresql).
-  timestamp_expire <= $1::bigint  
-  and revoked_reason is null
-
-
-   
+  timestamp_expire <= COALESCE($1::bigint, (extract( epoch from now()) * 1000)::bigint)  
+  and revoke_reason is null

@@ -24,7 +24,15 @@ export const ifInvalidPortString = validationFactory((s: any) => {
 });
 
 
-export function staticCast<T>(obj: T | undefined): T {
+export function staticCast<T>(obj: any): T {
     return obj as T;
 }
 
+
+export function makeObjectNull(obj: any) {
+    for (let i in obj) {
+        if (obj[i] === undefined) {
+            obj[i] = null;
+        }
+    }
+}
