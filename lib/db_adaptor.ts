@@ -1,5 +1,3 @@
-
-
 import * as fs from 'fs';
 import * as path from 'path';
 import * as url from 'url';
@@ -45,24 +43,21 @@ export interface TokenMessage {
     templateName: string;
 }
 
-export interface ActiveTokens {
+export interface TokensAndProps {
     tokenId: string;
     fkuserId: number;
-    /*
-    S0.fk_user user_id,
-    S3.name usr_name,
-    S3.email usr_email,
-    s2.fk_user black_listed,
-    purpose,
-    ip_addr,
-    timestamp_issued ts_issuance,
-    timestamp_revoked ts_revoked,
-    revoke_reason,
-    timestamp_expire,
-    fk_cookie_template_id cookie_template,
-    session_prop_name,
-    session_prop_value
-    */
+    usrName: string;
+    usrEmail: string;
+    blackListed?: number | null;
+    purpose: string;
+    ipAddr: string;
+    tsIssuance: number;
+    tsRevoked: number | null;
+    tsExpire: number;
+    revokeReason: string | null;
+    templateName: string;
+    sessionPropName: string;
+    sessionPropValue: string;
 }
 
 interface SQLFiles {
@@ -71,12 +66,10 @@ interface SQLFiles {
     sqlTokenCreate: string;
     sqlTokenDoExpire: string;
     sqlTokenGC: string;
-    sqlTokenSelectActive: string;
-    sqlTokenSelectAll: string;
-    sqlTokenSelectByUserId: string;
-    sqlTokenSelectByUsername: string;
-    sqlTokenSelectRevoked: string;
-    sqlTokenSelectSingle: string;
+    //
+    sqlTokenSelectAllByFilter: string;
+    //
+    sqlTokenSelectByUserIdOrName: string;
     //
     sqlUserAddProperty: string;
     sqlUserCreate: string;
@@ -96,13 +89,10 @@ const sqlFiles: SQLFiles = {
     sqlTokenCreate: './sql/token_create.sql',
     sqlTokenDoExpire: './sql/token_do_expire.sql',
     sqlTokenGC: './sql/token_gc.sql',
-    sqlTokenSelectActive: './sql/token_select_active.sql',
-    sqlTokenSelectAll: 'sql/token_select_all.sql',
-    sqlTokenSelectByUserId: 'sql/token_select_by_user_id.sql',
-    sqlTokenSelectByUsername: 'sql/token_select_by_user_name.sql',
-    sqlTokenSelectRevoked: 'sql/token_select_revoked.sql',
-    sqlTokenSelectSingle: 'sql/token_select_single.sql',
     //
+    sqlTokenSelectAllByFilter: './sql/token_select_all_by_filter.sql',
+    sqlTokenSelectByUserIdOrName: 'sql/token_select_by_userid_or_name.sql',
+    // 
     sqlUserAddProperty: 'sql/user_add_property.sql',
     sqlUserCreate: 'sql/user_create.sql',
     sqlUserRemoveProperty: 'sql/user_remove_property.sql',
@@ -641,6 +631,72 @@ export class DBAdaptor extends EventEmitter {
         return this.executeSQL<number>([sqlObject], (res, resolve) => {
             logger.trace('success: number of tokens expired %d', res.rowCount);
             resolve(res.rowCount);
+        });
+    }
+
+    public tokenSelectAllByFilter(timestampExpire: number, startTimestampRevoked: number, endTimestampRevoked: number): Promise<TokensAndProps[]> {
+
+        let qc = staticCast<pg.QueryConfig>(this.sql.get('sqlTokenSelectAllByFilter'));
+
+        let sqlObject = Object.assign({}, qc, { values: [timestampExpire, startTimestampRevoked, endTimestampRevoked] }) as pg.QueryConfig;
+
+        return this.executeSQL<TokensAndProps[]>([sqlObject], (res, resolve) => {
+            let copy = Object.assign({}, res);
+            delete copy.rows;
+            logger.trace('success: fetching.. statistics on fetch %j', copy);
+            let result: TokensAndProps[] = res.rows.map((raw: any) => {
+                return {
+                    tokenId: raw['token_id'],
+                    fkuserId: raw['user_id'],
+                    usrName: raw['usr_name'],
+                    usrEmail: raw['usr_email'],
+                    blackListed: raw['black_listed'],
+                    purpose: raw['purpose'],
+                    ipAddr: raw['ip_addr'],
+                    tsIssuance: raw['timestamp_issued'],
+                    tsRevoked: raw['timestamp_revoked'],
+                    tsExpire: raw['timestamp_'],
+                    revokeReason: raw['revoke_reason'],
+                    templateName: raw['template_name'],
+                    sessionPropName: raw['session_prop_name'],
+                    sessionPropValue: raw['session_prop_value']
+                };
+            });
+            delete res.rows; // garbage collect please
+            resolve(result);
+        });
+    }
+
+     public tokenSelectAllByUserIdOrName(userId: number|null, userName: string|null): Promise<TokensAndProps[]> {
+
+        let qc = staticCast<pg.QueryConfig>(this.sql.get('sqlTokenSelectByUserIdOrName'));
+        
+        let sqlObject = Object.assign({}, qc, { values: [userId, userName] }) as pg.QueryConfig;
+
+        return this.executeSQL<TokensAndProps[]>([sqlObject], (res, resolve) => {
+            let copy = Object.assign({}, res);
+            delete copy.rows;
+            logger.trace('success: fetching.. statistics on fetch %j', copy);
+            let result: TokensAndProps[] = res.rows.map((raw: any) => {
+                return {
+                    tokenId: raw['token_id'],
+                    fkuserId: raw['user_id'],
+                    usrName: raw['usr_name'],
+                    usrEmail: raw['usr_email'],
+                    blackListed: raw['black_listed'],
+                    purpose: raw['purpose'],
+                    ipAddr: raw['ip_addr'],
+                    tsIssuance: raw['timestamp_issued'],
+                    tsRevoked: raw['timestamp_revoked'],
+                    tsExpire: raw['timestamp_'],
+                    revokeReason: raw['revoke_reason'],
+                    templateName: raw['template_name'],
+                    sessionPropName: raw['session_prop_name'],
+                    sessionPropValue: raw['session_prop_value']
+                };
+            });
+            delete res.rows; // garbage collect please
+            resolve(result);
         });
     }
 

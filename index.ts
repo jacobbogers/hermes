@@ -4,9 +4,14 @@
 //import * as session from 'express-session';
 //import * as bodyParser from 'body-parser';
 
-import { DBAdaptor, TokenMessage } from './lib/db_adaptor';
+import {
+    DBAdaptor,
+    //    TokenMessage 
+} from './lib/db_adaptor';
 import { logger } from './lib/logger';
-import { staticCast } from './lib/validation';
+import {
+    //    staticCast 
+} from './lib/validation';
 //let app = express();
 
 // parse various different custom JSON types as JSON
@@ -27,7 +32,8 @@ DBAdaptor.create('postgresql://bookbarter:bookbarter@jacob-bogers.com:5432/bookb
         adaptor = DBAdaptor.adaptor;
 
         logger.trace('DBAdaptor instance created successfully.[%j]', v);
-        /* tokenId ?: string;
+        /* 
+         tokenId ?: string;
          fkUserId ?: number;
          purpose: string;
          ipAddr: string;
@@ -35,15 +41,21 @@ DBAdaptor.create('postgresql://bookbarter:bookbarter@jacob-bogers.com:5432/bookb
          tsExpire ?: number;
          templateName: string;
          */
-        let tm: TokenMessage = {
-            fkUserId: 1,
-            purpose: 'STKN', //--session-token
-            ipAddr: '::',
-            //tsIssuance: 0,
-            //tsExpire: 10,
-            templateName: 'secure_cookie'
-        };
-        adaptor.tokenCreate(tm).then((v2) => {
+        /* let tm: TokenMessage = {
+             fkUserId: 1,
+             purpose: 'STKN', //--session-token
+             ipAddr: '::',
+             //tsIssuance: 0,
+             //tsExpire: 10,
+             templateName: 'secure_cookie'
+         };
+ */
+        adaptor.tokenSelectAllByFilter(0, 0, 0 /*null /*'lucifer69c6'*/).then((v2) => {
+            logger.info(v2);
+        }).catch((err) => {
+            logger.error(err);
+        });
+        /*adaptor.tokenCreate(tm).then((v2) => {
             logger.warn('success object received,%j', v2);
             let t = staticCast<TokenMessage>(v2); t;
             adaptor.tokenGC(45).then((res) => {
@@ -53,7 +65,7 @@ DBAdaptor.create('postgresql://bookbarter:bookbarter@jacob-bogers.com:5432/bookb
             });
         }).catch((ee) => {
             logger.error('token create error %j', ee);
-        });
+        });*/
     }).catch((e) => {
         console.log('failure:', e);
         console.log(DBAdaptor.errors);

@@ -27,11 +27,11 @@ SELECT
     END,   
     $3::text,  --purpose
     $4::inet,  --ipaddr
-    COALESCE($5::bigint, extract( epoch from now()) * 1000 ),--timestamp of issuance
+    COALESCE($5::bigint, extract( epoch from current_timestamp) * 1000 ),--timestamp of issuance
     NULL, --timestamp of revoked
     NULL, --revoked reason
    COALESCE( $6::bigint, 
-       COALESCE( $5::bigint, extract( epoch from now()) * 1000) + s1.max_age 
+       COALESCE( $5::bigint, extract( epoch from current_timestamp) * 1000) + s1.max_age 
      ),
     s1.id
  from 
