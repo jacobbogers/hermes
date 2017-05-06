@@ -1,8 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import * as url from 'url';
+import * as URL from 'url';
 import * as pg from 'pg';
-import * as EventEmitter from 'events';
 import * as util from 'util';
 import * as UID from 'uid-safe';
 
@@ -10,6 +9,14 @@ import * as UID from 'uid-safe';
 
 import { logger } from './logger';
 import { makeObjectNull } from './validation';
+import {
+    AnyObjProps,
+    UsersAndProps,
+    TokenMessage,
+    TokensAndProps,
+    AdaptorBase,
+    ADAPTOR_STATE
+} from './db_adaptor_base';
 
 
 import {
@@ -19,46 +26,6 @@ import {
     // ifUndefined,
     // ifEmptyString
 } from './validation';
-
-interface AnyObjProps {
-    [index: string]: string;
-}
-
-
-export interface UsersAndProps {
-    userId: number;
-    userName: string;
-    userEmail: string;
-    propName: string;
-    propValue: string;
-}
-
-export interface TokenMessage {
-    tokenId?: string;
-    fkUserId?: number;
-    purpose: string;
-    ipAddr: string;
-    tsIssuance?: number;
-    tsExpire?: number;
-    templateName: string;
-}
-
-export interface TokensAndProps {
-    tokenId: string;
-    fkuserId: number;
-    usrName: string;
-    usrEmail: string;
-    blackListed?: number | null;
-    purpose: string;
-    ipAddr: string;
-    tsIssuance: number;
-    tsRevoked: number | null;
-    tsExpire: number;
-    revokeReason: string | null;
-    templateName: string;
-    sessionPropName: string;
-    sessionPropValue: string;
-}
 
 interface SQLFiles {
     sqlTokenAddProperty: string;
@@ -78,10 +45,7 @@ interface SQLFiles {
     sqlUserSelectAllNonBlackListed: string;
 }
 
-
 type ResolveResult<T> = (res: pg.QueryResult, resolve: (rc: T | undefined) => void) => void;
-
-
 
 const sqlFiles: SQLFiles = {
     sqlTokenAddProperty: './sql/token_add_property.sql',
@@ -102,147 +66,43 @@ const sqlFiles: SQLFiles = {
 
 type SqlFileKeys = keyof SQLFiles;
 
-/* state machine , for tear-down and startup of database adaptor */
-/* state machine , for tear-down and startup of database adaptor */
-/* state machine , for tear-down and startup of database adaptor */
-
-export enum ADAPTOR_STATE {
-    UnInitialized = 0,
-    Initializing,
-    Initialized,
-    Connecting,
-    Connected,
-    Disconnecting,
-    Disconnected,
-    ERR_Initializing,
-    ERR_Connecting,
-
-}
-
-interface StateTransition {
-    from: ADAPTOR_STATE[];
-    to: ADAPTOR_STATE[];
-}
-
-const transitions: StateTransition[] = [
-    {
-        from: [ADAPTOR_STATE.ERR_Initializing, ADAPTOR_STATE.ERR_Connecting],
-        to: [ADAPTOR_STATE.Initializing]
-    },
-    {
-        from: [ADAPTOR_STATE.UnInitialized],
-        to: [ADAPTOR_STATE.Initializing]
-    },
-    {
-        from: [ADAPTOR_STATE.Initializing],
-        to: [ADAPTOR_STATE.Initialized]
-    },
-    {
-        from: [ADAPTOR_STATE.Initialized],
-        to: [ADAPTOR_STATE.Connecting]
-    },
-    {
-        from: [ADAPTOR_STATE.Connecting],
-        to: [ADAPTOR_STATE.Connected]
-    },
-    {
-        from: [ADAPTOR_STATE.Connected],
-        to: [ADAPTOR_STATE.Disconnecting]
-    },
-    {
-        from: [ADAPTOR_STATE.Connected],
-        to: [ADAPTOR_STATE.Disconnected]
-    },
-    {
-        from: [ADAPTOR_STATE.Initializing],
-        to: [ADAPTOR_STATE.ERR_Initializing]
-    },
-    {
-        from: [ADAPTOR_STATE.Connecting],
-        to: [ADAPTOR_STATE.ERR_Connecting]
-    }
-];
-
-
-function moveToState(src: ADAPTOR_STATE, target: ADAPTOR_STATE): boolean {
-
-    let allowed = transitions.filter((t) => {
-        if (t.to.length === 1 && t.to.indexOf(target) >= 0) {
-            if (t.from.indexOf(src) >= 0) {
-                return true;
-            }
-        }
-        return false;
-    });
-    if (allowed.length > 0) {
-        return true;
-    }
-    return false;
-}
-
-
 /*  database adaptor */
 /*  database adaptor */
 /*  database adaptor */
 
-export class DBAdaptor extends EventEmitter {
-    // private statics
+export interface AdaptorPostgreSQLProperties {
+    sessionTemplate: string;
+    url: string;
+}
 
+export class AdaptorPostgreSQL extends AdaptorBase {
 
-    private static state: ADAPTOR_STATE = ADAPTOR_STATE.UnInitialized;
-    static errors: string[] = [];
-    static warnings: string[] = [];
+    private _url: string;
+    private sessionTemplate: string;
+    private pool: pg.Pool;
+    private nrClients: number;
+    private accessCount: number;
+    private sql: Map<SqlFileKeys, pg.QueryConfig>;
 
-    private static addErr(...rest: any[]) {
-        DBAdaptor.errors.push(util.format.call(util.format, ...rest));
-    }
-    private static lastErr(): string {
-        return DBAdaptor.errors[DBAdaptor.errors.length - 1];
-    }
+    public init(): Promise<boolean> {
 
+        let pURL = this._url;
 
-
-    // public statics    
-    public static adaptor: DBAdaptor;
-
-    public static transition(target: ADAPTOR_STATE, force?: boolean) {
-        force = !!force;
-        if (force || (!force && moveToState(DBAdaptor.state, target))) {
-            DBAdaptor.state = target;
-            return true;
-        }
-        return false;
-    }
-
-
-
-    public static create(postgresURL: string): Promise<boolean> {
-
-        logger.info('Attemp initialize DBAdaptor');
-        if (DBAdaptor.adaptor !== undefined && DBAdaptor !== null) {
-            DBAdaptor.addErr('[adaptor] property on DBAdaptor class is not null or undefined');
-            DBAdaptor.transition(ADAPTOR_STATE.ERR_Initializing, true);
-            logger.error(DBAdaptor.lastErr());
+        if (!this.transition(ADAPTOR_STATE.Initializing)) {
+            this.addErr('State cannot transition to [%s] from [%s]', ADAPTOR_STATE[ADAPTOR_STATE.Initializing], ADAPTOR_STATE[this.state]);
+            logger.error(this.lastErr());
             return Promise.reject(false);
         }
 
-
-        if (!DBAdaptor.transition(ADAPTOR_STATE.Initializing)) {
-            DBAdaptor.addErr('State cannot transition to [%s] from [%s]', ADAPTOR_STATE[ADAPTOR_STATE.Initializing], ADAPTOR_STATE[DBAdaptor.state]);
-            logger.error(DBAdaptor.lastErr());
-            return Promise.reject(false);
-        }
-
-        let ci = url.parse(postgresURL);
+        let ci = URL.parse(pURL);
         //collect all errors and warnings
-        let errP = DBAdaptor.errors.push.bind(DBAdaptor.errors);
-        let warnP = DBAdaptor.warnings.push.bind(DBAdaptor.warnings);
-        let pURL = postgresURL;
-        DBAdaptor.errors.splice(0);
-        DBAdaptor.warnings.splice(0);
+        let errP = this.errors.push.bind(this.errors);
+        let warnP = this.warnings.push.bind(this.warnings);
+
+        this.errors.splice(0);
+        this.warnings.splice(0);
 
         ifNull(warnP, ci.protocol, 'No protocol specified in: %s', pURL);
-
         ifNull(errP, ci.auth, 'No authentication specified in: %s', pURL);
         ifNull(errP, ci.hostname, 'No host specified in: %s', pURL);
 
@@ -255,8 +115,8 @@ export class DBAdaptor extends EventEmitter {
         ifNull(errP, ci.pathname && ci.pathname.slice(1), 'No database specified in: %s', pURL);
         ifNull(warnP, ci.query, 'No connection parameters specified in: %s', pURL);
 
-        if (DBAdaptor.errors.length > 0) {
-            DBAdaptor.transition(ADAPTOR_STATE.ERR_Initializing, true);
+        if (this.errors.length > 0) {
+            this.transition(ADAPTOR_STATE.ERR_Initializing, true);
             return Promise.reject(false);
         }
 
@@ -287,87 +147,80 @@ export class DBAdaptor extends EventEmitter {
         //create the pool
 
         logger.info('Creating the Pool at time [%s]', new Date().toTimeString());
-        let db = DBAdaptor.adaptor = new DBAdaptor(conf);
 
-        return db.loadSQLStatements()
-            .then(() => {
-                if (DBAdaptor.errors.length > 0) {
-                    DBAdaptor.transition(ADAPTOR_STATE.ERR_Initializing, true);
-                    logger.error(DBAdaptor.lastErr());
-                    return Promise.reject(false);
-                }
-
-                if (!DBAdaptor.transition(ADAPTOR_STATE.Initialized)) {
-                    DBAdaptor.addErr('Could not transition to [Initialized] state');
-                    DBAdaptor.transition(ADAPTOR_STATE.ERR_Initializing, true);
-                    logger.error(DBAdaptor.lastErr());
-                    return Promise.reject(false);
-                }
-                logger.info('success loading all sql files');
-                return Promise.resolve(true);
-            });
-
-    }
-
-    //private methods
-    private constructor(config: pg.ClientConfig) {
-        super();
-        // connect to db
         this.nrClients = 0;
         this.accessCount = 0;
-        this.pool = new pg.Pool(config);
+        this.pool = new pg.Pool(conf);
 
         this.pool.on('connect', (/*client: pg.Client*/) => {
             logger.trace('client connected to db [%d]', ++this.nrClients);
         });
+
         this.pool.on('acquire', (/*client: pg.Client*/) => {
             logger.debug('client acquire to db');
         });
         // client has an error while sitting idel
         this.pool.on('error', (err: Error) => {
             logger.error('idle client error [%j]', err);
-            DBAdaptor.addErr('client error when sitting idle, error [%s] [%s]', err.message, err.stack || '');
+            this.addErr('client error when sitting idle, error [%s] [%s]', err.message, err.stack || '');
             this.nrClients--;
         });
         this.sql = new Map();
-    }
 
-    private pool: pg.Pool;
-    private nrClients: number;
-    private accessCount: number;
-    private sql: Map<SqlFileKeys, pg.QueryConfig>;
-    // private userCache: Map<string, User>;
-    //public methods
-    get poolSize() {
-        return this.nrClients;
-    }
-
-    destroy(): Promise<boolean> {
-        if (!DBAdaptor.transition(ADAPTOR_STATE.Disconnecting)) {
-            DBAdaptor.errors.push('Could not transition to state [disconnecting]');
-            return Promise.resolve(false);
-        }
-        return this.pool.end()
+        return this.loadSQLStatements()
             .then(() => {
-                DBAdaptor.transition(ADAPTOR_STATE.Disconnected, true);
+                if (this.errors.length > 0) {
+                    this.transition(ADAPTOR_STATE.ERR_Initializing, true);
+                    logger.error(this.lastErr());
+                    this.destroy(); //close it down;
+                    return Promise.reject(false);
+                }
+
+                if (!this.transition(ADAPTOR_STATE.Initialized)) {
+                    this.addErr('Could not transition to [Initialized] state');
+                    this.transition(ADAPTOR_STATE.ERR_Initializing, true);
+                    logger.error(this.lastErr());
+                    this.destroy();
+                    return Promise.reject(false);
+                }
+                logger.info('success loading all sql files');
+                this.emit('connect');
                 return Promise.resolve(true);
-            })
-            .catch(() => {
-                DBAdaptor.errors.push('Could not transition to state [disconnecting]');
-                return Promise.resolve(false);
             });
 
     }
-    /*
-        export interface ErrnoException extends Error {
-            errno?: number;
-            code?: string;
-            path?: string;
-            syscall?: string;
-            stack?: string;
-        }
-    */
-    public loadSQLStatements(): Promise<boolean> {
+
+    //private methods
+    public constructor(app: AdaptorPostgreSQLProperties) {
+        super();
+        this._url = app.url;
+        this.sessionTemplate = app.sessionTemplate;
+    }
+
+
+    //override
+    public get poolSize(): number {
+        return this.nrClients;
+    }
+
+    public get isConnected(): boolean {
+        return this.state === ADAPTOR_STATE.Initialized;
+    }
+
+    public destroy(): Promise<boolean> {
+        return super.destroy().then(() => {
+            return this.pool.end()
+                .then(() => {
+                    this.transition(ADAPTOR_STATE.Disconnected, true);
+                    this.emit('disconnect');
+                    return Promise.resolve(true);
+                });
+        }).catch(() => {
+            return Promise.resolve(false);
+        });
+    }
+
+    private loadSQLStatements(): Promise<boolean> {
         this.sql.clear();
 
         let fileCount = Object.keys(sqlFiles).length;
@@ -381,8 +234,8 @@ export class DBAdaptor extends EventEmitter {
 
                     fileCount--;
                     if (err) {
-                        DBAdaptor.addErr('Could not load sql file: %s', fileName);
-                        logger.error(DBAdaptor.lastErr());
+                        this.addErr('Could not load sql file: %s', fileName);
+                        logger.error(this.lastErr());
                         errCount++;
                     }
                     else {
@@ -405,8 +258,6 @@ export class DBAdaptor extends EventEmitter {
             });
         });
     }
-
-
 
     private executeSQL<T>(qcArr: (pg.QueryConfig)[], fn: ResolveResult<T>): Promise<T> {
         return new Promise<T>((resolveFinal, rejectFinal) => {
@@ -667,10 +518,10 @@ export class DBAdaptor extends EventEmitter {
         });
     }
 
-     public tokenSelectAllByUserIdOrName(userId: number|null, userName: string|null): Promise<TokensAndProps[]> {
+    public tokenSelectAllByUserIdOrName(userId: number | null, userName: string | null): Promise<TokensAndProps[]> {
 
         let qc = staticCast<pg.QueryConfig>(this.sql.get('sqlTokenSelectByUserIdOrName'));
-        
+
         let sqlObject = Object.assign({}, qc, { values: [userId, userName] }) as pg.QueryConfig;
 
         return this.executeSQL<TokensAndProps[]>([sqlObject], (res, resolve) => {
