@@ -47,6 +47,8 @@ export class HermesStore extends Store {
             this.adaptor.emit('disconnect');
         });
 
+        //wire it up
+
         this.adaptor.once('connect', () => {
             this.emit('connect');
         });
