@@ -2,11 +2,24 @@ import * as EventEmitter from 'events';
 import * as util from 'util';
 import { logger } from './logger';
 
-export interface AnyObjProps {
-    [index: string]: string;
+
+
+export class AdaptorError extends Error {
+    private _adaptorState: ADAPTOR_STATE;
+    public get adaptorState() {
+        return this._adaptorState;
+    }
+    constructor(message: string, code: ADAPTOR_STATE) {
+        super(message);
+        this.message = message;
+        this.name = 'AdaptorError';
+        this._adaptorState = code;
+    }
 }
 
-export interface UsersAndProps {
+
+
+export interface UsersAndPropsMessage {
     userId: number;
     userName: string;
     userEmail: string;
@@ -24,21 +37,35 @@ export interface TokenMessage {
     templateName: string;
 }
 
-export interface TokensAndProps {
+export interface TokensAndPropsMessage extends TokenMessage {
+    // overrides
     tokenId: string;
-    fkuserId: number;
+    fkUserId: number;
+    tsIssuance: number;
+    tsExpire: number;
+    //extras
     usrName: string;
     usrEmail: string;
-    blackListed?: number | null;
-    purpose: string;
-    ipAddr: string;
-    tsIssuance: number;
+    blackListed: boolean; //its a repeat but ok
     tsRevoked: number | null;
-    tsExpire: number;
     revokeReason: string | null;
-    templateName: string;
     sessionPropName: string;
     sessionPropValue: string;
+    propName: string;
+    propValue: string;
+}
+
+export interface TemplatePropsMessage {
+    id: number;
+    cookieName: string;
+    path: string;
+    maxAge: number;
+    httpOnly: boolean;
+    secure: boolean;
+    domain: string;
+    sameSite: boolean;
+    rolling: boolean;
+    templateName: string;
 }
 
 /* state machine , for tear-down and startup of database adaptor */
@@ -138,7 +165,7 @@ export abstract class AdaptorBase extends EventEmitter {
         return _warnings;
     }
 
-    protected state: ADAPTOR_STATE = ADAPTOR_STATE.UnInitialized;
+    protected _state: ADAPTOR_STATE = ADAPTOR_STATE.UnInitialized;
 
     protected addErr(...rest: any[]) {
         _errors.push(util.format.call(util.format, ...rest));
@@ -165,7 +192,7 @@ export abstract class AdaptorBase extends EventEmitter {
     protected transition(target: ADAPTOR_STATE, force?: boolean) {
         force = !!force;
         if (force || (!force && moveToState(_adaptor.state, target))) {
-            _adaptor.state = target;
+            _adaptor._state = target;
             return true;
         }
         return false;
@@ -179,20 +206,25 @@ export abstract class AdaptorBase extends EventEmitter {
         return Promise.resolve(true);
     }
 
+    public get state(): ADAPTOR_STATE {
+        return this._state;
+    }
+
     public abstract init(): Promise<boolean>;
     public abstract userCreate(userName: string, email: string): Promise<number>;
     public abstract get poolSize(): number;
     public abstract userAddProperty(userId: number, propName: string, propValue: string): Promise<boolean>;
     public abstract userRemoveProperty(userId: number, propName: string): Promise<boolean>;
-    public abstract userSelectAllNONBlackListed(): Promise<UsersAndProps[]>;
+    public abstract userSelectByFilter(notHavingProp: string): Promise<UsersAndPropsMessage[]>;
     public abstract tokenCreate(token: TokenMessage): Promise<Partial<TokenMessage>>;
     public abstract tokenAddProperty(tokenId: string, propName: string, propValue: string): Promise<boolean>;
     public abstract tokenAssociateWithUser(tokenId: string, userId: number): Promise<boolean>;
     public abstract tokenDoExpire(tokenId: string, expireReason: string, expireTime?: number | null): Promise<boolean>;
     public abstract tokenGC(deleteBeforeExpireTime: number): Promise<number>;
-    public abstract tokenSelectAllByFilter(timestampExpire: number, startTimestampRevoked: number, endTimestampRevoked: number): Promise<TokensAndProps[]>;
-    public abstract tokenSelectAllByUserIdOrName(userId: number | null, userName: string | null): Promise<TokensAndProps[]>;
+    public abstract tokenSelectAllByFilter(timestampExpire: number | null, startTimestampRevoked: number, endTimestampRevoked: number): Promise<TokensAndPropsMessage[]>;
+    public abstract tokenSelectAllByUserIdOrName(userId: number | null, userName: string | null): Promise<TokensAndPropsMessage[]>;
+    public abstract templateSelectAll(): Promise<TemplatePropsMessage[]>;
 
-    public abstract get isConnected(): boolean;
+    public abstract get connected(): boolean;
 
 }

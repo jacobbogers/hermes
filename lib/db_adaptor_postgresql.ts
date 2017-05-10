@@ -8,24 +8,28 @@ import * as UID from 'uid-safe';
 
 
 import { logger } from './logger';
-import { makeObjectNull } from './validation';
+import { makeObjectNull } from './utils';
 import {
-    AnyObjProps,
-    UsersAndProps,
+    UsersAndPropsMessage,
+    TokensAndPropsMessage,
+    TemplatePropsMessage,
     TokenMessage,
-    TokensAndProps,
+    //
     AdaptorBase,
-    ADAPTOR_STATE
+    ADAPTOR_STATE,
+    AdaptorError,
+    //
 } from './db_adaptor_base';
 
 
 import {
     ifNull,
     ifInvalidPortString,
-    staticCast
+    staticCast,
+    AnyObjProps
     // ifUndefined,
     // ifEmptyString
-} from './validation';
+} from './utils';
 
 interface SQLFiles {
     sqlTokenAddProperty: string;
@@ -41,8 +45,9 @@ interface SQLFiles {
     sqlUserAddProperty: string;
     sqlUserCreate: string;
     sqlUserRemoveProperty: string;
-    sqlUserSelectAllBlackListed: string;
-    sqlUserSelectAllNonBlackListed: string;
+    sqlUserSelectAll: string;
+    //
+    sqlTemplateSelectAll: string;
 }
 
 type ResolveResult<T> = (res: pg.QueryResult, resolve: (rc: T | undefined) => void) => void;
@@ -60,8 +65,10 @@ const sqlFiles: SQLFiles = {
     sqlUserAddProperty: 'sql/user_add_property.sql',
     sqlUserCreate: 'sql/user_create.sql',
     sqlUserRemoveProperty: 'sql/user_remove_property.sql',
-    sqlUserSelectAllBlackListed: 'sql/user_select_all_blacklisted.sql',
-    sqlUserSelectAllNonBlackListed: 'sql/user_select_all_non_blacklisted.sql'
+    sqlUserSelectAll: 'sql/user_select_all.sql',
+    //
+    sqlTemplateSelectAll: 'sql/template_select_all.sql'
+
 };
 
 type SqlFileKeys = keyof SQLFiles;
@@ -71,14 +78,12 @@ type SqlFileKeys = keyof SQLFiles;
 /*  database adaptor */
 
 export interface AdaptorPostgreSQLProperties {
-    sessionTemplate: string;
-    url: string;
+   url: string;
 }
 
 export class AdaptorPostgreSQL extends AdaptorBase {
 
     private _url: string;
-    private sessionTemplate: string;
     private pool: pg.Pool;
     private nrClients: number;
     private accessCount: number;
@@ -184,30 +189,26 @@ export class AdaptorPostgreSQL extends AdaptorBase {
                     return Promise.reject(false);
                 }
                 logger.info('success loading all sql files');
-                this.emit('connect');
                 return Promise.resolve(true);
             });
-
     }
 
     //private methods
     public constructor(app: AdaptorPostgreSQLProperties) {
         super();
         this._url = app.url;
-        this.sessionTemplate = app.sessionTemplate;
     }
-
 
     //override
     public get poolSize(): number {
         return this.nrClients;
     }
 
-    public get isConnected(): boolean {
+    public get connected(): boolean {
         return this.state === ADAPTOR_STATE.Initialized;
     }
 
-    public destroy(): Promise<boolean> {
+    public shutDown(): Promise<boolean> {
         return super.destroy().then(() => {
             return this.pool.end()
                 .then(() => {
@@ -260,6 +261,9 @@ export class AdaptorPostgreSQL extends AdaptorBase {
     }
 
     private executeSQL<T>(qcArr: (pg.QueryConfig)[], fn: ResolveResult<T>): Promise<T> {
+        if (!this.connected) {
+            return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
+        }
         return new Promise<T>((resolveFinal, rejectFinal) => {
             if (qcArr.length === 0) {
                 let qryResult: pg.QueryResult = { command: '', rowCount: 0, oid: 0, rows: [] };
@@ -296,6 +300,9 @@ export class AdaptorPostgreSQL extends AdaptorBase {
 
     //  private executeSQL<T>(qcArr: (pg.QueryConfig)[], fn: ResolveResult<T>): Promise<T> {
     private executeSQLMutation<T>(qcArr: (pg.QueryConfig)[], fn: ResolveResult<T>): Promise<T> {
+        if (!this.connected) {
+            return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
+        }
 
         return this.executeSQL<T>(qcArr, (res, resolve) => {
             //no error but did we actually update something
@@ -306,10 +313,12 @@ export class AdaptorPostgreSQL extends AdaptorBase {
             logger.trace('Success: number of rows mutated %d', res.rowCount);
             return fn(res, resolve);
         });
-
     }
 
     public userCreate(userName: string, email: string): Promise<number> {
+        if (!this.connected) {
+            return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
+        }
 
         logger.trace('Inserting user [%s]/[%s]', userName, email);
         let qc = staticCast<pg.QueryConfig>(this.sql.get('sqlUserCreate'));
@@ -322,6 +331,9 @@ export class AdaptorPostgreSQL extends AdaptorBase {
     }
 
     public userAddProperty(userId: number, propName: string, propValue: string): Promise<boolean> {
+        if (!this.connected) {
+            return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
+        }
         logger.trace('trying to add property "%s":"%s" to userId:%d', propName, propValue, userId);
 
         let qc = staticCast<pg.QueryConfig>(this.sql.get('sqlUserAddProperty'));
@@ -336,6 +348,9 @@ export class AdaptorPostgreSQL extends AdaptorBase {
     }
 
     public userRemoveProperty(userId: number, propName: string): Promise<boolean> {
+        if (!this.connected) {
+            return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
+        }
         logger.trace('trying to deleting property "%s" from userId:%d', propName, userId);
 
         let qc = staticCast<pg.QueryConfig>(this.sql.get('sqlUserRemoveProperty'));
@@ -349,14 +364,18 @@ export class AdaptorPostgreSQL extends AdaptorBase {
     }
 
     //helper
-    private selectUserProps(qc: pg.QueryConfig): Promise<UsersAndProps[]> {
+    private selectUserProps(qc: pg.QueryConfig): Promise<UsersAndPropsMessage[]> {
+        if (!this.connected) {
+            return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
+        }
+
         let sqlObject = Object.assign({}, qc) as pg.QueryConfig;
 
-        return this.executeSQL<UsersAndProps[]>([sqlObject], (res, resolve) => {
+        return this.executeSQL<UsersAndPropsMessage[]>([sqlObject], (res, resolve) => {
             let copy = Object.assign({}, res);
             delete copy.rows;
-            logger.trace('success: fetching.. statistics on fetch %j', copy);
-            let result: UsersAndProps[] = res.rows.map((raw: any) => {
+            logger.trace('[selectUserProps]success: fetching.. statistics on fetch %j', copy);
+            let result: UsersAndPropsMessage[] = res.rows.map((raw: any) => {
                 return {
                     userId: raw.usr_id as number,
                     userName: raw.user_name as string,
@@ -371,25 +390,25 @@ export class AdaptorPostgreSQL extends AdaptorBase {
     }
 
 
-    public userSelectAllNONBlackListed(): Promise<UsersAndProps[]> {
+    public userSelectByFilter(): Promise<UsersAndPropsMessage[]> {
+        if (!this.connected) {
+            return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
+        }
         logger.warn('selecting all non-blacklisted users, potential expensive operation');
-        let qc = staticCast<pg.QueryConfig>(this.sql.get('sqlUserSelectAllNonBlackListed'));
+        let qc = staticCast<pg.QueryConfig>(this.sql.get('sqlUserSelectAll'));
         let sqlObject = Object.assign({}, qc) as pg.QueryConfig;
 
         return this.selectUserProps(sqlObject);
 
     }
 
-    public userSelectAllBlackListed(): Promise<UsersAndProps[]> {
-        logger.warn('selecting all blacklisted users, potential expensive operation');
-        let qc = staticCast<pg.QueryConfig>(this.sql.get('sqlUserSelectAllBlackListed'));
-        let sqlObject = Object.assign({}, qc) as pg.QueryConfig;
-        return this.selectUserProps(sqlObject);
-
-    }
 
 
     public tokenCreate(token: TokenMessage): Promise<Partial<TokenMessage>> {
+
+        if (!this.connected) {
+            return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
+        }
 
         let uid = UID.sync(18);
 
@@ -421,6 +440,10 @@ export class AdaptorPostgreSQL extends AdaptorBase {
 
     public tokenAddProperty(tokenId: string, propName: string, propValue: string): Promise<boolean> {
 
+        if (!this.connected) {
+            return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
+        }
+
         logger.trace('add a property to token %s , propName:%s, propValue:%s', tokenId, propName, propValue);
         let qc = staticCast<pg.QueryConfig>(this.sql.get('sqlTokenAddProperty'));
 
@@ -437,6 +460,11 @@ export class AdaptorPostgreSQL extends AdaptorBase {
     public tokenAssociateWithUser(tokenId: string, userId: number): Promise<boolean> {
 
         logger.trace('assoiate token %s with user %d', tokenId, userId);
+
+        if (!this.connected) {
+            return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
+        }
+
         let qc = staticCast<pg.QueryConfig>(this.sql.get('sqlTokenAssociateWithUser'));
 
         let sqlObject = Object.assign({}, qc, { values: [userId, tokenId] }) as pg.QueryConfig;
@@ -452,6 +480,9 @@ export class AdaptorPostgreSQL extends AdaptorBase {
 
         logger.trace('Expire token %s with reason %s at time %s', tokenId, expireReason, new Date(expireReason).toUTCString());
 
+        if (!this.connected) {
+            return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
+        }
         let qc = staticCast<pg.QueryConfig>(this.sql.get('sqlTokenDoExpire'));
 
         if (expireTime === undefined) {
@@ -471,7 +502,7 @@ export class AdaptorPostgreSQL extends AdaptorBase {
 
         if (!deleteBeforeExpireTime) {
             logger.error('No "deleteBeforeExpireTime" argument given!');
-            return Promise.reject(new Error('no cleanup time given'));
+            return Promise.reject(new AdaptorError('no cleanup time given,', this.state));
         }
         logger.trace('Remove all tokens expired before %s', new Date(deleteBeforeExpireTime).toUTCString());
 
@@ -485,23 +516,26 @@ export class AdaptorPostgreSQL extends AdaptorBase {
         });
     }
 
-    public tokenSelectAllByFilter(timestampExpire: number, startTimestampRevoked: number, endTimestampRevoked: number): Promise<TokensAndProps[]> {
+    public tokenSelectAllByFilter(timestampExpire: number | null, startTimestampRevoked: number, endTimestampRevoked: number): Promise<TokensAndPropsMessage[]> {
 
+        if (!this.connected) {
+            return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
+        }
         let qc = staticCast<pg.QueryConfig>(this.sql.get('sqlTokenSelectAllByFilter'));
 
         let sqlObject = Object.assign({}, qc, { values: [timestampExpire, startTimestampRevoked, endTimestampRevoked] }) as pg.QueryConfig;
 
-        return this.executeSQL<TokensAndProps[]>([sqlObject], (res, resolve) => {
+        return this.executeSQL<TokensAndPropsMessage[]>([sqlObject], (res, resolve) => {
             let copy = Object.assign({}, res);
             delete copy.rows;
-            logger.trace('success: fetching.. statistics on fetch %j', copy);
-            let result: TokensAndProps[] = res.rows.map((raw: any) => {
+            logger.trace('[tokenSelectAllByFilter]success: fetching.. statistics on fetch %j', copy);
+            let result: TokensAndPropsMessage[] = res.rows.map((raw: any) => {
                 return {
                     tokenId: raw['token_id'],
-                    fkuserId: raw['user_id'],
+                    fkUserId: raw['user_id'],
                     usrName: raw['usr_name'],
                     usrEmail: raw['usr_email'],
-                    blackListed: raw['black_listed'],
+                    blackListed: (raw['black_listed'] === raw['user_id']),
                     purpose: raw['purpose'],
                     ipAddr: raw['ip_addr'],
                     tsIssuance: raw['timestamp_issued'],
@@ -510,7 +544,9 @@ export class AdaptorPostgreSQL extends AdaptorBase {
                     revokeReason: raw['revoke_reason'],
                     templateName: raw['template_name'],
                     sessionPropName: raw['session_prop_name'],
-                    sessionPropValue: raw['session_prop_value']
+                    sessionPropValue: raw['session_prop_value'],
+                    propName: raw['prop_name'],
+                    propValue: raw['prop_value']
                 };
             });
             delete res.rows; // garbage collect please
@@ -518,23 +554,57 @@ export class AdaptorPostgreSQL extends AdaptorBase {
         });
     }
 
-    public tokenSelectAllByUserIdOrName(userId: number | null, userName: string | null): Promise<TokensAndProps[]> {
+    public templateSelectAll(): Promise<TemplatePropsMessage[]> {
+        if (!this.connected) {
+            return Promise.reject(new AdaptorError('Adaptor is not connected', this.state));
+        }
+
+        let qc = staticCast<pg.QueryConfig>(this.sql.get('sqlTemplateSelectAll'));
+        let sqlObject = Object.assign({}, qc) as pg.QueryConfig;
+        return this.executeSQL<TemplatePropsMessage[]>([sqlObject], (res, resolve) => {
+            let copy = Object.assign({}, res);
+            delete copy.rows;
+            logger.trace('success:[templateSelectAll] fetching.. statistics on fetch %j', copy);
+            let result: TemplatePropsMessage[] = res.rows.map((raw: any) => {
+                return {
+                    id: raw['id'],
+                    cookieName: raw['cookie_name'],
+                    path: raw['path'],
+                    maxAge: raw['max_age'],
+                    httpOnly: raw['httpOnly'],
+                    secure: raw['secure'],
+                    domain: raw['domain'],
+                    sameSite: raw['same_site'],
+                    rolling: raw['rolling'],
+                    templateName: raw['template_name']
+                };
+            });
+            delete res.rows; // garbage collect please
+            resolve(result);
+        });
+    }
+
+    public tokenSelectAllByUserIdOrName(userId: number | null, userName: string | null): Promise<TokensAndPropsMessage[]> {
+
+        if (!this.connected) {
+            return Promise.reject(new AdaptorError('Adaptor is not connected', this.state));
+        }
 
         let qc = staticCast<pg.QueryConfig>(this.sql.get('sqlTokenSelectByUserIdOrName'));
 
         let sqlObject = Object.assign({}, qc, { values: [userId, userName] }) as pg.QueryConfig;
 
-        return this.executeSQL<TokensAndProps[]>([sqlObject], (res, resolve) => {
+        return this.executeSQL<TokensAndPropsMessage[]>([sqlObject], (res, resolve) => {
             let copy = Object.assign({}, res);
             delete copy.rows;
             logger.trace('success: fetching.. statistics on fetch %j', copy);
-            let result: TokensAndProps[] = res.rows.map((raw: any) => {
+            let result: TokensAndPropsMessage[] = res.rows.map((raw: any) => {
                 return {
                     tokenId: raw['token_id'],
-                    fkuserId: raw['user_id'],
+                    fkUserId: raw['user_id'],
                     usrName: raw['usr_name'],
                     usrEmail: raw['usr_email'],
-                    blackListed: raw['black_listed'],
+                    blackListed: (raw['black_listed'] === raw['user_id']),
                     purpose: raw['purpose'],
                     ipAddr: raw['ip_addr'],
                     tsIssuance: raw['timestamp_issued'],
@@ -543,7 +613,9 @@ export class AdaptorPostgreSQL extends AdaptorBase {
                     revokeReason: raw['revoke_reason'],
                     templateName: raw['template_name'],
                     sessionPropName: raw['session_prop_name'],
-                    sessionPropValue: raw['session_prop_value']
+                    sessionPropValue: raw['session_prop_value'],
+                    propName: raw['prop_name'],
+                    propValue: raw['prop_value']
                 };
             });
             delete res.rows; // garbage collect please

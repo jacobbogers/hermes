@@ -17,11 +17,14 @@ SELECT
  revoke_reason,
  sct.template_name,
  session_prop_name,
- session_prop_value
+ session_prop_value,
+ prop_name,
+ prop_value
 from
    auth.issued_user_tokens iut
    left join auth.user u on (u.id = iut.fk_user)
    left join auth.session_props sp on (iut.id = sp.fk_token_id)
+   left join auth.user_props up on (up.fk_user = u.id)
    left join blacklisted_users bu on (bu.fk_user = iut.fk_user)
    left join auth.session_cookies_template sct on (sct.id = iut.fk_cookie_template_id)
 WHERE

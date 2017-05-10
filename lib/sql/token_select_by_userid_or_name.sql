@@ -20,4 +20,4 @@ from
    left join auth.user_props up on (up.fk_user = u.id and up.prop_name = 'BLACKLISTED' )  
    left join auth.session_cookies_template sct on (sct.id = iut.fk_cookie_template_id)
 WHERE
-    iut.fk_user = COALESCE($1::bigint, iut.fk_user) AND COALESCE($2::text, u.name) = u.name
+    iut.fk_user = COALESCE($1::bigint, iut.fk_user) AND COALESCE($2::text, u.name) = u.nameGU

@@ -24,7 +24,7 @@
     "stop": "echo stop",
     "poststop": "echo poststop",
     "prestart": "echo prestart",
-    "start": "node dist/index.js",
+    "start": "cross-env DEBUGX=express-session,cookie node dist/index.js",
     "poststart": "echo poststart",
     "prerestart": "echo prerestart",
     "restart": "echo restart",
@@ -72,11 +72,14 @@
     "typescript": "^2.4.0-dev.20170428"
   },
   "dependencies": {
+    "@types/moment": "^2.13.0",
     "body-parser": "^1.17.1",
+    "cross-env": "^4.0.0",
     "express": "^4.15.2",
     "express-session": "^1.15.2",
     "install": "^0.9.3",
     "merge2": "^1.0.3",
+    "moment": "^2.18.1",
     "npm": "^4.5.0",
     "pg": "^6.1.5",
     "pg-cursor": "^1.1.0",
