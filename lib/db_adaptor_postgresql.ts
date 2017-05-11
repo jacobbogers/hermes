@@ -14,6 +14,8 @@ import {
     TokensAndPropsMessage,
     TemplatePropsMessage,
     TokenMessage,
+    TokenMessageReturned,
+    PropertyModifyMessage,
     //
     AdaptorBase,
     ADAPTOR_STATE,
@@ -32,9 +34,9 @@ import {
 } from './utils';
 
 interface SQLFiles {
-    sqlTokenAddProperty: string;
+    sqlTokenInsertModifyProperty: string;
     sqlTokenAssociateWithUser: string;
-    sqlTokenCreate: string;
+    sqlTokenInsertModify: string;
     sqlTokenDoExpire: string;
     sqlTokenGC: string;
     //
@@ -53,9 +55,9 @@ interface SQLFiles {
 type ResolveResult<T> = (res: pg.QueryResult, resolve: (rc: T | undefined) => void) => void;
 
 const sqlFiles: SQLFiles = {
-    sqlTokenAddProperty: './sql/token_add_property.sql',
+    sqlTokenInsertModifyProperty: './sql/token_insert_modify_property.sql',
     sqlTokenAssociateWithUser: './sql/token_associate_with_user.sql',
-    sqlTokenCreate: './sql/token_create.sql',
+    sqlTokenInsertModify: './sql/token_insert_modify.sql',
     sqlTokenDoExpire: './sql/token_do_expire.sql',
     sqlTokenGC: './sql/token_gc.sql',
     //
@@ -78,7 +80,7 @@ type SqlFileKeys = keyof SQLFiles;
 /*  database adaptor */
 
 export interface AdaptorPostgreSQLProperties {
-   url: string;
+    url: string;
 }
 
 export class AdaptorPostgreSQL extends AdaptorBase {
@@ -372,9 +374,8 @@ export class AdaptorPostgreSQL extends AdaptorBase {
         let sqlObject = Object.assign({}, qc) as pg.QueryConfig;
 
         return this.executeSQL<UsersAndPropsMessage[]>([sqlObject], (res, resolve) => {
-            let copy = Object.assign({}, res);
-            delete copy.rows;
-            logger.trace('[selectUserProps]success: fetching.. statistics on fetch %j', copy);
+    
+            logger.trace('[selectUserProps]success: fetching.. rows fetched %d', res.rowCount);
             let result: UsersAndPropsMessage[] = res.rows.map((raw: any) => {
                 return {
                     userId: raw.usr_id as number,
@@ -384,27 +385,25 @@ export class AdaptorPostgreSQL extends AdaptorBase {
                     propValue: raw.prop_value as string
                 };
             });
-            delete res.rows; // garbage collect please
+          
             resolve(result);
         });
     }
 
-
-    public userSelectByFilter(): Promise<UsersAndPropsMessage[]> {
+    public userSelectByFilter(notHavingProp?: string): Promise<UsersAndPropsMessage[]> {
+        notHavingProp;
         if (!this.connected) {
             return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
         }
-        logger.warn('selecting all non-blacklisted users, potential expensive operation');
+        logger.warn('select all non-blacklisted users and props, potential expensive operation');
         let qc = staticCast<pg.QueryConfig>(this.sql.get('sqlUserSelectAll'));
         let sqlObject = Object.assign({}, qc) as pg.QueryConfig;
-
         return this.selectUserProps(sqlObject);
-
     }
 
 
 
-    public tokenCreate(token: TokenMessage): Promise<Partial<TokenMessage>> {
+    public tokenInsertModify(token: TokenMessage): Promise<TokenMessageReturned> {
 
         if (!this.connected) {
             return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
@@ -418,40 +417,78 @@ export class AdaptorPostgreSQL extends AdaptorBase {
 
             logger.trace('creating a new token %j with properties', t);
 
-        let qc = staticCast<pg.QueryConfig>(this.sql.get('sqlTokenCreate'));
+        let qc = staticCast<pg.QueryConfig>(this.sql.get('sqlTokenInsertModify'));
 
-        let sqlObject = Object.assign({}, qc, { values: [t.tokenId, t.fkUserId, t.purpose, t.ipAddr, t.tsIssuance, t.tsExpire, t.templateName] }) as pg.QueryConfig;
+        /*tokenId?: string;
+        fkUserId?: number;
+        purpose: string;
+        ipAddr: string;
+        tsIssuance: number|null;
+        tsRevoked: number | null;
+        revokeReason: string | null;
+        tsExpire: number|null;
+        templateName: string;*/
 
-        return this.executeSQL<Partial<TokenMessage>>([sqlObject], (res, resolve) => {
-            logger.trace('success: query result [%j]', res);
+        /*
+          id, 
+        fk_user, 
+        purpose, 
+        ip_addr, 
+        timestamp_issued,
+        timestamp_revoked,
+        revoke_reason,
+        timestamp_expire,
+        fk_cookie_template_id
+        */
+
+
+        let sqlObject = Object.assign({}, qc, { values: [t.tokenId, t.fkUserId, t.purpose, t.ipAddr, t.tsIssuance, t.tsRevoked, t.revokeReason, t.tsExpire, t.templateName] }) as pg.QueryConfig;
+
+        return this.executeSQL<TokenMessageReturned>([sqlObject], (res, resolve) => {
+            
+            logger.trace('success: query result [%j]', {command:res.command, rowCount:res.rowCount});
             let row = res.rows[0];
-            let rc: Partial<TokenMessage> = {
-                tokenId: row['uid'] as string,
+            /*
+             id, fk_user, purpose, ip_addr, timestamp_issued, timestamp_revoked, revoke_reason, timestamp_expire, s1.template_name
+             */
+            let rc: TokenMessageReturned = {
+                tokenId: row['id'] as string,
                 fkUserId: row['fk_user'] as number,
-                tsIssuance: row['timestamp_issued'],
-                tsExpire: row['timestamp_expire'],
-                templateName: '' + row['fk_cookie_template_id']
-                //    , fk_user,timestamp_issued, timestamp_expire,fk_cookie_template_id
+                purpose: row['purpose'] as string,
+                ipAddr: row['ip_addr'],
+                tsIssuance: row['timestamp_issued'] as number,
+                tsRevoked: row['timestamp_revoked'] as number,
+                revokeReason: row['revoke_reason'] as string,
+                tsExpire: row['timestamp_expire'] as number,
+                templateId: row['fk_cookie_template_id'] as number
             };
             logger.debug('success: "creating token", returned values %j', rc);
             resolve(rc);
         });
     }
 
-    public tokenAddProperty(tokenId: string, propName: string, propValue: string): Promise<boolean> {
+    public tokenInsertModifyProperty(tokenId: string, modifications: PropertyModifyMessage[]): Promise<boolean> {
 
         if (!this.connected) {
             return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
         }
+        let propNames: string[] = [];
+        let propValues: string[] = [];
+        let invisibles: boolean[] = [];
 
-        logger.trace('add a property to token %s , propName:%s, propValue:%s', tokenId, propName, propValue);
-        let qc = staticCast<pg.QueryConfig>(this.sql.get('sqlTokenAddProperty'));
+        for (let mod of modifications) {
+            propNames.push(mod.propName);
+            propValues.push(mod.propValue);
+            invisibles.push(mod.invisible);
+        }
 
-        let sqlObject = Object.assign({}, qc, { values: [tokenId, propName, propValue] }) as pg.QueryConfig;
+        logger.trace('token %s modification list %j', tokenId, modifications);
+        let qc = staticCast<pg.QueryConfig>(this.sql.get('sqlTokenInsertModifyProperty'));
+
+        let sqlObject = Object.assign({}, qc, { values: [tokenId, propNames, propValues, invisibles] }) as pg.QueryConfig;
 
         return this.executeSQL<boolean>([sqlObject], (res, resolve) => {
-            res;
-            logger.trace('success: adding property %s to token %s.', propName, tokenId);
+            logger.trace('%d of rows modified/inserted for token %s', res.rowCount, tokenId);
             resolve(true);
         });
 
@@ -526,9 +563,8 @@ export class AdaptorPostgreSQL extends AdaptorBase {
         let sqlObject = Object.assign({}, qc, { values: [timestampExpire, startTimestampRevoked, endTimestampRevoked] }) as pg.QueryConfig;
 
         return this.executeSQL<TokensAndPropsMessage[]>([sqlObject], (res, resolve) => {
-            let copy = Object.assign({}, res);
-            delete copy.rows;
-            logger.trace('[tokenSelectAllByFilter]success: fetching.. statistics on fetch %j', copy);
+           
+            logger.trace('tokenSelectAllByFilter,success: fetching, nr of rows fetched %d', res.rowCount);
             let result: TokensAndPropsMessage[] = res.rows.map((raw: any) => {
                 return {
                     tokenId: raw['token_id'],
@@ -540,7 +576,7 @@ export class AdaptorPostgreSQL extends AdaptorBase {
                     ipAddr: raw['ip_addr'],
                     tsIssuance: raw['timestamp_issued'],
                     tsRevoked: raw['timestamp_revoked'],
-                    tsExpire: raw['timestamp_'],
+                    tsExpire: raw['timestamp_expire'],
                     revokeReason: raw['revoke_reason'],
                     templateName: raw['template_name'],
                     sessionPropName: raw['session_prop_name'],
@@ -562,9 +598,8 @@ export class AdaptorPostgreSQL extends AdaptorBase {
         let qc = staticCast<pg.QueryConfig>(this.sql.get('sqlTemplateSelectAll'));
         let sqlObject = Object.assign({}, qc) as pg.QueryConfig;
         return this.executeSQL<TemplatePropsMessage[]>([sqlObject], (res, resolve) => {
-            let copy = Object.assign({}, res);
-            delete copy.rows;
-            logger.trace('success:[templateSelectAll] fetching.. statistics on fetch %j', copy);
+           
+            logger.trace('templateSelectAll, success: fetching.. nr of rows fetched', res.rowCount);
             let result: TemplatePropsMessage[] = res.rows.map((raw: any) => {
                 return {
                     id: raw['id'],

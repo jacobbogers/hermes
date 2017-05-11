@@ -84,8 +84,8 @@ hermesStore.once('connect', () => {
 
     logger.info('store is initialized');
     init();
-    app.listen(8080, (msg: any) => {
-        logger.warn('app is listening on [%j]', msg);
+    app.listen(8080, () => {
+        logger.warn('app is listening on 8080');
     });
 
 
@@ -117,14 +117,14 @@ function init() {
         req;
         next;
         res.set({ 'Contet-Type': 'text/html' });
-        if (req.session) {
+        /*if (req.session) {
             let cnt = Number.parseInt(req.session['counter']);
             if (cnt === undefined) {
                 cnt = 7;
             }
             cnt = (cnt > 0) ? --cnt : 7;
             req.session['counter'] = '' + cnt;
-        }
+        }*/
         if (req.session && !req.session._user) {
             req.session.save((err) => {
                 if (err) {
@@ -133,9 +133,10 @@ function init() {
                 logger.warn('session looks like %j', req.session);
                 res.send('Response:' + new Date());
             });
+            return;
         }
-        //logger.warn('session looks like %j', req.session);
-        //res.send('Response:' + new Date());
+        logger.info('session looks like %j', req.session);
+        res.send('Response:' + new Date());
 
     });
 }

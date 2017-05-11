@@ -6,5 +6,4 @@ select
   up.prop_value 
 from
   auth.user u
-  left join blacklisted bl on (bl.fk_user = u.id)
   left join auth.user_props up on (u.id = up.fk_user)

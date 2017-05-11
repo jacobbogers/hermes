@@ -27,14 +27,29 @@ export interface UsersAndPropsMessage {
     propValue: string;
 }
 
-export interface TokenMessage {
-    tokenId?: string;
-    fkUserId?: number;
-    purpose: string;
-    ipAddr: string;
-    tsIssuance?: number;
-    tsExpire?: number;
-    templateName: string;
+export interface TokenMessageBase {
+    tokenId: string;
+    fkUserId: number | null;
+    purpose: string | null;
+    ipAddr: string | null;
+    tsIssuance: number;
+    tsRevoked: number | null;
+    revokeReason: string | null;
+    tsExpire: number;
+}
+
+export interface TokenMessage extends TokenMessageBase {
+    templateName: string|null;
+}
+
+export interface TokenMessageReturned extends TokenMessageBase {
+    templateId: number|null;
+}
+
+export interface PropertyModifyMessage {
+    propName: string;
+    propValue: string;
+    invisible: boolean;
 }
 
 export interface TokensAndPropsMessage extends TokenMessage {
@@ -215,9 +230,9 @@ export abstract class AdaptorBase extends EventEmitter {
     public abstract get poolSize(): number;
     public abstract userAddProperty(userId: number, propName: string, propValue: string): Promise<boolean>;
     public abstract userRemoveProperty(userId: number, propName: string): Promise<boolean>;
-    public abstract userSelectByFilter(notHavingProp: string): Promise<UsersAndPropsMessage[]>;
-    public abstract tokenCreate(token: TokenMessage): Promise<Partial<TokenMessage>>;
-    public abstract tokenAddProperty(tokenId: string, propName: string, propValue: string): Promise<boolean>;
+    public abstract userSelectByFilter(notHavingProp?: string): Promise<UsersAndPropsMessage[]>;
+    public abstract tokenInsertModify(token: TokenMessage): Promise<TokenMessageReturned>;
+    public abstract tokenInsertModifyProperty(tokenId: string, modifications: PropertyModifyMessage[]): Promise<boolean>;
     public abstract tokenAssociateWithUser(tokenId: string, userId: number): Promise<boolean>;
     public abstract tokenDoExpire(tokenId: string, expireReason: string, expireTime?: number | null): Promise<boolean>;
     public abstract tokenGC(deleteBeforeExpireTime: number): Promise<number>;

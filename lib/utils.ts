@@ -80,8 +80,10 @@ export class MapWithIndexes<T> {
             throw new Error(err);
         }
         let _rc = JSON.parse(JSON.stringify(data));
+
         for (let key in this.access) {
             let keyValue = _rc[key];
+            //console.log('key found', key, keyValue);
             this.access[key].set(keyValue, _rc);
         }
     }

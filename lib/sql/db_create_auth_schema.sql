@@ -54,7 +54,7 @@ CREATE Index issued_tokens_expired_keys on issued_user_tokens(timestamp_expire)
 create index issued_tokens_revoked on issued_user_tokens(timestamp_revoked)
 --
 create table session_props (
-   fk_token_id varchar(24),
+   fk_token_id varchar(32),
    session_prop_name varchar(30),
    session_prop_value varchar(120),
    CONSTRAINT pk_session_props PRIMARY KEY (fk_token_id, session_prop_name),
