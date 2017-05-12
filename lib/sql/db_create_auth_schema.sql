@@ -12,6 +12,7 @@ create table user_props (
    fk_user bigint,  
    prop_name varchar(30),  
    prop_value varchar(60),  
+   invisible boolean default false,
    constraint user_props_user_fk 
      FOREIGN KEY (fk_user) REFERENCES auth.user(id) on delete cascade 
 )
@@ -35,7 +36,7 @@ create unique index sct_pk on session_cookies_template(id)
 create unique index sct_uix on session_cookies_template(template_name)
 --
 create table issued_user_tokens (  
-   id varchar(24), -- token id
+   id varchar(64), -- token id
    fk_user bigint, --user id
    purpose CHAR(4), --CHAR-mnemonic for the purpose of issueing 
    ip_addr inet, -- ip@port of the user agent when this token was issued
@@ -54,9 +55,10 @@ CREATE Index issued_tokens_expired_keys on issued_user_tokens(timestamp_expire)
 create index issued_tokens_revoked on issued_user_tokens(timestamp_revoked)
 --
 create table session_props (
-   fk_token_id varchar(32),
+   fk_token_id varchar(64),
    session_prop_name varchar(30),
    session_prop_value varchar(120),
+   invisible boolean default false,
    CONSTRAINT pk_session_props PRIMARY KEY (fk_token_id, session_prop_name),
    CONSTRAINT fk_token_id FOREIGN KEY (fk_token_id) REFERENCES auth.issued_user_tokens(id) on delete cascade
 )

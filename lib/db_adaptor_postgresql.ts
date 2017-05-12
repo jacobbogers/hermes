@@ -16,6 +16,7 @@ import {
     TokenMessage,
     TokenMessageReturned,
     PropertyModifyMessage,
+    PropertyModifyMessageReturned,
     //
     AdaptorBase,
     ADAPTOR_STATE,
@@ -268,11 +269,12 @@ export class AdaptorPostgreSQL extends AdaptorBase {
         }
         return new Promise<T>((resolveFinal, rejectFinal) => {
             if (qcArr.length === 0) {
-                let qryResult: pg.QueryResult = { command: '', rowCount: 0, oid: 0, rows: [] };
+                let qryResult: pg.QueryResult = { command: 'EMPTY COMMAND', rowCount: 0, oid: 0, rows: [] };
                 return fn(qryResult, resolveFinal);
             }
             this.pool.connect((err, client, done) => {
                 if (err) {
+                    logger.error('could not aquire a client from the pool because:[%j]', err);
                     done();
                     return rejectFinal(err);
                 }
@@ -300,11 +302,12 @@ export class AdaptorPostgreSQL extends AdaptorBase {
         });
     }
 
-    //  private executeSQL<T>(qcArr: (pg.QueryConfig)[], fn: ResolveResult<T>): Promise<T> {
+ 
     private executeSQLMutation<T>(qcArr: (pg.QueryConfig)[], fn: ResolveResult<T>): Promise<T> {
         if (!this.connected) {
             return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
         }
+        logger.debug('exectuting statement', qcArr[0].name);
 
         return this.executeSQL<T>(qcArr, (res, resolve) => {
             //no error but did we actually update something
@@ -374,7 +377,7 @@ export class AdaptorPostgreSQL extends AdaptorBase {
         let sqlObject = Object.assign({}, qc) as pg.QueryConfig;
 
         return this.executeSQL<UsersAndPropsMessage[]>([sqlObject], (res, resolve) => {
-    
+
             logger.trace('[selectUserProps]success: fetching.. rows fetched %d', res.rowCount);
             let result: UsersAndPropsMessage[] = res.rows.map((raw: any) => {
                 return {
@@ -385,7 +388,7 @@ export class AdaptorPostgreSQL extends AdaptorBase {
                     propValue: raw.prop_value as string
                 };
             });
-          
+
             resolve(result);
         });
     }
@@ -401,52 +404,30 @@ export class AdaptorPostgreSQL extends AdaptorBase {
         return this.selectUserProps(sqlObject);
     }
 
-
-
     public tokenInsertModify(token: TokenMessage): Promise<TokenMessageReturned> {
 
         if (!this.connected) {
             return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
         }
 
+
+
+
         let uid = UID.sync(18);
 
         let t = Object.assign({}, token);
         makeObjectNull(t);
-        t.tokenId = t.tokenId || uid,
+        t.tokenId = t.tokenId || uid;
 
-            logger.trace('creating a new token %j with properties', t);
+        logger.trace('inserting/updating token %j', t);
 
         let qc = staticCast<pg.QueryConfig>(this.sql.get('sqlTokenInsertModify'));
-
-        /*tokenId?: string;
-        fkUserId?: number;
-        purpose: string;
-        ipAddr: string;
-        tsIssuance: number|null;
-        tsRevoked: number | null;
-        revokeReason: string | null;
-        tsExpire: number|null;
-        templateName: string;*/
-
-        /*
-          id, 
-        fk_user, 
-        purpose, 
-        ip_addr, 
-        timestamp_issued,
-        timestamp_revoked,
-        revoke_reason,
-        timestamp_expire,
-        fk_cookie_template_id
-        */
-
 
         let sqlObject = Object.assign({}, qc, { values: [t.tokenId, t.fkUserId, t.purpose, t.ipAddr, t.tsIssuance, t.tsRevoked, t.revokeReason, t.tsExpire, t.templateName] }) as pg.QueryConfig;
 
         return this.executeSQL<TokenMessageReturned>([sqlObject], (res, resolve) => {
-            
-            logger.trace('success: query result [%j]', {command:res.command, rowCount:res.rowCount});
+
+            logger.trace('success: query result [%j]', { command: res.command, rowCount: res.rowCount });
             let row = res.rows[0];
             /*
              id, fk_user, purpose, ip_addr, timestamp_issued, timestamp_revoked, revoke_reason, timestamp_expire, s1.template_name
@@ -455,7 +436,7 @@ export class AdaptorPostgreSQL extends AdaptorBase {
                 tokenId: row['id'] as string,
                 fkUserId: row['fk_user'] as number,
                 purpose: row['purpose'] as string,
-                ipAddr: row['ip_addr'],
+                ipAddr: row['ip_addr'] as string,
                 tsIssuance: row['timestamp_issued'] as number,
                 tsRevoked: row['timestamp_revoked'] as number,
                 revokeReason: row['revoke_reason'] as string,
@@ -467,7 +448,7 @@ export class AdaptorPostgreSQL extends AdaptorBase {
         });
     }
 
-    public tokenInsertModifyProperty(tokenId: string, modifications: PropertyModifyMessage[]): Promise<boolean> {
+    public tokenInsertModifyProperty(tokenId: string, modifications: PropertyModifyMessage[]): Promise<PropertyModifyMessageReturned[]> {
 
         if (!this.connected) {
             return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
@@ -487,9 +468,20 @@ export class AdaptorPostgreSQL extends AdaptorBase {
 
         let sqlObject = Object.assign({}, qc, { values: [tokenId, propNames, propValues, invisibles] }) as pg.QueryConfig;
 
-        return this.executeSQL<boolean>([sqlObject], (res, resolve) => {
+        return this.executeSQL<PropertyModifyMessageReturned[]>([sqlObject], (res, resolve) => {
             logger.trace('%d of rows modified/inserted for token %s', res.rowCount, tokenId);
-            resolve(true);
+            let rc = res.rows.filter((raw) => {
+                //fk_token_id, session_prop_name, session_prop_value, invisible   
+                return raw['invisible'] === false;
+            }).map((raw) => {
+                return {
+                    propName: raw['session_prop_name'],
+                    propValue: raw['session_prop_value'],
+                    invisible: raw['invisible'],
+                    fkTokenId: raw['fk_token_id']
+                } as PropertyModifyMessageReturned;
+            });
+            resolve(rc);
         });
 
     }
@@ -563,7 +555,7 @@ export class AdaptorPostgreSQL extends AdaptorBase {
         let sqlObject = Object.assign({}, qc, { values: [timestampExpire, startTimestampRevoked, endTimestampRevoked] }) as pg.QueryConfig;
 
         return this.executeSQL<TokensAndPropsMessage[]>([sqlObject], (res, resolve) => {
-           
+
             logger.trace('tokenSelectAllByFilter,success: fetching, nr of rows fetched %d', res.rowCount);
             let result: TokensAndPropsMessage[] = res.rows.map((raw: any) => {
                 return {
@@ -598,7 +590,7 @@ export class AdaptorPostgreSQL extends AdaptorBase {
         let qc = staticCast<pg.QueryConfig>(this.sql.get('sqlTemplateSelectAll'));
         let sqlObject = Object.assign({}, qc) as pg.QueryConfig;
         return this.executeSQL<TemplatePropsMessage[]>([sqlObject], (res, resolve) => {
-           
+
             logger.trace('templateSelectAll, success: fetching.. nr of rows fetched', res.rowCount);
             let result: TemplatePropsMessage[] = res.rows.map((raw: any) => {
                 return {

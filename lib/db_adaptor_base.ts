@@ -39,17 +39,25 @@ export interface TokenMessageBase {
 }
 
 export interface TokenMessage extends TokenMessageBase {
-    templateName: string|null;
+    templateName: string | null;
 }
 
 export interface TokenMessageReturned extends TokenMessageBase {
-    templateId: number|null;
+    templateId: number | null;
 }
 
 export interface PropertyModifyMessage {
     propName: string;
     propValue: string;
     invisible: boolean;
+}
+
+export interface PropertyModifyMessageReturned extends PropertyModifyMessage {
+    fkTokenId: string;
+}
+
+export interface PropertyModifyMessageReturned extends PropertyModifyMessage {
+    //TODO 
 }
 
 export interface TokensAndPropsMessage extends TokenMessage {
@@ -232,7 +240,7 @@ export abstract class AdaptorBase extends EventEmitter {
     public abstract userRemoveProperty(userId: number, propName: string): Promise<boolean>;
     public abstract userSelectByFilter(notHavingProp?: string): Promise<UsersAndPropsMessage[]>;
     public abstract tokenInsertModify(token: TokenMessage): Promise<TokenMessageReturned>;
-    public abstract tokenInsertModifyProperty(tokenId: string, modifications: PropertyModifyMessage[]): Promise<boolean>;
+    public abstract tokenInsertModifyProperty(tokenId: string, modifications: PropertyModifyMessage[]): Promise<PropertyModifyMessageReturned[]>;
     public abstract tokenAssociateWithUser(tokenId: string, userId: number): Promise<boolean>;
     public abstract tokenDoExpire(tokenId: string, expireReason: string, expireTime?: number | null): Promise<boolean>;
     public abstract tokenGC(deleteBeforeExpireTime: number): Promise<number>;

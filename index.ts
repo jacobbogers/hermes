@@ -94,16 +94,6 @@ hermesStore.once('connect', () => {
 function init() {
 
     app.use(session({
-        /**secret: string;
-          name?: string;
-          store?: Store | MemoryStore;
-          cookie?: express.CookieOptions;
-          genid?: (req: express.Request) => string;
-          rolling?: boolean;
-          resave?: boolean;
-          proxy?: boolean;
-          saveUninitialized?: boolean;
-          unset?: string; */
         secret: 'the fox jumps over the lazy dog',
         name: 'hermes.id',
         store: hermesStore,
@@ -116,6 +106,7 @@ function init() {
     app.get('/', (req, res, next) => {
         req;
         next;
+        let session = req.session;
         res.set({ 'Contet-Type': 'text/html' });
         /*if (req.session) {
             let cnt = Number.parseInt(req.session['counter']);
@@ -125,8 +116,8 @@ function init() {
             cnt = (cnt > 0) ? --cnt : 7;
             req.session['counter'] = '' + cnt;
         }*/
-        if (req.session && !req.session._user) {
-            req.session.save((err) => {
+        if (session && (!session._user || !session._hermes)) {
+            session.save((err) => {
                 if (err) {
                     return next(err);
                 }
@@ -134,6 +125,12 @@ function init() {
                 res.send('Response:' + new Date());
             });
             return;
+        }
+        logger.info('setting some props');
+        if (session){
+             session['LAST_NAME'] = null; // = 'HENNY';
+             delete session['NAME'];
+             session ['AUTH'] = 1; 
         }
         logger.info('session looks like %j', req.session);
         res.send('Response:' + new Date());
