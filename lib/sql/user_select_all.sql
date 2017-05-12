@@ -6,4 +6,4 @@ select
   up.prop_value
 from
   auth.user u
-  left join auth.user_props up on (u.id = up.fk_user and up.invisible = false)
+  left join auth.user_props up on (u.id = up.fk_user_id and up.invisible = false)

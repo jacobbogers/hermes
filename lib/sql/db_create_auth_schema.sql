@@ -9,15 +9,15 @@ CREATE unique INDEX user_name_udx ON auth.user (name)
 create unique index user_email_udx on auth.user (email)  
 --
 create table user_props (  
-   fk_user bigint,  
+   fk_user_id bigint,  
    prop_name varchar(30),  
    prop_value varchar(60),  
    invisible boolean default false,
    constraint user_props_user_fk 
-     FOREIGN KEY (fk_user) REFERENCES auth.user(id) on delete cascade 
+     FOREIGN KEY (fk_user_id) REFERENCES auth.user(id) on delete cascade 
 )
-create UNIQUE index user_props_user_udx on auth.user_props(fk_user, prop_name)  
-create index user_props_user_name_idx on auth.user_props(prop_name, fk_user)  
+create UNIQUE index user_props_user_udx on auth.user_props(fk_user_id, prop_name)  
+create index user_props_user_name_idx on auth.user_props(prop_name, fk_user_id)  
 --
 create table session_cookies_template ( -- insert a dummy '0' value
   id bigint,
@@ -37,7 +37,7 @@ create unique index sct_uix on session_cookies_template(template_name)
 --
 create table issued_user_tokens (  
    id varchar(64), -- token id
-   fk_user bigint, --user id
+   fk_user_id bigint, --user id
    purpose CHAR(4), --CHAR-mnemonic for the purpose of issueing 
    ip_addr inet, -- ip@port of the user agent when this token was issued
    timestamp_issued bigint NOT NULL,  --time of issuance
@@ -46,11 +46,11 @@ create table issued_user_tokens (
    timestamp_expire bigint NOT NULL, -- timestamp when this token expires
    fk_cookie_template_id bigint DEFAULT 0, --more info if this token is a cookie-token, default 0 is a dud template
    CONSTRAINT pk_issued_token PRIMARY KEY (id),
-   CONSTRAINT fk_issued_token_user FOREIGN KEY (fk_user) REFERENCES auth.user(id) on delete cascade,
+   CONSTRAINT fk_issued_token_user FOREIGN KEY (fk_user_id) REFERENCES auth.user(id) on delete cascade,
    CONSTRAINT fk_session_cookie_template FOREIGN KEY (fk_cookie_template_id) REFERENCES auth.session_cookies_template(id) on delete cascade 
 )
 CREATE index issued_token_udx on issued_user_tokens(id)
-CREATE Index issued_token_user_idx on issued_user_tokens(fk_user) 
+CREATE Index issued_token_user_idx on issued_user_tokens(fk_user_id) 
 CREATE Index issued_tokens_expired_keys on issued_user_tokens(timestamp_expire)
 create index issued_tokens_revoked on issued_user_tokens(timestamp_revoked)
 --

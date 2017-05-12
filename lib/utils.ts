@@ -1,9 +1,6 @@
-
-
 import * as util from 'util';
 
 type validation = (s: any) => boolean;
-
 
 function validationFactory(v: validation) {
     return (exec: Function, obj: any, ...rest: any[]) => {
@@ -142,3 +139,6 @@ export class MapWithIndexes<T> {
     }
 }
 
+export function deepClone<T>(obj: T): T {
+    return JSON.parse(JSON.stringify(obj));
+}

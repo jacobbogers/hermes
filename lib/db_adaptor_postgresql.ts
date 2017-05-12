@@ -10,18 +10,23 @@ import * as UID from 'uid-safe';
 import { logger } from './logger';
 import { makeObjectNull } from './utils';
 import {
-    UsersAndPropsMessage,
-    TokensAndPropsMessage,
-    TemplatePropsMessage,
-    TokenMessage,
-    TokenMessageReturned,
-    PropertyModifyMessage,
-    PropertyModifyMessageReturned,
-    //
+    //general
     AdaptorBase,
     ADAPTOR_STATE,
     AdaptorError,
-    //
+    PropertiesModifyMessage,
+    //user
+    UsersAndPropsMessage,
+    UserMessageBase,
+    UserMessageReturned,
+    UserPropertiesModifyMessageReturned,
+    //tokens
+    TokenMessage,
+    TokensAndPropsMessage,
+    TokenMessageReturned,
+    TokenPropertiesModifyMessageReturned,
+    //templates
+    TemplatePropsMessage
 } from './db_adaptor_base';
 
 
@@ -45,9 +50,9 @@ interface SQLFiles {
     //
     sqlTokenSelectByUserIdOrName: string;
     //
-    sqlUserAddProperty: string;
-    sqlUserCreate: string;
-    sqlUserRemoveProperty: string;
+    sqlUserGc: string;
+    sqlUserInsertModify: string;
+    sqlUserInsertModifyProperty: string;
     sqlUserSelectAll: string;
     //
     sqlTemplateSelectAll: string;
@@ -65,9 +70,9 @@ const sqlFiles: SQLFiles = {
     sqlTokenSelectAllByFilter: './sql/token_select_all_by_filter.sql',
     sqlTokenSelectByUserIdOrName: 'sql/token_select_by_userid_or_name.sql',
     // 
-    sqlUserAddProperty: 'sql/user_add_property.sql',
-    sqlUserCreate: 'sql/user_create.sql',
-    sqlUserRemoveProperty: 'sql/user_remove_property.sql',
+    sqlUserGc: './sql/user_gc.sql',
+    sqlUserInsertModify: 'sql/user_insert_modify.sql',
+    sqlUserInsertModifyProperty: 'sql/user_insert_modify_property.sql',
     sqlUserSelectAll: 'sql/user_select_all.sql',
     //
     sqlTemplateSelectAll: 'sql/template_select_all.sql'
@@ -202,7 +207,10 @@ export class AdaptorPostgreSQL extends AdaptorBase {
         this._url = app.url;
     }
 
-    //override
+    /*general tooling*/
+    /*general tooling*/
+    /*general tooling*/
+
     public get poolSize(): number {
         return this.nrClients;
     }
@@ -223,6 +231,8 @@ export class AdaptorPostgreSQL extends AdaptorBase {
             return Promise.resolve(false);
         });
     }
+
+
 
     private loadSQLStatements(): Promise<boolean> {
         this.sql.clear();
@@ -281,7 +291,9 @@ export class AdaptorPostgreSQL extends AdaptorBase {
                 logger.debug('..client aquired');
                 let copyArr = qcArr.slice();
 
+                //iterative function
                 const _do = (qc: pg.QueryConfig) => {
+                    logger.debug('executing query: %s', qc.name);
                     client.query(qc).then((value: pg.QueryResult) => {
                         let nextQc = copyArr.shift();
                         if (nextQc !== undefined) {
@@ -302,7 +314,7 @@ export class AdaptorPostgreSQL extends AdaptorBase {
         });
     }
 
- 
+
     private executeSQLMutation<T>(qcArr: (pg.QueryConfig)[], fn: ResolveResult<T>): Promise<T> {
         if (!this.connected) {
             return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
@@ -320,98 +332,15 @@ export class AdaptorPostgreSQL extends AdaptorBase {
         });
     }
 
-    public userCreate(userName: string, email: string): Promise<number> {
-        if (!this.connected) {
-            return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
-        }
-
-        logger.trace('Inserting user [%s]/[%s]', userName, email);
-        let qc = staticCast<pg.QueryConfig>(this.sql.get('sqlUserCreate'));
-        let sqlObject = Object.assign({}, qc, { values: [userName, email] }) as pg.QueryConfig;
-
-        return this.executeSQL<number>([sqlObject], (res, resolve) => {
-            let answer = (res.rows[0] && res.rows[0].id) || undefined;
-            resolve(answer);
-        });
-    }
-
-    public userAddProperty(userId: number, propName: string, propValue: string): Promise<boolean> {
-        if (!this.connected) {
-            return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
-        }
-        logger.trace('trying to add property "%s":"%s" to userId:%d', propName, propValue, userId);
-
-        let qc = staticCast<pg.QueryConfig>(this.sql.get('sqlUserAddProperty'));
-        let sqlObject = Object.assign({}, qc, { values: [userId, propName, propValue] }) as pg.QueryConfig;
-
-        return this.executeSQL<boolean>([sqlObject], (res, resolve) => {
-            res;
-            // logger.trace('command %s was used to add user Property %s,%s', res.command, propName, propValue);
-            logger.trace('success: property "%s":"%s" added to userId:%d', propName, propValue, userId);
-            resolve(true);
-        });
-    }
-
-    public userRemoveProperty(userId: number, propName: string): Promise<boolean> {
-        if (!this.connected) {
-            return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
-        }
-        logger.trace('trying to deleting property "%s" from userId:%d', propName, userId);
-
-        let qc = staticCast<pg.QueryConfig>(this.sql.get('sqlUserRemoveProperty'));
-        let sqlObject = Object.assign({}, qc, { values: [userId, propName] }) as pg.QueryConfig;
-
-        return this.executeSQL<boolean>([sqlObject], (res, resolve) => {
-            res;
-            logger.trace('success: deleting property "%s" from userId:%d', propName, userId);
-            resolve(true);
-        });
-    }
-
-    //helper
-    private selectUserProps(qc: pg.QueryConfig): Promise<UsersAndPropsMessage[]> {
-        if (!this.connected) {
-            return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
-        }
-
-        let sqlObject = Object.assign({}, qc) as pg.QueryConfig;
-
-        return this.executeSQL<UsersAndPropsMessage[]>([sqlObject], (res, resolve) => {
-
-            logger.trace('[selectUserProps]success: fetching.. rows fetched %d', res.rowCount);
-            let result: UsersAndPropsMessage[] = res.rows.map((raw: any) => {
-                return {
-                    userId: raw.usr_id as number,
-                    userName: raw.user_name as string,
-                    userEmail: raw.user_email as string,
-                    propName: raw.prop_name as string,
-                    propValue: raw.prop_value as string
-                };
-            });
-
-            resolve(result);
-        });
-    }
-
-    public userSelectByFilter(notHavingProp?: string): Promise<UsersAndPropsMessage[]> {
-        notHavingProp;
-        if (!this.connected) {
-            return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
-        }
-        logger.warn('select all non-blacklisted users and props, potential expensive operation');
-        let qc = staticCast<pg.QueryConfig>(this.sql.get('sqlUserSelectAll'));
-        let sqlObject = Object.assign({}, qc) as pg.QueryConfig;
-        return this.selectUserProps(sqlObject);
-    }
+    /* token */
+    /* token */
+    /* token */
 
     public tokenInsertModify(token: TokenMessage): Promise<TokenMessageReturned> {
 
         if (!this.connected) {
             return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
         }
-
-
-
 
         let uid = UID.sync(18);
 
@@ -430,11 +359,11 @@ export class AdaptorPostgreSQL extends AdaptorBase {
             logger.trace('success: query result [%j]', { command: res.command, rowCount: res.rowCount });
             let row = res.rows[0];
             /*
-             id, fk_user, purpose, ip_addr, timestamp_issued, timestamp_revoked, revoke_reason, timestamp_expire, s1.template_name
+             id, fk_user_id, purpose, ip_addr, timestamp_issued, timestamp_revoked, revoke_reason, timestamp_expire, s1.template_name
              */
             let rc: TokenMessageReturned = {
                 tokenId: row['id'] as string,
-                fkUserId: row['fk_user'] as number,
+                fkUserId: row['fk_user_id'] as number,
                 purpose: row['purpose'] as string,
                 ipAddr: row['ip_addr'] as string,
                 tsIssuance: row['timestamp_issued'] as number,
@@ -448,7 +377,7 @@ export class AdaptorPostgreSQL extends AdaptorBase {
         });
     }
 
-    public tokenInsertModifyProperty(tokenId: string, modifications: PropertyModifyMessage[]): Promise<PropertyModifyMessageReturned[]> {
+    public tokenInsertModifyProperty(tokenId: string, modifications: PropertiesModifyMessage[]): Promise<TokenPropertiesModifyMessageReturned[]> {
 
         if (!this.connected) {
             return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
@@ -468,7 +397,7 @@ export class AdaptorPostgreSQL extends AdaptorBase {
 
         let sqlObject = Object.assign({}, qc, { values: [tokenId, propNames, propValues, invisibles] }) as pg.QueryConfig;
 
-        return this.executeSQL<PropertyModifyMessageReturned[]>([sqlObject], (res, resolve) => {
+        return this.executeSQL<TokenPropertiesModifyMessageReturned[]>([sqlObject], (res, resolve) => {
             logger.trace('%d of rows modified/inserted for token %s', res.rowCount, tokenId);
             let rc = res.rows.filter((raw) => {
                 //fk_token_id, session_prop_name, session_prop_value, invisible   
@@ -479,7 +408,7 @@ export class AdaptorPostgreSQL extends AdaptorBase {
                     propValue: raw['session_prop_value'],
                     invisible: raw['invisible'],
                     fkTokenId: raw['fk_token_id']
-                } as PropertyModifyMessageReturned;
+                } as TokenPropertiesModifyMessageReturned;
             });
             resolve(rc);
         });
@@ -647,6 +576,104 @@ export class AdaptorPostgreSQL extends AdaptorBase {
             });
             delete res.rows; // garbage collect please
             resolve(result);
+        });
+    }
+
+
+    /* users */
+    /* users */
+    /* users */
+
+    public userSelectByFilter(notHavingProp?: string): Promise<UsersAndPropsMessage[]> {
+        notHavingProp;
+        if (!this.connected) {
+            return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
+        }
+        logger.warn('select all non-blacklisted users and props, potential expensive operation');
+        let qc = staticCast<pg.QueryConfig>(this.sql.get('sqlUserSelectAll'));
+        let sqlObject = Object.assign({}, qc) as pg.QueryConfig;
+        return this.executeSQL<UsersAndPropsMessage[]>([sqlObject], (res, resolve) => {
+
+            logger.trace('[selectUserProps]success: fetching.. rows fetched %d', res.rowCount);
+            let result: UsersAndPropsMessage[] = res.rows.map((raw: any) => {
+                return {
+                    userId: raw.usr_id as number,
+                    userName: raw.user_name as string,
+                    userEmail: raw.user_email as string,
+                    propName: raw.prop_name as string,
+                    propValue: raw.prop_value as string
+                };
+            });
+
+            resolve(result);
+        });
+    }
+
+    public userInsertModify(user: UserMessageBase): Promise<UserMessageReturned> {
+        if (!this.connected) {
+            return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
+        }
+
+        let u = Object.assign({}, user);
+        makeObjectNull(u);
+
+        logger.trace('inserting/updating user %j', u);
+
+        let qc = staticCast<pg.QueryConfig>(this.sql.get('sqlUserInsertModify'));
+
+        let sqlObject = Object.assign({}, qc, { values: [u.userName, u.userEmail] }) as pg.QueryConfig;
+
+        return this.executeSQL<UserMessageReturned>([sqlObject], (res, resolve) => {
+
+            logger.trace('success: query result [%j]', { command: res.command, rowCount: res.rowCount });
+            let row = res.rows[0];
+            /*
+             id, name , email 
+             */
+            let rc: UserMessageReturned = {
+                userId: row['id'] as number,
+                userName: row['name'] as string,
+                userEmail: row['email'] as string
+            };
+            logger.debug('success: "creating token", returned values %j', rc);
+            resolve(rc);
+        });
+
+    }
+
+    public userInsertModifyProperty(userId: number, modifications: PropertiesModifyMessage[]): Promise<UserPropertiesModifyMessageReturned[]> {
+        if (!this.connected) {
+            return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
+        }
+        let propNames: string[] = [];
+        let propValues: string[] = [];
+        let invisibles: boolean[] = [];
+
+        for (let mod of modifications) {
+            propNames.push(mod.propName);
+            propValues.push(mod.propValue);
+            invisibles.push(mod.invisible);
+        }
+
+        logger.trace('token %s modification list %j', userId, modifications);
+        let qc = staticCast<pg.QueryConfig>(this.sql.get('sqlUserInsertModifyProperty'));
+
+        let sqlObject = Object.assign({}, qc, { values: [userId, propNames, propValues, invisibles] }) as pg.QueryConfig;
+
+        return this.executeSQL<UserPropertiesModifyMessageReturned[]>([sqlObject], (res, resolve) => {
+            logger.trace('%d of rows modified/inserted for token %s', res.rowCount, userId);
+            let rc = res.rows.filter((raw) => {
+                //fk_token_id, prop_name, prop_value, invisible   
+                return raw['invisible'] === false;
+            }).map((raw) => {
+                return {
+                    propName: raw['prop_name'],
+                    propValue: raw['prop_value'],
+                    invisible: raw['invisible'],
+                    fkUserId: raw['fk_user_id']
+                } as UserPropertiesModifyMessageReturned;
+            });
+            resolve(rc);
         });
     }
 

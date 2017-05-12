@@ -3,14 +3,19 @@ import { Store } from 'express-session';
 
 //import * as express from 'express';
 import {
+    //general
     AdaptorBase,
-    TokensAndPropsMessage,
-    TemplatePropsMessage,
-    PropertyModifyMessage,
-    PropertyModifyMessageReturned,
-    UsersAndPropsMessage,
+    PropertiesModifyMessage,
+    //tokens
     TokenMessage,
-    TokenMessageReturned
+    TokenMessageReturned,
+    TokenPropertiesModifyMessageReturned,
+    TokensAndPropsMessage,
+    //user
+    UsersAndPropsMessage,
+    //template
+    TemplatePropsMessage
+
 } from './db_adaptor_base';
 
 import { logger } from './logger';
@@ -237,12 +242,12 @@ export class HermesStore extends Store {
     }
 
 
-    private tokenPropertiesUpdateInsert(token: TokenProperties): Promise<PropertyModifyMessageReturned[]> {
+    private tokenPropertiesUpdateInsert(token: TokenProperties): Promise<TokenPropertiesModifyMessageReturned[]> {
 
         let oldToken = this.tokenMaps.get('tokenId', token.tokenId);
         let oldSessProps = (oldToken && oldToken.sessionProps) || {}; //empty
         let newSessProps = token.sessionProps || {};
-        let actions: PropertyModifyMessage[] = [];
+        let actions: PropertiesModifyMessage[] = [];
         //what to add/modify
 
         for (let props in newSessProps) {
@@ -263,16 +268,16 @@ export class HermesStore extends Store {
         }).map((propNameFiltered) => {
             logger.warn('token %s, property %s marked for deletion', token.tokenId, propNameFiltered);
 
-            let rc: PropertyModifyMessage = { propName: propNameFiltered, propValue: oldSessProps[propNameFiltered], invisible: true };
+            let rc: PropertiesModifyMessage = { propName: propNameFiltered, propValue: oldSessProps[propNameFiltered], invisible: true };
             return rc;
-        }) as PropertyModifyMessage[];
+        }) as PropertiesModifyMessage[];
 
         actions.push.apply(actions, deletes);
 
         if (actions.length > 0) {//nothing to do 
             return this.adaptor.tokenInsertModifyProperty(token.tokenId, actions);
         }
-        return Promise.resolve([] as PropertyModifyMessageReturned[]);
+        return Promise.resolve([] as TokenPropertiesModifyMessageReturned[]);
 
     }
 
@@ -451,6 +456,54 @@ export class HermesStore extends Store {
         return this.mapTokenToSession(token);
     }
 
+    /* users */
+    /* users */
+    /* users */
+
+
+    public userUpdateInsert(token: TokenProperties): Promise<TokenMessageReturned> {
+
+        let oldToken = this.tokenMaps.get('tokenId', token.tokenId) || {} as TokenProperties;
+        //console.log('token in store:', oldToken);
+        //console.log('token new:', token);
+        let changed = false;
+        let propName: keyof TokenProperties;
+        for (propName in oldToken) {
+            if (['tokenId', 'sessionProps'].indexOf(propName) >= 0) {
+                continue;
+            }
+            if (oldToken[propName] !== token[propName]) {
+                logger.warn('propname %s has changed old:%j  new:%j', propName, oldToken[propName], token[propName]);
+                changed = true;
+            }
+        }
+        let msg: TokenMessage = {
+            tokenId: token.tokenId,
+            fkUserId: token.fkUserId,
+            purpose: STKN,
+            ipAddr: token.ipAddr,
+            tsIssuance: token.tsIssuance,
+            tsRevoked: null,
+            revokeReason: null,
+            tsExpire: token.tsExpire,
+            templateName: token.templateName
+        };
+        if (changed) {
+            logger.warn('token main attributes has changed');
+            return this.adaptor.tokenInsertModify(msg);
+        }
+        logger.error('token has not changed');
+
+        //convert TokenMessage to TokenMessageReturned
+        let template = this.templateMaps.get('templateName', token.templateName || '');
+        let templateId = (template && template.id) || null;
+        let tokenMsgReply = Object.assign({}, msg, { templateId: templateId }) as TokenMessageReturned;
+
+        delete staticCast<TokenMessage>(tokenMsgReply).templateName;
+        return Promise.resolve(tokenMsgReply);
+    }
+
+
     public get connected() {
         return this.adaptor.connected;
     }
@@ -479,11 +532,18 @@ export class HermesStore extends Store {
         return rc;
     }
 
+
+
+
     public getDefaultTemplate() {
         return this.getTemplate(this.defaultTemplate || 'default_cookie');
     }
 
 
+    /* interface methods of Store */
+    /* interface methods of Store */
+    /* interface methods of Store */
+    
     /**
      * Get all active sessions.
      *
@@ -565,7 +625,9 @@ export class HermesStore extends Store {
      * 
      */
     public set(sessionId: string, session: Express.Session, callback: CallBack<Express.Session>) {
+
         //throw new Error('stack trace');
+
         logger.debug('set session by sessionId: %s', sessionId);
         //session.id =
         sessionId;
@@ -580,6 +642,7 @@ export class HermesStore extends Store {
             let template = this.templateMaps.get('id', replyTokenMessage.templateId || -1);
             delete replyTokenMessage.templateId;
             updatedToken = Object.assign({}, replyTokenMessage, { templateName: template && template.templateName, sessionProps: oldToken.sessionProps }) as TokenProperties;
+
             //partially update the token in cache to reflect database change
             this.tokenMaps.set(updatedToken);
             return this.tokenPropertiesUpdateInsert(token);

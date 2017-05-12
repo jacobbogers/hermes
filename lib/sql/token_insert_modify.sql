@@ -9,7 +9,7 @@ anonymous_user as (
 )
 insert into auth.issued_user_tokens ( 
     id, 
-    fk_user, 
+    fk_user_id, 
     purpose, 
     ip_addr, 
     timestamp_issued,
@@ -20,7 +20,7 @@ insert into auth.issued_user_tokens (
     )     
 SELECT
     $1::text, --token-id
-    CASE -- fk_user
+    CASE -- fk_user_id
        WHEN $2::bigint IS NULL OR $2::bigint = s.id THEN  s.id
        ELSE $2::bigint
     END,   
@@ -38,7 +38,7 @@ SELECT
    token_template s1 
  ON CONFLICT (id) DO UPDATE
    SET 
-    fk_user =EXCLUDED.fk_user,
+    fk_user_id =EXCLUDED.fk_user_id,
     purpose = EXCLUDED.purpose,
     ip_addr = EXCLUDED.ip_addr,
     timestamp_issued = EXCLUDED.timestamp_issued,
@@ -46,4 +46,4 @@ SELECT
     revoke_reason = EXCLUDED.revoke_reason,
     timestamp_expire = EXCLUDED.timestamp_expire,
     fk_cookie_template_id = EXCLUDED.fk_cookie_template_id
- RETURNING  id, fk_user, purpose, ip_addr, timestamp_issued, timestamp_revoked, revoke_reason, timestamp_expire, fk_cookie_template_id
+ RETURNING  id, fk_user_id, purpose, ip_addr, timestamp_issued, timestamp_revoked, revoke_reason, timestamp_expire, fk_cookie_template_id

@@ -2,8 +2,6 @@ import * as EventEmitter from 'events';
 import * as util from 'util';
 import { logger } from './logger';
 
-
-
 export class AdaptorError extends Error {
     private _adaptorState: ADAPTOR_STATE;
     public get adaptorState() {
@@ -17,7 +15,28 @@ export class AdaptorError extends Error {
     }
 }
 
+/* general */
 
+export interface PropertiesModifyMessage {
+    propName: string;
+    propValue: string;
+    invisible: boolean;
+}
+
+/* users */
+
+export interface UserPropertiesModifyMessageReturned extends PropertiesModifyMessage {
+    fkUserId: number;
+}
+
+export interface UserMessageBase {
+    userName: string;
+    userEmail: string;
+}
+
+export interface UserMessageReturned extends UserMessageBase {
+    userId: number;
+}
 
 export interface UsersAndPropsMessage {
     userId: number;
@@ -26,6 +45,9 @@ export interface UsersAndPropsMessage {
     propName: string;
     propValue: string;
 }
+
+
+/* tokens */
 
 export interface TokenMessageBase {
     tokenId: string;
@@ -46,19 +68,13 @@ export interface TokenMessageReturned extends TokenMessageBase {
     templateId: number | null;
 }
 
-export interface PropertyModifyMessage {
-    propName: string;
-    propValue: string;
-    invisible: boolean;
-}
 
-export interface PropertyModifyMessageReturned extends PropertyModifyMessage {
+export interface TokenPropertiesModifyMessageReturned extends PropertiesModifyMessage {
     fkTokenId: string;
 }
 
-export interface PropertyModifyMessageReturned extends PropertyModifyMessage {
-    //TODO 
-}
+
+/* users and tokens */
 
 export interface TokensAndPropsMessage extends TokenMessage {
     // overrides
@@ -77,6 +93,8 @@ export interface TokensAndPropsMessage extends TokenMessage {
     propName: string;
     propValue: string;
 }
+
+/* template */
 
 export interface TemplatePropsMessage {
     id: number;
@@ -232,20 +250,23 @@ export abstract class AdaptorBase extends EventEmitter {
     public get state(): ADAPTOR_STATE {
         return this._state;
     }
-
+   
+    /* general */
     public abstract init(): Promise<boolean>;
-    public abstract userCreate(userName: string, email: string): Promise<number>;
     public abstract get poolSize(): number;
-    public abstract userAddProperty(userId: number, propName: string, propValue: string): Promise<boolean>;
-    public abstract userRemoveProperty(userId: number, propName: string): Promise<boolean>;
+    /* user */
+    public abstract userInsertModify(token: UserMessageBase): Promise<UserMessageReturned>;
+    public abstract userInsertModifyProperty(userId: number, modifications: PropertiesModifyMessage[]): Promise<UserPropertiesModifyMessageReturned[]>;
     public abstract userSelectByFilter(notHavingProp?: string): Promise<UsersAndPropsMessage[]>;
+    /*tokens*/
     public abstract tokenInsertModify(token: TokenMessage): Promise<TokenMessageReturned>;
-    public abstract tokenInsertModifyProperty(tokenId: string, modifications: PropertyModifyMessage[]): Promise<PropertyModifyMessageReturned[]>;
+    public abstract tokenInsertModifyProperty(tokenId: string, modifications: PropertiesModifyMessage[]): Promise<TokenPropertiesModifyMessageReturned[]>;
     public abstract tokenAssociateWithUser(tokenId: string, userId: number): Promise<boolean>;
     public abstract tokenDoExpire(tokenId: string, expireReason: string, expireTime?: number | null): Promise<boolean>;
     public abstract tokenGC(deleteBeforeExpireTime: number): Promise<number>;
     public abstract tokenSelectAllByFilter(timestampExpire: number | null, startTimestampRevoked: number, endTimestampRevoked: number): Promise<TokensAndPropsMessage[]>;
     public abstract tokenSelectAllByUserIdOrName(userId: number | null, userName: string | null): Promise<TokensAndPropsMessage[]>;
+    /* templates */
     public abstract templateSelectAll(): Promise<TemplatePropsMessage[]>;
 
     public abstract get connected(): boolean;
