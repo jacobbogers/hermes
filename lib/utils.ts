@@ -1,3 +1,5 @@
+'use strict';
+
 import * as util from 'util';
 
 type validation = (s: any) => boolean;
@@ -86,11 +88,47 @@ export class MapWithIndexes<T> {
     }
 
 
-    public remove(data: T) {
-        for (let key in this.access) {
-            let keyValue = data[key as keyof T];
-            this.access[key].delete(keyValue);
+
+    public remove(data: T /* might be 'Partial' forced by caller*/): boolean {
+
+        let searchKeys = Object.keys(data).filter((key) => {
+            return key in this.access;
+        });
+
+        if (!searchKeys.length) {
+            return false;
         }
+
+        let indexedObjects = (searchKeys as (keyof T)[]).reduce((col, key) => {
+            let obj = this.access[key].get(data[key]);
+            if (obj) {
+                col[key] = obj;
+            }
+            return col;
+        }, {} as { [index: string]: T });
+        //
+        // check it must all be the same object
+        //
+        let ok = true;
+        outer:
+        for (let i = 0; i < searchKeys.length; i++) {
+            for (let j = i + 1; j < searchKeys.length; j++) {
+                if (indexedObjects[searchKeys[i]] !== indexedObjects[searchKeys[j]]) {
+                    ok = false;
+                    break outer;
+                }
+            }
+        }
+        if (!ok) {
+            return false;
+        }
+        //pick one, its all has been checked to be the same object anyway
+        let obj: T = indexedObjects[searchKeys[0]];
+        for (let key in this.access) {
+            let keyValue = obj[key as keyof T];
+            this.access[key].delete(keyValue as any);
+        }
+        return true;
     }
 
     //get a copy not the reference

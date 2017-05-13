@@ -1,4 +1,6 @@
 
+'use strict';
+
 import { Store } from 'express-session';
 
 //import * as express from 'express';
@@ -13,6 +15,9 @@ import {
     TokensAndPropsMessage,
     //user
     UsersAndPropsMessage,
+    UserMessageReturned,
+    UserMessageBase,
+    UserPropertiesModifyMessageReturned,
     //template
     TemplatePropsMessage
 
@@ -21,9 +26,12 @@ import {
 import { logger } from './logger';
 
 import {
+
     MapWithIndexes,
     staticCast,
-    AnyObjProps
+    AnyObjProps,
+    deepClone
+
 } from './utils';
 
 import * as util from 'util';
@@ -31,11 +39,9 @@ util;
 
 import express = require('express');
 
-
-
-
-
 const STKN = 'STKN';
+const USR_ANONYMOUS = 'anonymous';
+const TEMPLATE_DEFAULT_COOKIE = 'default_cookie';
 
 export interface SessionHash {
     [sid: string]: Express.SessionData;
@@ -109,7 +115,8 @@ export class HermesStore extends Store {
         // the express-session object default sets the internal  "storeReady" to true, on creation, make sure this is turned off.
         // this will ensure that the store will disable the middleware by default.
         this.adaptor = options.adaptor;
-        this.defaultTemplate = options.defaultCookieOptionsName || 'default_cookie';
+        this.defaultTemplate = options.defaultCookieOptionsName || TEMPLATE_DEFAULT_COOKIE;
+
 
         this.userMaps = new MapWithIndexes<UserProperties>('id', 'email', 'name');
         this.tokenMaps = new MapWithIndexes<TokenProperties>('tokenId');
@@ -125,24 +132,36 @@ export class HermesStore extends Store {
         });
         //TODO, fire off initialisation of adaptor,
         this.adaptor.init().then((ok) => {
-            logger.trace('DBAdaptor instance created successfully.[%s]', ok ? 'true' : 'false');
-            logger.trace('loading templates...');
+            logger.info('DBAdaptor instance created successfully.[%s]', ok ? 'true' : 'false');
+            logger.info('loading templates...');
             return this.adaptor.templateSelectAll();
         }).then((templates) => {
             this.processTemplates(templates);
-            logger.trace('loading tokens...');
+            this.getDefaultCookieOptions(); // will throw if not exist
+            logger.info('loading tokens...');
             return this.adaptor.tokenSelectAllByFilter(null, 0, 0);
         }).then((tokens) => {
             this.processTokenSelectAll(tokens);
-            logger.trace('loading users....');
+            logger.info('loading users....');
             return this.adaptor.userSelectByFilter();
         }).then((users) => {
-
             this.processUsersSelectAll(users);
+            if (!this.userMaps.get('name', USR_ANONYMOUS)) {
+                let err = `User ${USR_ANONYMOUS} doesnt exist`;
+                this.adaptor.errors.push(err);
+                throw new Error(err);
+            }
             logger.info('...all db data cached');
             this.emit('connect');
-        }).catch(() => {
-            logger.error('Failure to initialze adaptor: %j', this.adaptor.errors);
+        }).catch((err) => {
+            logger.error('failed because of %j', err);
+
+            let errors = this.adaptor.errors;
+            logger.error('All adaptor errors #(%d) from the adaptor: %j', errors.length, errors.length ? errors : 'NO ERRORS');
+
+            let warnings = this.adaptor.warnings;
+            logger.warn('All warnings #(%d) from the adaptor %j', warnings.length, warnings.length ? warnings : 'NO WARNINGS');
+
             this.adaptor.emit('disconnect');
         });
 
@@ -325,15 +344,18 @@ export class HermesStore extends Store {
 
     private mapTokenToSession(token: TokenProperties): Express.SessionData {
 
-        let template = this.templateMaps.get('templateName', token.templateName || 'default_cookie');
+        let template = this.templateMaps.get('templateName', token.templateName || TEMPLATE_DEFAULT_COOKIE);
         if (template === undefined) {
-            let errStr = util.format('No cookie template found with name: %s', token.templateName || 'default_cookie');
+            let errStr = util.format('No cookie template found with name: %s', token.templateName || TEMPLATE_DEFAULT_COOKIE);
             logger.error(errStr);
             throw new Error(errStr);
         }
+
+
         let sess: Express.SessionData = {
             id: token.tokenId,
-            _hermes: {
+            _hermes: Object.freeze({
+
                 tokenId: token.tokenId,
                 fkUserId: token.fkUserId,
                 purpose: token.purpose,
@@ -343,8 +365,9 @@ export class HermesStore extends Store {
                 tsExpire: token.tsExpire,
                 revokeReason: token.revokeReason,
                 templateName: token.templateName
-            } as TokenProperties,
-            cookie: {
+
+            }) as TokenProperties,
+            cookie: Object.seal({
                 maxAge: template.maxAge,
                 originalMaxAge: template.maxAge,
                 expires: new Date(token.tsExpire),
@@ -352,8 +375,8 @@ export class HermesStore extends Store {
                 secure: template.secure,
                 httpOnly: template.httpOnly,
                 path: template.path
-            },
-            _user: this.userMaps.get('id', token.fkUserId as number)
+            }),
+            _user: Object.seal(this.userMaps.get('id', token.fkUserId || USR_ANONYMOUS) || this.userMaps.get('id', USR_ANONYMOUS))
 
         };
         for (let propName in token.sessionProps) {
@@ -398,6 +421,44 @@ export class HermesStore extends Store {
         return collector;
     }
 
+    private mapSessionToUser(sess: Express.Session | Express.SessionData): UserProperties {
+
+        let user = sess['_user'] as UserProperties;
+
+        if (user === undefined) {// no user information, set it to anonymous
+            return staticCast<UserProperties>(this.userMaps.get('name', USR_ANONYMOUS));
+        }
+        let rc: UserProperties = {
+            name: user.name,
+            email: user.email,
+            id: user.id,
+            userProps: deepClone(user.userProps || {})
+        };
+        //collect props 
+        for (let propName in user.userProps) {
+            let value = user.userProps[propName];
+            switch (typeof value) { // need to check can be modified by module consumer.
+                case 'string':
+                    break;
+                case 'number':
+                    value = '' + value;
+                    break;
+                case 'object'://null value will get you here
+                    if (value !== null) {
+                        value = JSON.stringify(value);
+                    }
+                    break;
+                default:
+                    value = undefined as any;
+            }
+            if (value === undefined) {
+                continue;
+            }
+            rc.userProps[propName] = value;
+        }
+        return rc;
+    }
+
     private mapSessionToToken(sess: Express.Session | Express.SessionData): TokenProperties {
 
         // what we need is set the expire datum 
@@ -406,7 +467,7 @@ export class HermesStore extends Store {
 
         // correct for missing user, set to anonymous
         if (!_hermes || !_hermes.fkUserId) {// not set? (should never happen) map to "anonymous"
-            let anoUser = this.userMaps.get('name', 'anonymous');
+            let anoUser = this.userMaps.get('name', USR_ANONYMOUS);
             if (!anoUser) {
                 throw new Error('anonymous user not found in cache');
             }
@@ -439,10 +500,11 @@ export class HermesStore extends Store {
             return;
         }
 
+        /* not solved in the store
         if (token.revokeReason) {
             logger.debug('token "%s" was revoked:', sessionId);
             return;
-        }
+        }*/
 
         if (token.tsExpire <= new Date().getTime()) {
             logger.debug('token "%s" expired ,token %j', sessionId, token);
@@ -450,7 +512,7 @@ export class HermesStore extends Store {
         }
 
         if (token.purpose !== STKN) {
-            logger.error('token "%s" is NOT a cookie but appears in a cookie header', sessionId);
+            logger.error('INTERNAL INCONSISTANCY: token "%s" is NOT a cookie but appears in a cookie header', sessionId);
             return;
         }
         return this.mapTokenToSession(token);
@@ -460,55 +522,84 @@ export class HermesStore extends Store {
     /* users */
     /* users */
 
+    protected userPropertiesUpdateInsert(user: UserProperties): Promise<UserPropertiesModifyMessageReturned[]> {
 
-    public userUpdateInsert(token: TokenProperties): Promise<TokenMessageReturned> {
+        let oldUser = this.userMaps.get('id', user.id);
+        let oldProps = (oldUser && oldUser.userProps) || {}; //empty
+        let newProps = user.userProps || {};
+        let actions: PropertiesModifyMessage[] = [];
 
-        let oldToken = this.tokenMaps.get('tokenId', token.tokenId) || {} as TokenProperties;
+        //what to add/modify
+        for (let props in newProps) {
+            if (oldProps[props] !== newProps[props]) {
+                logger.warn('user %s, property userProp[\%s\'] has changed', user.email, props);
+                actions.push({
+                    propName: props,
+                    propValue: newProps[props],
+                    invisible: false
+                });
+            }
+        }
+
+        let listOfNewProps = Object.keys(newProps);
+
+        let deletes = Object.keys(oldProps).filter((propName) => {
+            return listOfNewProps.indexOf(propName) === -1;
+        }).map((propNameFiltered) => {
+            logger.warn('property %s of user %s, marked for deletion', propNameFiltered, user.name);
+            let rc: PropertiesModifyMessage = { propName: propNameFiltered, propValue: oldProps[propNameFiltered], invisible: true };
+            return rc;
+        }) as PropertiesModifyMessage[];
+
+        actions.push.apply(actions, deletes);
+
+        if (actions.length > 0) {//nothing to do 
+            return this.adaptor.userInsertModifyProperty(user.id, actions);
+        }
+        return Promise.resolve([] as UserPropertiesModifyMessageReturned[]);
+
+    }
+
+    protected userUpdateInsert(user: UserProperties): Promise<UserMessageReturned> {
+
+        let oldUser = this.userMaps.get('id', user.id) || {} as UserProperties;
         //console.log('token in store:', oldToken);
         //console.log('token new:', token);
         let changed = false;
-        let propName: keyof TokenProperties;
-        for (propName in oldToken) {
-            if (['tokenId', 'sessionProps'].indexOf(propName) >= 0) {
+        let propName: keyof UserProperties;
+        //seems a bit overkill for just 2 props but expandable in future
+        for (propName in oldUser) {
+            if (['id', 'userProps'].indexOf(propName) >= 0) {
                 continue;
             }
-            if (oldToken[propName] !== token[propName]) {
-                logger.warn('propname %s has changed old:%j  new:%j', propName, oldToken[propName], token[propName]);
+            if (oldUser[propName] !== oldUser[propName]) {
+                logger.warn('propname %s has changed old:%j  new:%j', propName, oldUser[propName], oldUser[propName]);
                 changed = true;
             }
         }
-        let msg: TokenMessage = {
-            tokenId: token.tokenId,
-            fkUserId: token.fkUserId,
-            purpose: STKN,
-            ipAddr: token.ipAddr,
-            tsIssuance: token.tsIssuance,
-            tsRevoked: null,
-            revokeReason: null,
-            tsExpire: token.tsExpire,
-            templateName: token.templateName
+        let msg: UserMessageBase = {
+            userName: user.name,
+            userEmail: user.email
         };
         if (changed) {
-            logger.warn('token main attributes has changed');
-            return this.adaptor.tokenInsertModify(msg);
+            logger.warn('user main attributes has changed');
+            return this.adaptor.userInsertModify(msg);
         }
-        logger.error('token has not changed');
-
-        //convert TokenMessage to TokenMessageReturned
-        let template = this.templateMaps.get('templateName', token.templateName || '');
-        let templateId = (template && template.id) || null;
-        let tokenMsgReply = Object.assign({}, msg, { templateId: templateId }) as TokenMessageReturned;
-
-        delete staticCast<TokenMessage>(tokenMsgReply).templateName;
-        return Promise.resolve(tokenMsgReply);
+        logger.error('user has not changed');
+        let usrMsgReply = Object.assign({}, msg, { userId: user.id }) as UserMessageReturned;
+        return Promise.resolve(usrMsgReply);
     }
 
+
+    /* specific tooling */
+    /* specific tooling */
+    /* specific tooling */
 
     public get connected() {
         return this.adaptor.connected;
     }
 
-    public getTemplate(templateName: string): express.CookieOptions {
+    public getCookieOptions(templateName: string): express.CookieOptions {
         if (!this.connected) {
             throw new Error('The Store is not "connected" and in a usable state');
         }
@@ -532,18 +623,15 @@ export class HermesStore extends Store {
         return rc;
     }
 
-
-
-
-    public getDefaultTemplate() {
-        return this.getTemplate(this.defaultTemplate || 'default_cookie');
+    public getDefaultCookieOptions() {
+        return this.getCookieOptions(this.defaultTemplate || 'default_cookie');
     }
 
 
     /* interface methods of Store */
     /* interface methods of Store */
     /* interface methods of Store */
-    
+
     /**
      * Get all active sessions.
      *
@@ -626,27 +714,39 @@ export class HermesStore extends Store {
      */
     public set(sessionId: string, session: Express.Session, callback: CallBack<Express.Session>) {
 
-        //throw new Error('stack trace');
-
         logger.debug('set session by sessionId: %s', sessionId);
-        //session.id =
-        sessionId;
+
+        //token
         let token = this.mapSessionToToken(session); // actual goes here
         let oldToken = this.tokenMaps.get('tokenId', token.tokenId) || { sessionProps: {} };
         let updatedToken: TokenProperties;
+        //user
+        let user = this.mapSessionToUser(session);
+        let oldUser = this.userMaps.get('id', user.id) || { userProps: {} };
+        let updatedUser: UserProperties;
+        //
+
         this.tokenUpdateInsert(token).then((replyTokenMessage) => {
             // for now we glue sessionProps to this. , normally there is an update sequence here
             logger.debug('Main token record updated for %s', sessionId);
-            Object.assign(token, replyTokenMessage); //update token with returned values
 
+            //convert from template_id to template_name
+            Object.assign(token, replyTokenMessage); //update token with returned values
             let template = this.templateMaps.get('id', replyTokenMessage.templateId || -1);
             delete replyTokenMessage.templateId;
-            updatedToken = Object.assign({}, replyTokenMessage, { templateName: template && template.templateName, sessionProps: oldToken.sessionProps }) as TokenProperties;
+
+            updatedToken = Object.assign({}, replyTokenMessage, {
+                templateName: template && template.templateName,
+                sessionProps: oldToken.sessionProps
+            }) as TokenProperties;
 
             //partially update the token in cache to reflect database change
             this.tokenMaps.set(updatedToken);
+
             return this.tokenPropertiesUpdateInsert(token);
         }).then((replyTokenPropertyMessages) => {
+
+            logger.debug('sessionProps of  token  updated for %s', sessionId);
             let sessionProps = updatedToken.sessionProps;
             for (let msg of replyTokenPropertyMessages) {
                 if (msg.invisible === true) {
@@ -656,6 +756,32 @@ export class HermesStore extends Store {
                 sessionProps[msg.propName] = msg.propValue;
             }
             this.tokenMaps.set(updatedToken);
+            //process change in user properties and user name
+            return this.userUpdateInsert(user);
+        }).then((replyUserMessage) => {
+            logger.debug('Main user record updated for %s', sessionId);
+            updatedUser = {
+                name: replyUserMessage.userName,
+                email: replyUserMessage.userEmail,
+                id: replyUserMessage.userId,
+                userProps: oldUser.userProps
+            };
+            this.userMaps.set(updatedUser);
+            return this.userPropertiesUpdateInsert(user);
+        }).then((replyUserPropertyMessages) => {
+            logger.debug('userProps update for user [%s] belonging tor record updated for %s', updatedUser.name, sessionId);
+
+            let userProps = updatedUser.userProps;
+            for (let msg of replyUserPropertyMessages) {
+                if (msg.invisible === true) {
+                    delete userProps[msg.propName];
+                    continue;
+                }
+                userProps[msg.propName] = msg.propValue;
+            }
+            this.userMaps.set(updatedUser);
+            return Promise.resolve('DONE');
+        }).then(() => {
             if (!session._hermes || !session._user) {
                 let sess = this.mapTokenToSession(updatedToken);
                 session._hermes = session._hermes || sess._hermes;
@@ -705,7 +831,6 @@ export class HermesStore extends Store {
                 callback && defer(callback, err);
             });
             return;
-
         }
         callback && defer(callback);
     }

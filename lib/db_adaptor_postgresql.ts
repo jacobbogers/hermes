@@ -1,3 +1,5 @@
+'use strict';
+
 import * as fs from 'fs';
 import * as path from 'path';
 import * as URL from 'url';
@@ -178,6 +180,7 @@ export class AdaptorPostgreSQL extends AdaptorBase {
             this.addErr('client error when sitting idle, error [%s] [%s]', err.message, err.stack || '');
             this.nrClients--;
         });
+
         this.sql = new Map();
 
         return this.loadSQLStatements()
@@ -201,7 +204,7 @@ export class AdaptorPostgreSQL extends AdaptorBase {
             });
     }
 
-    //private methods
+  
     public constructor(app: AdaptorPostgreSQLProperties) {
         super();
         this._url = app.url;
@@ -231,8 +234,6 @@ export class AdaptorPostgreSQL extends AdaptorBase {
             return Promise.resolve(false);
         });
     }
-
-
 
     private loadSQLStatements(): Promise<boolean> {
         this.sql.clear();

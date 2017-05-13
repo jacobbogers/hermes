@@ -88,7 +88,6 @@ hermesStore.once('connect', () => {
         logger.warn('app is listening on 8080');
     });
 
-
 });
 
 function init() {
@@ -101,7 +100,7 @@ function init() {
         resave: false,
         rolling: true,
         unset: 'keep',
-        cookie: hermesStore.getDefaultTemplate()
+        cookie: hermesStore.getDefaultCookieOptions()
     }));
     app.get('/', (req, res, next) => {
         req;

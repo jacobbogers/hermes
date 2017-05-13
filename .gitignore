@@ -1,9 +1,7 @@
 # Logs
 logs
 dist/
-r-source-trunk/
 *.log
-lib/sql/_scratchad.sql
 TODO
 npm-debug.log*
 

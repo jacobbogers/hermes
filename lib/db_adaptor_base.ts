@@ -1,3 +1,5 @@
+'use strict';
+
 import * as EventEmitter from 'events';
 import * as util from 'util';
 import { logger } from './logger';
