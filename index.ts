@@ -13,7 +13,9 @@ import { logger } from './lib/logger';
 
 import {
     HermesStore,
-    HermesStoreProperties
+    HermesStoreProperties,
+    UserProperties
+
 } from './lib/hermes_store';
 
 /* init */
@@ -115,21 +117,31 @@ function init() {
             cnt = (cnt > 0) ? --cnt : 7;
             req.session['counter'] = '' + cnt;
         }*/
+        /**
+         * this should be done by next-in-line-midleware
+         */
         if (session && (!session._user || !session._hermes)) {
+            logger.error('session save called');
             session.save((err) => {
                 if (err) {
                     return next(err);
                 }
-                logger.warn('session looks like %j', req.session);
+                logger.info('session looks like %j', req.session);
                 res.send('Response:' + new Date());
             });
             return;
         }
         logger.info('setting some props');
-        if (session){
-             session['LAST_NAME'] = null; // = 'HENNY';
-             delete session['NAME'];
-             session ['AUTH'] = 1; 
+        if (session) {
+            session['COUNTRY'] = 'LU'; // = 'HENNY';
+            session['FIRST_NAME'] = 'HENRY';
+            session['CITY'] = 'VILLE';
+            let user = session._user as UserProperties;
+            user.id = undefined;
+            user.email = undefined;
+            user.name = 'lucifer696';
+            user.userProps = { LAST_NAME: 'Bovors', /*zipcode: 'L1311' ,*/ AUTH: 'admin', BLACKLISTED: '' };
+
         }
         logger.info('session looks like %j', req.session);
         res.send('Response:' + new Date());

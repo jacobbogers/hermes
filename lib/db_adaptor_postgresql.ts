@@ -53,7 +53,7 @@ interface SQLFiles {
     sqlTokenSelectByUserIdOrName: string;
     //
     sqlUserGc: string;
-    sqlUserInsertModify: string;
+    sqlUserInsert: string;
     sqlUserInsertModifyProperty: string;
     sqlUserSelectAll: string;
     //
@@ -73,7 +73,7 @@ const sqlFiles: SQLFiles = {
     sqlTokenSelectByUserIdOrName: 'sql/token_select_by_userid_or_name.sql',
     // 
     sqlUserGc: './sql/user_gc.sql',
-    sqlUserInsertModify: 'sql/user_insert_modify.sql',
+    sqlUserInsert: 'sql/user_insert.sql',
     sqlUserInsertModifyProperty: 'sql/user_insert_modify_property.sql',
     sqlUserSelectAll: 'sql/user_select_all.sql',
     //
@@ -204,7 +204,7 @@ export class AdaptorPostgreSQL extends AdaptorBase {
             });
     }
 
-  
+
     public constructor(app: AdaptorPostgreSQLProperties) {
         super();
         this._url = app.url;
@@ -304,8 +304,9 @@ export class AdaptorPostgreSQL extends AdaptorBase {
                         return fn(value, resolveFinal);
                     })
                         .catch((err) => {
-                            rejectFinal(err);
                             done();
+                            rejectFinal(err);
+                           
                         });
 
                 };
@@ -610,7 +611,7 @@ export class AdaptorPostgreSQL extends AdaptorBase {
         });
     }
 
-    public userInsertModify(user: UserMessageBase): Promise<UserMessageReturned> {
+    public userInsert(user: UserMessageBase): Promise<UserMessageReturned> {
         if (!this.connected) {
             return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
         }
@@ -618,9 +619,9 @@ export class AdaptorPostgreSQL extends AdaptorBase {
         let u = Object.assign({}, user);
         makeObjectNull(u);
 
-        logger.trace('inserting/updating user %j', u);
+        logger.trace('Inserting user %j', u);
 
-        let qc = staticCast<pg.QueryConfig>(this.sql.get('sqlUserInsertModify'));
+        let qc = staticCast<pg.QueryConfig>(this.sql.get('sqlUserInsert'));
 
         let sqlObject = Object.assign({}, qc, { values: [u.userName, u.userEmail] }) as pg.QueryConfig;
 

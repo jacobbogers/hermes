@@ -41,23 +41,28 @@ export function makeObjectNull(obj: any) {
 
 //entries<T extends { [key: string]: any }, K extends keyof T>(o: T): [keyof T, T[K]][];
 
+
+
 export interface Access<T> {
-    [index: string]: Map<T[keyof T], T>;
+    [index: string]: Map<T[keyof T], { readOnly: boolean, obj: T }>;
 }
 
 export class MapWithIndexes<T> {
     private access: Access<T> = {};
     constructor(primary: keyof T, ...rest: (keyof T)[]) {
-        this.access[primary] = new Map<T[keyof T], T>();
+        this.access[primary] = new Map<T[keyof T], { readOnly: boolean, obj: T }>();
         for (let key of rest) {
-            this.access[key] = new Map<T[keyof T], T>();
+            this.access[key] = new Map<T[keyof T], { readOnly: boolean, obj: T }>();
         }
     }
 
     public values(): T[] {
         let rc: T[] = [];
         for (let firstKey in this.access) {
-            return Array.from(this.access[firstKey].values());
+            return Array.from(this.access[firstKey].values()).map((wrap) => {
+                return wrap.obj;
+            });
+
         }
         return rc;
     }
@@ -71,19 +76,22 @@ export class MapWithIndexes<T> {
 
 
     //store a copy
-    public set(data: T) {
+    public set(data: T, readOnly: boolean = false) {
 
         if (!data) {
             let err = 'data argument is undefined';
             //logger.error(err);
             throw new Error(err);
         }
-        let _rc = JSON.parse(JSON.stringify(data));
+        let _rc = JSON.parse(JSON.stringify(data)) as T;
 
         for (let key in this.access) {
-            let keyValue = _rc[key];
-            //console.log('key found', key, keyValue);
-            this.access[key].set(keyValue, _rc);
+            let keyValue = _rc[key as keyof T];
+            let exist = this.access[key].get(keyValue);
+            if (exist && exist.readOnly) {
+                break;
+            }
+            this.access[key].set(keyValue, { readOnly, obj: _rc });
         }
     }
 
@@ -100,9 +108,9 @@ export class MapWithIndexes<T> {
         }
 
         let indexedObjects = (searchKeys as (keyof T)[]).reduce((col, key) => {
-            let obj = this.access[key].get(data[key]);
-            if (obj) {
-                col[key] = obj;
+            let itm = this.access[key].get(data[key]);
+            if (itm) {
+                col[key] = itm.obj;
             }
             return col;
         }, {} as { [index: string]: T });
@@ -141,7 +149,7 @@ export class MapWithIndexes<T> {
         if (_rc) {
             _rc = JSON.parse(JSON.stringify(_rc));
         }
-        return _rc;
+        return _rc && _rc.obj;
     }
 
     public get stats() {
@@ -159,10 +167,10 @@ export class MapWithIndexes<T> {
         let firstPick = Object.keys(this.access)[0];
         let firstMap = this.access[firstPick];
         let stats = Array.from(firstMap.values()).reduce((prev, itm) => {
-            for (let prop in itm) {
+            for (let prop in itm.obj) {
                 prev[prop] = prev[prop] || 0;
-                prev[prop] = Math.max(prev[prop], String(itm[prop]).length);
-                console.log(prop, String(itm[prop]), String(itm[prop]).length);
+                prev[prop] = Math.max(prev[prop], String(itm.obj[prop]).length);
+                console.log(prop, String(itm.obj[prop]), String(itm.obj[prop]).length);
             }
             return prev;
         }, {} as { [index: string]: number; });

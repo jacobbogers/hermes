@@ -5,8 +5,8 @@ create table auth.user (
    email varchar(120) NOT NULL, --unique
    constraint pk_user primary key (id) 
 ) 
-CREATE unique INDEX user_name_udx ON auth.user (name)  
-create unique index user_email_udx on auth.user (email)  
+create unique index user_name_udx on auth.user(upper(name))
+create unique index user_email_udx on auth.user (upper(email))  
 --
 create table user_props (  
    fk_user_id bigint,  

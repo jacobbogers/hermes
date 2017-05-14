@@ -48,9 +48,9 @@ export interface SessionHash {
 }
 
 export interface UserProperties {
-    name: string;
-    email: string;
-    id: number;
+    name?: string;
+    email?: string;
+    id?: number;
     userProps: {
         [name: string]: string;
     };
@@ -146,11 +146,14 @@ export class HermesStore extends Store {
             return this.adaptor.userSelectByFilter();
         }).then((users) => {
             this.processUsersSelectAll(users);
-            if (!this.userMaps.get('name', USR_ANONYMOUS)) {
+            let anonymous = this.userMaps.get('name', USR_ANONYMOUS);
+            if (!anonymous) {
                 let err = `User ${USR_ANONYMOUS} doesnt exist`;
                 this.adaptor.errors.push(err);
                 throw new Error(err);
             }
+            // make user anonymous readonly
+            this.userMaps.set(anonymous, true);
             logger.info('...all db data cached');
             this.emit('connect');
         }).catch((err) => {
@@ -181,7 +184,7 @@ export class HermesStore extends Store {
     }
 
     private processTemplates(data: TemplatePropsMessage[]) {
-        this.templateMaps.clear();
+
         for (let tt of data) {
             let tp: TemplateProperties = {
                 id: tt.id,
@@ -195,11 +198,12 @@ export class HermesStore extends Store {
                 rolling: tt.rolling,
                 templateName: tt.templateName
             };
-            this.templateMaps.set(tp);
+            this.templateMaps.set(tp, true);
         }
     }
 
     private processTokenSelectAll(data: TokensAndPropsMessage[]) {
+
         for (let token of data) {
             //fetch user data
             let uf: UserProperties | undefined = this.userMaps.get('id', token.fkUserId);
@@ -241,7 +245,7 @@ export class HermesStore extends Store {
 
 
     private processUsersSelectAll(data: UsersAndPropsMessage[]) {
-
+        this.userMaps.clear();
         for (let user of data) {
             let uf = this.userMaps.get('id', user.userId);
             if (!uf) {
@@ -268,10 +272,10 @@ export class HermesStore extends Store {
         let newSessProps = token.sessionProps || {};
         let actions: PropertiesModifyMessage[] = [];
         //what to add/modify
-
+        logger.debug('%s has %d nr of sessions props to process.', token.tokenId, Object.keys(token.sessionProps).length);
         for (let props in newSessProps) {
             if (oldSessProps[props] !== newSessProps[props]) {
-                logger.warn('token %s, property %s has changed', token.tokenId, props);
+                logger.debug('%s: property %s has changed', token.tokenId, props);
                 actions.push({
                     propName: props,
                     propValue: newSessProps[props],
@@ -285,14 +289,14 @@ export class HermesStore extends Store {
         let deletes = Object.keys(oldSessProps).filter((propName) => {
             return listOfNewProps.indexOf(propName) === -1;
         }).map((propNameFiltered) => {
-            logger.warn('token %s, property %s marked for deletion', token.tokenId, propNameFiltered);
+            logger.trace('%s: property %s marked for deletion', token.tokenId, propNameFiltered);
 
             let rc: PropertiesModifyMessage = { propName: propNameFiltered, propValue: oldSessProps[propNameFiltered], invisible: true };
             return rc;
         }) as PropertiesModifyMessage[];
 
         actions.push.apply(actions, deletes);
-
+        logger.debug('%s will process %d nr of properties on data-base', token.tokenId, actions.length);
         if (actions.length > 0) {//nothing to do 
             return this.adaptor.tokenInsertModifyProperty(token.tokenId, actions);
         }
@@ -307,12 +311,12 @@ export class HermesStore extends Store {
         //console.log('token new:', token);
         let changed = false;
         let propName: keyof TokenProperties;
-        for (propName in oldToken) {
+        for (propName in token) {
             if (['tokenId', 'sessionProps'].indexOf(propName) >= 0) {
                 continue;
             }
             if (oldToken[propName] !== token[propName]) {
-                logger.warn('propname %s has changed old:%j  new:%j', propName, oldToken[propName], token[propName]);
+                logger.debug('%s, propname %s has changed old:%j  new:%j', token.tokenId, propName, oldToken[propName], token[propName]);
                 changed = true;
             }
         }
@@ -328,10 +332,10 @@ export class HermesStore extends Store {
             templateName: token.templateName
         };
         if (changed) {
-            logger.warn('token main attributes has changed');
+            logger.info('%s, token attributes have changed', msg.tokenId);
             return this.adaptor.tokenInsertModify(msg);
         }
-        logger.error('token has not changed');
+        logger.trace('token has not changed');
 
         //convert TokenMessage to TokenMessageReturned
         let template = this.templateMaps.get('templateName', token.templateName || '');
@@ -428,6 +432,7 @@ export class HermesStore extends Store {
         if (user === undefined) {// no user information, set it to anonymous
             return staticCast<UserProperties>(this.userMaps.get('name', USR_ANONYMOUS));
         }
+        //
         let rc: UserProperties = {
             name: user.name,
             email: user.email,
@@ -529,10 +534,14 @@ export class HermesStore extends Store {
         let newProps = user.userProps || {};
         let actions: PropertiesModifyMessage[] = [];
 
+        if (user.name === USR_ANONYMOUS) {
+            return Promise.resolve([] as UserPropertiesModifyMessageReturned[]);
+        }
+
         //what to add/modify
         for (let props in newProps) {
             if (oldProps[props] !== newProps[props]) {
-                logger.warn('user %s, property userProp[\%s\'] has changed', user.email, props);
+                logger.trace('User %s, property userProp[\%s\'] has changed', user.email, props);
                 actions.push({
                     propName: props,
                     propValue: newProps[props],
@@ -546,7 +555,7 @@ export class HermesStore extends Store {
         let deletes = Object.keys(oldProps).filter((propName) => {
             return listOfNewProps.indexOf(propName) === -1;
         }).map((propNameFiltered) => {
-            logger.warn('property %s of user %s, marked for deletion', propNameFiltered, user.name);
+            logger.trace('User:%s, property %s marked for deletion', user.name, propNameFiltered, user.name);
             let rc: PropertiesModifyMessage = { propName: propNameFiltered, propValue: oldProps[propNameFiltered], invisible: true };
             return rc;
         }) as PropertiesModifyMessage[];
@@ -554,40 +563,59 @@ export class HermesStore extends Store {
         actions.push.apply(actions, deletes);
 
         if (actions.length > 0) {//nothing to do 
-            return this.adaptor.userInsertModifyProperty(user.id, actions);
+            return this.adaptor.userInsertModifyProperty(staticCast<number>(user.id), actions);
         }
         return Promise.resolve([] as UserPropertiesModifyMessageReturned[]);
 
     }
 
-    protected userUpdateInsert(user: UserProperties): Promise<UserMessageReturned> {
 
-        let oldUser = this.userMaps.get('id', user.id) || {} as UserProperties;
-        //console.log('token in store:', oldToken);
-        //console.log('token new:', token);
-        let changed = false;
-        let propName: keyof UserProperties;
-        //seems a bit overkill for just 2 props but expandable in future
-        for (propName in oldUser) {
-            if (['id', 'userProps'].indexOf(propName) >= 0) {
-                continue;
-            }
-            if (oldUser[propName] !== oldUser[propName]) {
-                logger.warn('propname %s has changed old:%j  new:%j', propName, oldUser[propName], oldUser[propName]);
-                changed = true;
-            }
-        }
-        let msg: UserMessageBase = {
-            userName: user.name,
-            userEmail: user.email
+
+    protected userInsert(user: UserProperties): Promise<UserMessageReturned> {
+
+
+
+        let userAnon = staticCast<UserProperties>(this.userMaps.get('name', USR_ANONYMOUS));
+        let rcAnon: UserMessageReturned = {
+            userName: staticCast<string>(userAnon.name),
+            userEmail: staticCast<string>(userAnon.email),
+            userId: staticCast<number>(userAnon.id)
         };
-        if (changed) {
-            logger.warn('user main attributes has changed');
-            return this.adaptor.userInsertModify(msg);
+
+        if (user.id === userAnon.id || user.name === userAnon.name) {
+            return Promise.resolve(rcAnon);
         }
-        logger.error('user has not changed');
-        let usrMsgReply = Object.assign({}, msg, { userId: user.id }) as UserMessageReturned;
-        return Promise.resolve(usrMsgReply);
+
+        if (user.id === undefined && user.name === undefined) {
+            return Promise.resolve(rcAnon);
+        }
+        // at this point its not an anonymous user, we could have partial information , make the best of it      
+        let oldUser = this.userMaps.get('id', user.id);
+        if (!oldUser) {
+            oldUser = this.userMaps.get('name', user.name);
+            if (!oldUser) {
+                oldUser = this.userMaps.get('email', user.email);
+            }
+        }
+
+        if (oldUser) { //correct possible mess and resolve
+            user.id = oldUser.id;
+            user.name = oldUser.name;
+            user.email = oldUser.email;
+            let reply: UserMessageReturned = {
+                userName: staticCast<string>(user.name),
+                userEmail: staticCast<string>(user.email),
+                userId: staticCast<number>(user.id)
+            };
+            return Promise.resolve(reply);
+        }
+
+        let msg: UserMessageBase = {
+            userName: staticCast<string>(user.name),
+            userEmail: staticCast<string>(user.email),
+        };
+        logger.trace('Will insert user %j', msg);
+        return this.adaptor.userInsert(msg);
     }
 
 
@@ -722,27 +750,48 @@ export class HermesStore extends Store {
         let updatedToken: TokenProperties;
         //user
         let user = this.mapSessionToUser(session);
-        let oldUser = this.userMaps.get('id', user.id) || { userProps: {} };
+
         let updatedUser: UserProperties;
         //
-
-        this.tokenUpdateInsert(token).then((replyTokenMessage) => {
-            // for now we glue sessionProps to this. , normally there is an update sequence here
-            logger.debug('Main token record updated for %s', sessionId);
-
+        this.userInsert(user).then((reply) => {
+            logger.trace('%s: User %s tentative association.', sessionId, reply.userName);
+            let oldUser = this.userMaps.get('id', reply.userId) || { userProps: {} };
+            updatedUser = {
+                name: reply.userName,
+                email: reply.userEmail,
+                id: reply.userId,
+                userProps: deepClone(oldUser.userProps)
+            };
+            this.userMaps.set(updatedUser);
+            return this.userPropertiesUpdateInsert(user);
+        }).then((reply) => {
+            logger.debug('%s: User %s exist/created, has %d properties', sessionId, updatedUser.name, Object.keys(updatedUser.userProps).length);
+            let userProps = updatedUser.userProps;
+            for (let msg of reply) {
+                if (msg.invisible === true) {
+                    delete userProps[msg.propName];
+                    continue;
+                }
+                userProps[msg.propName] = msg.propValue;
+            }
+            this.userMaps.set(updatedUser);
+            token.fkUserId = staticCast<number>(updatedUser.id); // associate
+            return this.tokenUpdateInsert(token);
+        }).then((reply) => {
+            logger.debug('%s: token updated', sessionId);
+            //
             //convert from template_id to template_name
-            Object.assign(token, replyTokenMessage); //update token with returned values
-            let template = this.templateMaps.get('id', replyTokenMessage.templateId || -1);
-            delete replyTokenMessage.templateId;
+            let template = this.templateMaps.get('id', reply.templateId || -1);
+            delete reply.templateId;
+            Object.assign(token, reply); //update token with returned values
 
-            updatedToken = Object.assign({}, replyTokenMessage, {
+            updatedToken = Object.assign({}, reply, {
                 templateName: template && template.templateName,
                 sessionProps: oldToken.sessionProps
             }) as TokenProperties;
-
             //partially update the token in cache to reflect database change
-            this.tokenMaps.set(updatedToken);
 
+            this.tokenMaps.set(updatedToken);
             return this.tokenPropertiesUpdateInsert(token);
         }).then((replyTokenPropertyMessages) => {
 
@@ -757,33 +806,13 @@ export class HermesStore extends Store {
             }
             this.tokenMaps.set(updatedToken);
             //process change in user properties and user name
-            return this.userUpdateInsert(user);
-        }).then((replyUserMessage) => {
-            logger.debug('Main user record updated for %s', sessionId);
-            updatedUser = {
-                name: replyUserMessage.userName,
-                email: replyUserMessage.userEmail,
-                id: replyUserMessage.userId,
-                userProps: oldUser.userProps
-            };
-            this.userMaps.set(updatedUser);
-            return this.userPropertiesUpdateInsert(user);
-        }).then((replyUserPropertyMessages) => {
-            logger.debug('userProps update for user [%s] belonging tor record updated for %s', updatedUser.name, sessionId);
-
-            let userProps = updatedUser.userProps;
-            for (let msg of replyUserPropertyMessages) {
-                if (msg.invisible === true) {
-                    delete userProps[msg.propName];
-                    continue;
-                }
-                userProps[msg.propName] = msg.propValue;
-            }
-            this.userMaps.set(updatedUser);
             return Promise.resolve('DONE');
         }).then(() => {
+            logger.debug('finalize session %s', token.tokenId);
             if (!session._hermes || !session._user) {
+                logger.trace('monkey patching session %s', token.tokenId);
                 let sess = this.mapTokenToSession(updatedToken);
+                logger.info('%s, session should look like this: %j', token.tokenId, sess);
                 session._hermes = session._hermes || sess._hermes;
                 session._user = session._user || sess._user;
             }

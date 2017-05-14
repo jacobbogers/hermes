@@ -257,7 +257,7 @@ export abstract class AdaptorBase extends EventEmitter {
     public abstract init(): Promise<boolean>;
     public abstract get poolSize(): number;
     /* user */
-    public abstract userInsertModify(token: UserMessageBase): Promise<UserMessageReturned>;
+    public abstract userInsert(token: UserMessageBase): Promise<UserMessageReturned>;
     public abstract userInsertModifyProperty(userId: number, modifications: PropertiesModifyMessage[]): Promise<UserPropertiesModifyMessageReturned[]>;
     public abstract userSelectByFilter(notHavingProp?: string): Promise<UsersAndPropsMessage[]>;
     /*tokens*/
