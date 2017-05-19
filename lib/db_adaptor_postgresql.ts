@@ -1,16 +1,16 @@
 'use strict';
 
-import * as fs from 'fs';
 import * as path from 'path';
 import * as URL from 'url';
 import * as pg from 'pg';
 import * as util from 'util';
 import * as UID from 'uid-safe';
+import { SystemInfo } from './system';
 
 
 
 import { logger } from './logger';
-import { makeObjectNull } from './utils';
+import { makeObjectNull, loadFiles } from './utils';
 import {
     //general
     AdaptorBase,
@@ -111,11 +111,11 @@ export class AdaptorPostgreSQL extends AdaptorBase {
 
         let ci = URL.parse(pURL);
         //collect all errors and warnings
-        let errP = this.errors.push.bind(this.errors);
-        let warnP = this.warnings.push.bind(this.warnings);
+        let _si = SystemInfo.createSystemInfo();
+        let errP = _si.addError.bind(_si);
+        let warnP = _si.addWarning.bind(_si);
 
-        this.errors.splice(0);
-        this.warnings.splice(0);
+
 
         ifNull(warnP, ci.protocol, 'No protocol specified in: %s', pURL);
         ifNull(errP, ci.auth, 'No authentication specified in: %s', pURL);
@@ -130,7 +130,7 @@ export class AdaptorPostgreSQL extends AdaptorBase {
         ifNull(errP, ci.pathname && ci.pathname.slice(1), 'No database specified in: %s', pURL);
         ifNull(warnP, ci.query, 'No connection parameters specified in: %s', pURL);
 
-        if (this.errors.length > 0) {
+        if (_si.hasErrors(AdaptorError)) {
             this.transition(ADAPTOR_STATE.ERR_Initializing, true);
             return Promise.reject(false);
         }
@@ -154,7 +154,7 @@ export class AdaptorPostgreSQL extends AdaptorBase {
             host,
             ssl: qry['sslmode'] !== 'disable',
             max: 20, //set pool max size  
-            min: 14, //set min pool size  
+            min: 1, //set min pool size  
             idleTimeoutMillis: 1000, //ms
             refreshIdle: true
         };
@@ -185,13 +185,6 @@ export class AdaptorPostgreSQL extends AdaptorBase {
 
         return this.loadSQLStatements()
             .then(() => {
-                if (this.errors.length > 0) {
-                    this.transition(ADAPTOR_STATE.ERR_Initializing, true);
-                    logger.error(this.lastErr());
-                    this.destroy(); //close it down;
-                    return Promise.reject(false);
-                }
-
                 if (!this.transition(ADAPTOR_STATE.Initialized)) {
                     this.addErr('Could not transition to [Initialized] state');
                     this.transition(ADAPTOR_STATE.ERR_Initializing, true);
@@ -201,6 +194,11 @@ export class AdaptorPostgreSQL extends AdaptorBase {
                 }
                 logger.info('success loading all sql files');
                 return Promise.resolve(true);
+            }).catch(() => {
+                this.transition(ADAPTOR_STATE.ERR_Initializing, true);
+                logger.error(this.lastErr());
+                this.destroy(); //close it down;
+                return Promise.reject(false);
             });
     }
 
@@ -235,42 +233,40 @@ export class AdaptorPostgreSQL extends AdaptorBase {
         });
     }
 
+
+
     private loadSQLStatements(): Promise<boolean> {
         this.sql.clear();
 
-        let fileCount = Object.keys(sqlFiles).length;
-        logger.trace('Number of sql files to load: [%d]', fileCount);
-        let errCount = 0;
+        let files = Object.assign({}, sqlFiles);
+        let _file: keyof SQLFiles;
+        for (_file in files) {
+            files[_file] = path.join(__dirname, files[_file]);
+        }
+        let self = this;
 
-        return new Promise<boolean>((resolve, reject) => {
-            Object.keys(sqlFiles).forEach((key: SqlFileKeys) => {
-                let fileName = path.join(__dirname, sqlFiles[key]);
-                fs.readFile(fileName, { flag: 'r', encoding: 'utf8' }, (err, data) => {
+        function processLoadingResults(sql: SQLFiles): number {
+            let nrErrors = 0;
+            let _file: keyof SQLFiles;
+            for (_file in sql) {
+                if ((sql[_file] as any) instanceof Error) {
+                    nrErrors++;
+                    self.addErr('Could not load sql file: %s', sqlFiles[_file]);
+                    logger.error(this.lastErr());
+                    continue;
+                }
+                let qc: pg.QueryConfig = {
+                    text: sql[_file],
+                    name: _file
+                };
+                logger.trace('loaded file [%s]->[%s]', _file, path.basename(files[_file]));
+                self.sql.set(_file, qc);
+            }
+            return nrErrors;
+        }
 
-                    fileCount--;
-                    if (err) {
-                        this.addErr('Could not load sql file: %s', fileName);
-                        logger.error(this.lastErr());
-                        errCount++;
-                    }
-                    else {
-                        let qc: pg.QueryConfig = {
-                            text: data,
-                            name: key
-                        };
-                        logger.trace('loaded file [%s]->[%s]', key, fileName);
-                        this.sql.set(key, qc);
-                    }
-                    if (fileCount === 0) {
-                        if (errCount > 0) {
-                            logger.error('Some errors ocurred when loading sql files');
-                            return reject(false);
-                        }
-                        logger.info('All sql files loadded successfully');
-                        return resolve(true);
-                    }
-                });
-            });
+        return loadFiles<SQLFiles>(files).then((sql) => {
+            return processLoadingResults(sql) > 0 ? Promise.reject(false) : Promise.resolve(true);
         });
     }
 
@@ -285,6 +281,7 @@ export class AdaptorPostgreSQL extends AdaptorBase {
             }
             this.pool.connect((err, client, done) => {
                 if (err) {
+                    this.addErr(err);
                     logger.error('could not aquire a client from the pool because:[%j]', err);
                     done();
                     return rejectFinal(err);
@@ -294,8 +291,8 @@ export class AdaptorPostgreSQL extends AdaptorBase {
 
                 //iterative function
                 const _do = (qc: pg.QueryConfig) => {
-                    logger.debug('executing query: %s', qc.name);
                     client.query(qc).then((value: pg.QueryResult) => {
+                        logger.debug('query done %s', qc.name);
                         let nextQc = copyArr.shift();
                         if (nextQc !== undefined) {
                             return _do(nextQc);
@@ -306,7 +303,7 @@ export class AdaptorPostgreSQL extends AdaptorBase {
                         .catch((err) => {
                             done();
                             rejectFinal(err);
-                           
+
                         });
 
                 };
@@ -515,9 +512,10 @@ export class AdaptorPostgreSQL extends AdaptorBase {
 
     public templateSelectAll(): Promise<TemplatePropsMessage[]> {
         if (!this.connected) {
-            return Promise.reject(new AdaptorError('Adaptor is not connected', this.state));
+            this.addErr('Adaptor is not connected');
+            return Promise.reject(this.lastErr());
         }
-
+       
         let qc = staticCast<pg.QueryConfig>(this.sql.get('sqlTemplateSelectAll'));
         let sqlObject = Object.assign({}, qc) as pg.QueryConfig;
         return this.executeSQL<TemplatePropsMessage[]>([sqlObject], (res, resolve) => {

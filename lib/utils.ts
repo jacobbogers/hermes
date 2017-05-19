@@ -1,6 +1,7 @@
 'use strict';
 
 import * as util from 'util';
+import * as fs from 'fs';
 
 type validation = (s: any) => boolean;
 
@@ -187,4 +188,37 @@ export class MapWithIndexes<T> {
 
 export function deepClone<T>(obj: T): T {
     return JSON.parse(JSON.stringify(obj));
+}
+
+
+export function loadFiles<T>(files: T): Promise<T> {
+
+    let fileNameAliases = Object.keys(files) as (keyof T)[];
+    let toDo = fileNameAliases.length;
+    let errCount = 0;
+
+    if (toDo === 0) {
+        return Promise.resolve({} as T);
+    }
+
+    let results: T = {} as T;
+
+    return new Promise<T>((resolve) => {
+        fileNameAliases.forEach((fileNameAlias: keyof T) => {
+            let fileName = files[fileNameAlias];
+            fs.readFile(String(fileName), { flag: 'r', encoding: 'utf8' }, (err: NodeJS.ErrnoException, data) => {
+                toDo--;
+                if (err) {
+                    results[fileNameAlias] = err as any;
+                    errCount++;
+                }
+                else {
+                    results[fileNameAlias] = data as any;
+                }
+                if (toDo === 0) {
+                  return resolve(results);
+                }
+            });
+        });
+    });
 }

@@ -3,11 +3,15 @@
 
 import { Store } from 'express-session';
 
+import { SystemInfo } from './system';
+
 //import * as express from 'express';
 import {
     //general
     AdaptorBase,
     PropertiesModifyMessage,
+    AdaptorError,
+    AdaptorWarning,
     //tokens
     TokenMessage,
     TokenMessageReturned,
@@ -19,7 +23,9 @@ import {
     UserMessageBase,
     UserPropertiesModifyMessageReturned,
     //template
-    TemplatePropsMessage
+    TemplatePropsMessage,
+
+
 
 } from './db_adaptor_base';
 
@@ -62,8 +68,6 @@ export interface TokenProperties extends TokenMessage {
     };
 }
 
-
-
 export interface UserPropertyProperties {
     fkUserId: number;
     name: string;
@@ -80,6 +84,22 @@ export enum AdaptorInstructionSet {
 
 }
 
+
+export class HermesStoreError extends Error {
+
+    private _connected: boolean;
+
+    constructor(message: string, connected: boolean) {
+        super(message);
+        this.message = message;
+        this.name = 'AdaptorError';
+        this._connected = connected;
+    }
+
+    public toString() {
+        return `HermesStoreError: state:${this._connected ? '' : 'NOT'} connected  `;
+    }
+}
 
 
 /**
@@ -118,6 +138,8 @@ export class HermesStore extends Store {
         this.defaultTemplate = options.defaultCookieOptionsName || TEMPLATE_DEFAULT_COOKIE;
 
 
+        let _si = SystemInfo.createSystemInfo();
+
         this.userMaps = new MapWithIndexes<UserProperties>('id', 'email', 'name');
         this.tokenMaps = new MapWithIndexes<TokenProperties>('tokenId');
         this.templateMaps = new MapWithIndexes<TemplateProperties>('templateName', 'id');
@@ -148,9 +170,9 @@ export class HermesStore extends Store {
             this.processUsersSelectAll(users);
             let anonymous = this.userMaps.get('name', USR_ANONYMOUS);
             if (!anonymous) {
-                let err = `User ${USR_ANONYMOUS} doesnt exist`;
-                this.adaptor.errors.push(err);
-                throw new Error(err);
+                let err = new HermesStoreError(`User ${USR_ANONYMOUS} doesnt exist`, this.connected );
+                _si.addError(err);
+                throw err;
             }
             // make user anonymous readonly
             this.userMaps.set(anonymous, true);
@@ -158,11 +180,12 @@ export class HermesStore extends Store {
             this.emit('connect');
         }).catch((err) => {
             logger.error('failed because of %j', err);
+            let errors = _si.systemErrors(null, Error /*AdaptorError*/ );
+            AdaptorError;
 
-            let errors = this.adaptor.errors;
-            logger.error('All adaptor errors #(%d) from the adaptor: %j', errors.length, errors.length ? errors : 'NO ERRORS');
+            logger.error('All adaptor errors #(%d) from the adaptor: %j', errors.length, errors.length ? errors.map( (err) => String(err)) : 'NO ERRORS');
 
-            let warnings = this.adaptor.warnings;
+            let warnings = _si.systemWarnings(null, AdaptorWarning);
             logger.warn('All warnings #(%d) from the adaptor %j', warnings.length, warnings.length ? warnings : 'NO WARNINGS');
 
             this.adaptor.emit('disconnect');

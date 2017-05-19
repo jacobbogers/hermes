@@ -3,17 +3,35 @@
 import * as EventEmitter from 'events';
 import * as util from 'util';
 import { logger } from './logger';
+import { SystemInfo } from './system';
 
 export class AdaptorError extends Error {
     private _adaptorState: ADAPTOR_STATE;
-    public get adaptorState() {
-        return this._adaptorState;
-    }
+
     constructor(message: string, code: ADAPTOR_STATE) {
         super(message);
-        this.message = message;
         this.name = 'AdaptorError';
         this._adaptorState = code;
+    }
+
+    public getStateStr() {
+        return ADAPTOR_STATE[this._adaptorState];
+    }
+
+    public toString() {
+        return `${this.name}: (state: ${this.getStateStr()}) ${this.message}`;
+    }
+
+}
+
+/* make it a warning */
+export class AdaptorWarning extends AdaptorError {
+    constructor(message: string, code: ADAPTOR_STATE) {
+        super(message, code);
+        this.name = 'AdaptorWarning';
+    }
+    public toString(): string {
+        return `${this.name}: (state: ${this.getStateStr()}) ${this.message}`;
     }
 }
 
@@ -189,8 +207,8 @@ function moveToState(src: ADAPTOR_STATE, target: ADAPTOR_STATE): boolean {
 
 
 let _adaptor: AdaptorBase;
-let _errors: string[] = [];
-let _warnings: string[] = [];
+//let _errors: string[] = [];
+//let _warnings: string[] = [];
 
 
 export abstract class AdaptorBase extends EventEmitter {
@@ -200,22 +218,26 @@ export abstract class AdaptorBase extends EventEmitter {
         return _adaptor;
     }
 
-    public get errors(): string[] {
-        return _errors;
+    public get errs(): string[] {
+        return SystemInfo.createSystemInfo().systemErrors<AdaptorError>(null, AdaptorError).map((err) => String(err));
     }
 
-    public get warnings(): string[] {
-        return _warnings;
+    public get warns(): string[] {
+        return SystemInfo.createSystemInfo().systemWarnings<AdaptorWarning>(null, AdaptorError).map((warn) => String(warn));
     }
 
     protected _state: ADAPTOR_STATE = ADAPTOR_STATE.UnInitialized;
 
-    protected addErr(...rest: any[]) {
-        _errors.push(util.format.call(util.format, ...rest));
+    protected addErr(message: string | Error, ...rest: any[]) {
+        //the last one is the error code
+        SystemInfo.createSystemInfo().addError(
+            typeof message === 'string' ? new AdaptorError(util.format.call(util.format, message, ...rest), this._state) : message
+        );
+        return;
     }
 
     protected lastErr(): string {
-        return _errors[_errors.length - 1];
+        return String(SystemInfo.createSystemInfo().lastErr(AdaptorError));
     }
 
     constructor() {
@@ -224,7 +246,7 @@ export abstract class AdaptorBase extends EventEmitter {
         logger.info('Attempt to initialize %s', thisClassName);
         if (_adaptor !== undefined) {
             let adaptorClassName = _adaptor.constructor.name;
-            _adaptor.addErr(util.format('[adaptor] property on [%s] class is not null or undefined', thisClassName));
+            _adaptor.addErr('[adaptor] property on [%s] class is not null or undefined', thisClassName);
             _adaptor.transition(ADAPTOR_STATE.ERR_Initializing, true);
             logger.error(_adaptor.lastErr());
             throw new Error(util.format('Adaptor of type %s already created, cannot create this new instance of %s', adaptorClassName, thisClassName));
@@ -243,7 +265,7 @@ export abstract class AdaptorBase extends EventEmitter {
 
     public destroy(): Promise<boolean> {
         if (!this.transition(ADAPTOR_STATE.Disconnecting)) {
-            _errors.push('Could not transition to state [disconnecting]');
+            this.addErr('Could not transition to state [disconnecting]');
             return Promise.reject(false);
         }
         return Promise.resolve(true);
@@ -252,7 +274,7 @@ export abstract class AdaptorBase extends EventEmitter {
     public get state(): ADAPTOR_STATE {
         return this._state;
     }
-   
+
     /* general */
     public abstract init(): Promise<boolean>;
     public abstract get poolSize(): number;

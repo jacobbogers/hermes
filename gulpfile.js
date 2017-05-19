@@ -22,6 +22,11 @@ gulp.task('copy-sql', function() {
      .pipe(gulp.dest('dist/lib/sql'));
 });
 
+gulp.task('copy-html', function() {
+    return gulp.src('lib/**/*.{html,css}')
+    .pipe(gulp.dest('dist/lib'))
+});
+
 
 gulp.task('tsc', function () {
   let tsResult = tsP.src().pipe(tsP()).on('error', function (err) {
@@ -47,6 +52,6 @@ gulp.task('lint', function () {
 });
 
 
-gulp.task('js', gulp.series('lint', 'tsc', 'copy-sql'));
+gulp.task('js', gulp.series('lint', 'tsc', gulp.parallel('copy-sql','copy-html')));
 gulp.task('build', gulp.series('clean:dist', 'js'))
 gulp.task('default', gulp.series('build'));
