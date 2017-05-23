@@ -27,6 +27,7 @@ gulp.task('copy-html', function() {
     .pipe(gulp.dest('dist/lib'))
 });
 
+//const tsP = ts.createProject('tsconfig.json');
 
 gulp.task('tsc', function () {
   let tsResult = tsP.src().pipe(tsP()).on('error', function (err) {

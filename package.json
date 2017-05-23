@@ -82,6 +82,7 @@
     "graphql-server-express": "^0.7.2",
     "graphql-tools": "^0.11.0",
     "install": "^0.9.3",
+    "mailgun-js": "^0.10.1",
     "merge2": "^1.0.3",
     "moment": "^2.18.1",
     "npm": "^4.5.0",

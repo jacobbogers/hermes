@@ -92,12 +92,10 @@ export class EmailRenderer {
         );
 
         return this.renderEmailMain(templates.get('actionEmailCSS') || '', content);
-
     }
 
     public init(): Promise<boolean> {
 
-     
         let filesFullPath = deepClone(htmlFiles);
         let _file: keyof HTMLTemplateFiles;
         for (_file in htmlFiles) {
@@ -110,4 +108,3 @@ export class EmailRenderer {
         });
     }
 }
-
