@@ -18,11 +18,10 @@ import { logger } from './lib/logger';
 import {
     HermesStore,
     HermesStoreProperties,
-    //   UserProperties
+     UserProperties
 
 } from './lib/hermes_store';
 
-/* init */
 /* init */
 /* init */
 
@@ -92,7 +91,7 @@ hermesStore.once('connect', () => {
 
     logger.info('store is initialized');
 
-    false && init();
+    true && init();
 
     app.listen(8080, () => {
         logger.warn('app is listening on 8080');
@@ -166,11 +165,11 @@ function init() {
 
     //app.listen(4000, () => console.log('Now browse to localhost:4000/graphiql'));
 
-    /* app.get('/', (req, res, next) => {
+    app.get('/', (req, res, next) => {
          req;
          next;
          let session = req.session;
-         res.set({ 'Contet-Type': 'text/html' });
+         res.set({ 'Content-Type': 'text/html' });
         
         
  
@@ -201,7 +200,7 @@ function init() {
          res.send('Response:' + new Date());
  
      });
-     */
+     
 }
 
 process.on('exit', () => {
