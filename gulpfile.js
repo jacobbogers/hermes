@@ -5,17 +5,17 @@ const
   tslint = require('gulp-tslint'),
   gutil = require('gulp-util'),
   ts = require('gulp-typescript'),
-  merge = require('merge2'),
-  clean = require('gulp-clean');
+  merge = require('merge2');/*,
+  clean = require('gulp-clean');*/
 
 const tsP = ts.createProject('tsconfig.json');
 
-gulp.task('clean:dist', function () {
-  return gulp.src(['dist/**/*.*', 'dist/**/*'], {
-    read: false
-  }).
-    pipe(clean());
-});
+//gulp.task('clean:dist', function () {
+//  return gulp.src(['dist/**/*.*', 'dist/**/*'], {
+//    read: false
+//  }).
+//    pipe(clean());
+//});
 
 gulp.task('copy-sql', function() {
    return gulp.src('lib/sql/*.sql')
@@ -54,5 +54,5 @@ gulp.task('lint', function () {
 
 
 gulp.task('js', gulp.series('lint', 'tsc', gulp.parallel('copy-sql','copy-html')));
-gulp.task('build', gulp.series('clean:dist', 'js'))
+gulp.task('build',  gulp.series('js'));
 gulp.task('default', gulp.series('build'));
