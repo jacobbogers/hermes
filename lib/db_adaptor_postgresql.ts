@@ -1,6 +1,6 @@
 'use strict';
 
-import * as path from 'path';
+//import * as path from 'path';
 import * as URL from 'url';
 import * as pg from 'pg';
 import * as util from 'util';
@@ -10,7 +10,12 @@ import { SystemInfo } from './system';
 
 
 import { logger } from './logger';
-import { makeObjectNull, loadFiles } from './utils';
+
+import { 
+    makeObjectNull, 
+//    loadFiles 
+} from './utils';
+
 import {
     //general
     AdaptorBase,
@@ -63,21 +68,21 @@ interface SQLFiles {
 type ResolveResult<T> = (res: pg.QueryResult, resolve: (rc: T | undefined) => void) => void;
 
 const sqlFiles: SQLFiles = {
-    sqlTokenInsertModifyProperty: './sql/token_insert_modify_property.sql',
-    sqlTokenAssociateWithUser: './sql/token_associate_with_user.sql',
-    sqlTokenInsertModify: './sql/token_insert_modify.sql',
-    sqlTokenDoExpire: './sql/token_do_expire.sql',
-    sqlTokenGC: './sql/token_gc.sql',
+    sqlTokenInsertModifyProperty: require('./sql/token_insert_modify_property.sql'),
+    sqlTokenAssociateWithUser: require('./sql/token_associate_with_user.sql'),
+    sqlTokenInsertModify: require('./sql/token_insert_modify.sql'),
+    sqlTokenDoExpire: require('./sql/token_do_expire.sql'),
+    sqlTokenGC: require('./sql/token_gc.sql'),
     //
-    sqlTokenSelectAllByFilter: './sql/token_select_all_by_filter.sql',
-    sqlTokenSelectByUserIdOrName: 'sql/token_select_by_userid_or_name.sql',
+    sqlTokenSelectAllByFilter: require('./sql/token_select_all_by_filter.sql'),
+    sqlTokenSelectByUserIdOrName: require('./sql/token_select_by_userid_or_name.sql'),
     // 
-    sqlUserGc: './sql/user_gc.sql',
-    sqlUserInsert: 'sql/user_insert.sql',
-    sqlUserInsertModifyProperty: 'sql/user_insert_modify_property.sql',
-    sqlUserSelectAll: 'sql/user_select_all.sql',
+    sqlUserGc: require('./sql/user_gc.sql'),
+    sqlUserInsert: require('./sql/user_insert.sql'),
+    sqlUserInsertModifyProperty: require('./sql/user_insert_modify_property.sql'),
+    sqlUserSelectAll: require('./sql/user_select_all.sql'),
     //
-    sqlTemplateSelectAll: 'sql/template_select_all.sql'
+    sqlTemplateSelectAll: require('./sql/template_select_all.sql')
 
 };
 
@@ -189,8 +194,7 @@ export class AdaptorPostgreSQL extends AdaptorBase {
                     this.addErr('Could not transition to [Initialized] state');
                     this.transition(ADAPTOR_STATE.ERR_Initializing, true);
                     logger.error(this.lastErr());
-                    this.destroy();
-                    return Promise.reject(false);
+                    return this.destroy(true);
                 }
                 logger.info('success loading all sql files');
                 return Promise.resolve(true);
@@ -224,11 +228,13 @@ export class AdaptorPostgreSQL extends AdaptorBase {
             return this.pool.end()
                 .then(() => {
                     this.transition(ADAPTOR_STATE.Disconnected, true);
-                    this.emit('disconnect');
                     return Promise.resolve(true);
                 });
         }).catch(() => {
             return Promise.resolve(false);
+        }).then((rc) => { //"finally" clause analog
+            this.emit('disconnect');
+            return Promise.resolve(rc);
         });
     }
 
@@ -238,38 +244,43 @@ export class AdaptorPostgreSQL extends AdaptorBase {
         this.sql.clear();
 
         let files = Object.assign({}, sqlFiles);
-        let _file: keyof SQLFiles;
+        /*let _file: keyof SQLFiles;
         for (_file in files) {
             files[_file] = path.join(__dirname, files[_file]);
-        }
+        }*/
         let self = this;
 
         function processLoadingResults(sql: SQLFiles): number {
             let nrErrors = 0;
             let _file: keyof SQLFiles;
             for (_file in sql) {
-                if ((sql[_file] as any) instanceof Error) {
-                    nrErrors++;
-                    self.addErr('Could not load sql file: %s', files[_file]);
-                    logger.error(this.lastErr());
-                    continue;
-                }
+                /* this never happens because its all included via require */
+
+                //if ((sql[_file] as any) instanceof Error) {
+                //    nrErrors++;
+                //    self.addErr('Could not load sql file: %s', _file);
+                //    logger.error(this.lastErr());
+                //    continue;
+                //}
+                
                 let qc: pg.QueryConfig = {
                     text: sql[_file],
                     name: _file
                 };
-                logger.trace('loaded file [%s]->[%s]', _file, files[_file]);
+                logger.trace('loaded file [%s]', _file);
                 self.sql.set(_file, qc);
             }
             return nrErrors;
         }
+        let rc = processLoadingResults(files);
+        return rc > 0 ? Promise.resolve(false) : Promise.resolve(true);
+        /*
+                return loadFiles<SQLFiles>(files).then((sql) => {
+                    let rc = processLoadingResults(sql);
+                    return rc > 0 ? Promise.resolve(false) : Promise.resolve(true);
+                });
+        */
 
-        return loadFiles<SQLFiles>(files).then((sql) => {
-            let rc = processLoadingResults(sql);
-            return rc > 0 ? Promise.resolve(false) : Promise.resolve(true);
-        });
-
-    
     }
 
     private executeSQL<T>(qcArr: (pg.QueryConfig)[], fn: ResolveResult<T>): Promise<T> {

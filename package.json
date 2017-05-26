@@ -25,7 +25,8 @@
     "stop": "echo stop",
     "poststop": "echo poststop",
     "prestart": "echo prestart",
-    "start": "cross-env DEBUGx=express-session,cookie node dist/index.js",
+    "start": "cross-env DEBUGx=express-session,cookie node dist/bundle.js",
+    "start-gulp": "cross-env DEBUGx=express-session,cookie node dist/index.js",
     "poststart": "echo poststart",
     "prerestart": "echo prerestart",
     "restart": "echo restart",
@@ -33,7 +34,8 @@
     "preshrinkwrap": "echo preshrinkwrap",
     "shrinkwrap": "echo shrinkwrap",
     "postshrinkwrap": "echo postshrinkwrap",
-    "build": "./node_modules/.bin/gulp"
+    "build-gulp": "./node_modules/.bin/gulp",
+    "build":"webpack"
   },
   "repository": {
     "type": "git",
@@ -71,6 +73,7 @@
     "gulp-tslint": "^8.1.0",
     "gulp-typescript": "^3.1.7",
     "mocha": "^3.2.0",
+    "raw-loader": "^0.5.1",
     "rimraf": "^2.6.1",
     "ts-lint": "^4.5.1",
     "tslint": "^5.1.0",

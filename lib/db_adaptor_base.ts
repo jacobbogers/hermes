@@ -191,6 +191,9 @@ const transitions: StateTransition[] = [
 
 function moveToState(src: ADAPTOR_STATE, target: ADAPTOR_STATE): boolean {
 
+    if (src === target) {
+        return true;
+    }
     let allowed = transitions.filter((t) => {
         if (t.to.length === 1 && t.to.indexOf(target) >= 0) {
             if (t.from.indexOf(src) >= 0) {
