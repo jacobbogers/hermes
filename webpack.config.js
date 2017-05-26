@@ -4,11 +4,8 @@ const path = require('path');
 const fs = require('fs');
 
 const resolve = path.resolve;
-const join = path.join;
 
-const dist = path.join(__dirname, 'dist');
-
-console.log('[dist]:%s', dist);
+var CleanWebpackPlugin = require('clean-webpack-plugin');
 
 var nodeModules = {};
 fs.readdirSync('node_modules')
@@ -21,6 +18,15 @@ fs.readdirSync('node_modules')
 
 
 module.exports = {
+
+    plugins: [
+        new CleanWebpackPlugin(['dist', 'build'], {
+            root: __dirname,
+            verbose: true,
+            dry: false,
+            exclude: []
+        })
+    ],
     externals: nodeModules,
     resolve: {
         extensions: ['.ts', '.tsx', '.js', '.jsx']
@@ -30,10 +36,12 @@ module.exports = {
         __dirname: false,
         __filename: false,
     },
-    entry: resolve('index.ts'),
+    entry: {
+        server: resolve('index.ts'),
+    },
     output: {
         path: resolve('dist'),
-        filename: 'bundle.js'
+        filename: '[name].js'
     },
     module: {
         rules: [
@@ -43,13 +51,13 @@ module.exports = {
                 loader: 'tslint-loader',
                 exclude: /(node_modules)/,
             },
-           /* {
-                test: /\.ts$/,
-                enforce: 'pre',
-                loader: 'tslint-loader',
-                options: { //Loader options go here 
-                 }
-},*/
+            /* {
+                 test: /\.ts$/,
+                 enforce: 'pre',
+                 loader: 'tslint-loader',
+                 options: { //Loader options go here 
+                  }
+ },*/
 
             /*{
                 enforce: 'pre',
