@@ -4,7 +4,6 @@
   "description": "express middleware to manage user signup/login and password reset/account activation",
   "main": "./dist/index.js",
   "scripts": {
-    "clean":"rimraf ./dist",
     "prepublish": "echo 'prepublish'",
     "prepare": "echo 'prepare'",
     "prepublishOnly": "echo prepublishOnly",
@@ -71,7 +70,6 @@
     "gulp-typescript": "^3.1.6",
     "gulp-util": "^3.0.8",
     "mocha": "^3.2.0",
-    "rimraf": "^2.6.1",
     "tslint": "^5.1.0",
     "typescript": "^2.4.0-dev.20170428"
   },

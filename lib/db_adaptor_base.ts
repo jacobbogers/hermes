@@ -263,12 +263,12 @@ export abstract class AdaptorBase extends EventEmitter {
         return false;
     }
 
-    public destroy(): Promise<boolean> {
+    public destroy(alwaysReject?: boolean): Promise<boolean> {
         if (!this.transition(ADAPTOR_STATE.Disconnecting)) {
             this.addErr('Could not transition to state [disconnecting]');
             return Promise.reject(false);
         }
-        return Promise.resolve(true);
+        return alwaysReject ? Promise.reject(false) : Promise.resolve(true);
     }
 
     public get state(): ADAPTOR_STATE {

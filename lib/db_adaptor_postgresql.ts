@@ -197,8 +197,7 @@ export class AdaptorPostgreSQL extends AdaptorBase {
             }).catch(() => {
                 this.transition(ADAPTOR_STATE.ERR_Initializing, true);
                 logger.error(this.lastErr());
-                this.destroy(); //close it down;
-                return Promise.reject(false);
+                return this.destroy(true);
             });
     }
 
@@ -251,7 +250,7 @@ export class AdaptorPostgreSQL extends AdaptorBase {
             for (_file in sql) {
                 if ((sql[_file] as any) instanceof Error) {
                     nrErrors++;
-                    self.addErr('Could not load sql file: %s', sqlFiles[_file]);
+                    self.addErr('Could not load sql file: %s', files[_file]);
                     logger.error(this.lastErr());
                     continue;
                 }
@@ -259,15 +258,18 @@ export class AdaptorPostgreSQL extends AdaptorBase {
                     text: sql[_file],
                     name: _file
                 };
-                logger.trace('loaded file [%s]->[%s]', _file, path.basename(files[_file]));
+                logger.trace('loaded file [%s]->[%s]', _file, files[_file]);
                 self.sql.set(_file, qc);
             }
             return nrErrors;
         }
 
         return loadFiles<SQLFiles>(files).then((sql) => {
-            return processLoadingResults(sql) > 0 ? Promise.reject(false) : Promise.resolve(true);
+            let rc = processLoadingResults(sql);
+            return rc > 0 ? Promise.resolve(false) : Promise.resolve(true);
         });
+
+    
     }
 
     private executeSQL<T>(qcArr: (pg.QueryConfig)[], fn: ResolveResult<T>): Promise<T> {
@@ -515,7 +517,7 @@ export class AdaptorPostgreSQL extends AdaptorBase {
             this.addErr('Adaptor is not connected');
             return Promise.reject(this.lastErr());
         }
-       
+
         let qc = staticCast<pg.QueryConfig>(this.sql.get('sqlTemplateSelectAll'));
         let sqlObject = Object.assign({}, qc) as pg.QueryConfig;
         return this.executeSQL<TemplatePropsMessage[]>([sqlObject], (res, resolve) => {
