@@ -6,11 +6,9 @@ const webpack = require('webpack');
 const p = process.env.NODE_ENV === 'production';
 
 const plugins = [
-    new CleanWebpackPlugin(['dist', 'build'], {
-        root: __dirname,
-        verbose: true,
-        dry: false,
-        exclude: []
+    new CleanWebpackPlugin(['dist'], {
+        root: resolve(),
+        verbose: true
     })
 ];
 
