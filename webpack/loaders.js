@@ -3,8 +3,6 @@ const { resolve } = require('path');
 
 // Which files should be excluded from the compilation?
 const exclude = /node_modules/;
-// Which files should be included in the compilation?
-const include = [resolve('lib'), resolve('index.ts')];
 // Loaders respond differently depending on the NODE_ENV environment variable
 const p = process.env.NODE_ENV === 'production';
 
@@ -34,7 +32,7 @@ const postcss = {
 const raw = {
     test: /\.sql/,
     exclude,
-    include,
+    include: [],
     use: 'raw-loader'
 }
 
@@ -55,7 +53,7 @@ const style = {
 const styles = {
     test: /\.(s[ca]|c)ss$/,
     exclude,
-    include,
+    include: [],
     use: p ? // If we're in production, extract css, if not, inline css
         ExtractTextPlugin.extract({
             fallback: style,
@@ -66,7 +64,7 @@ const styles = {
 const ts = {
     test: /\.tsx?$/,
     exclude,
-    include,
+    include: [],
     use: {
         loader: 'awesome-typescript-loader',
         options: {
@@ -90,7 +88,7 @@ const tslint = {
     enforce: 'pre',
     test: /\.tsx?$/,
     exclude,
-    include,
+    include: [],
     use: [
         {
             loader: 'tslint-loader',
