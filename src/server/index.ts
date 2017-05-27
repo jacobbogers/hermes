@@ -6,13 +6,13 @@ import * as bodyParser from 'body-parser';
 import { GraphQLOptions } from 'graphql-server-core';
 import { graphqlExpress, graphiqlExpress } from 'graphql-server-express';
 import { makeExecutableSchema } from 'graphql-tools';
-import { SystemInfo } from './lib/system';
+import { SystemInfo } from '../lib/system';
 
 import {
     AdaptorPostgreSQL,
-} from './lib/db_adaptor_postgresql';
+} from '../lib/db_adaptor_postgresql';
 
-import { logger } from './lib/logger';
+import { logger } from '../lib/logger';
 
 
 import {
@@ -20,7 +20,7 @@ import {
     HermesStoreProperties,
      UserProperties
 
-} from './lib/hermes_store';
+} from '../lib/hermes_store';
 
 /* init */
 /* init */
@@ -127,7 +127,7 @@ function init() {
     let resolvers = {
         Query: {
             hello() {
-                /* 
+                /*
                   Array.from(arguments).forEach((itm, idx) => {
                      logger.info('%d. type:%s', idx + 1, typeof itm);
                   });
@@ -170,9 +170,9 @@ function init() {
          next;
          let session = req.session;
          res.set({ 'Content-Type': 'text/html' });
-        
-        
- 
+
+
+
          if (session && (!session._user || !session._hermes)) {
              logger.error('session save called');
              session.save((err) => {
@@ -194,13 +194,13 @@ function init() {
              user.email = undefined;
              user.name = 'lucifer696';
              user.userProps = { LAST_NAME: 'Bovors', AUTH: 'admin', BLACKLISTED: '' };
- 
+
          }
          logger.info('session looks like %j', req.session);
          res.send('Response:' + new Date());
- 
+
      });
-     
+
 }
 
 process.on('exit', () => {

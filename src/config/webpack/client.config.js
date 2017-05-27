@@ -2,7 +2,7 @@ const { resolve } = require('path');
 
 module.exports = {
     entry: {
-        app: resolve('client/app.tsx')
+        app: resolve('src/client/app.tsx')
     },
     output: {
         path: resolve('dist/client'),
@@ -16,4 +16,4 @@ module.exports = {
 
 // Include <projectRoot>/client in loaders
 for (const rule of module.exports.module.rules)
-    rule.include = rule.include.concat([resolve('client')]);
+    rule.include = rule.include.concat([resolve('src/client')]);

@@ -1,10 +1,9 @@
 {
-  "files": [
-    "./index.ts",
-    "tests/all-tests.ts"
-  ],
   "include": [
-    "lib/**/*.ts"
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "tests/**/*.ts",
+    "tests/**/*.tsx"
   ],
   "exclude": [
     "node_modules"

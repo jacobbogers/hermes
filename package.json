@@ -35,9 +35,9 @@
     "preshrinkwrap": "echo preshrinkwrap",
     "shrinkwrap": "echo shrinkwrap",
     "postshrinkwrap": "echo postshrinkwrap",
-    "build:client:dev": "cross-env NODE_ENV=development webpack --config webpack/client.config",
-    "build:client:prod": "cross-env NODE_ENV=production webpack --config webpack/client.config",
-    "fixtypes": "cpr extra/index.d.ts node_modules/@types/express-session/index.d.ts -o"
+    "build:client:dev": "cross-env NODE_ENV=development webpack --config src/config/webpack/client.config",
+    "build:client:prod": "cross-env NODE_ENV=production webpack --config src/config/webpack/client.config",
+    "fixtypes": "cpr src/extra/index.d.ts node_modules/@types/express-session/index.d.ts -o"
   },
   "repository": {
     "type": "git",
