@@ -10,7 +10,7 @@ module.exports = {
     },
     devtool: require('./devtool'),
     module: require('./module'),
-    plugins: require('./plugins').clientPlugins,
+    plugins: require('./plugins').client,
     resolve: require('./resolve'),
 };
 

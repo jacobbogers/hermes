@@ -25,7 +25,7 @@ if (p) {
     );
 }
 
-const clientPlugins = plugins.concat([
+const client = plugins.concat([
     // Extract CSS from bundled JS
     new ExtractTextPlugin('styles.css'),
     // Extract external code into a separate "vendor" bundle
@@ -42,6 +42,6 @@ const clientPlugins = plugins.concat([
     })
 ]);
 
-const serverPlugins = plugins.concat([]);
+const server = plugins.concat([]);
 
-module.exports = { clientPlugins, serverPlugins };
+module.exports = { client, server };
