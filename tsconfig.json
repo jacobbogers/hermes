@@ -9,10 +9,8 @@
     "node_modules"
   ],
   "compilerOptions": {
-    "alwaysStrict": true,
+    "strict": true,
     "declaration": true,
-    "strictNullChecks": true,
-    "noImplicitAny": true,
     "target": "es2017",
     "jsx": "react",
     "lib": [
