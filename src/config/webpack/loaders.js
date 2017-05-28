@@ -14,6 +14,8 @@ const css = {
         importLoaders: 1,
         // Mangle CSS class names
         localIdentName: p ? '[hash:base64:5]' : '[name]__[local]__[hash:base64:5]',
+        // Minimize CSS for faster loading
+        minimize: p,
         // Enable source maps if in production mode
         sourceMap: p
     }
