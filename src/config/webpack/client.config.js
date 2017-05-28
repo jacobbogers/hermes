@@ -6,7 +6,7 @@ module.exports = {
     },
     output: {
         path: resolve('dist/client'),
-        filename: '[name].js'
+        filename: '[name].[chunkhash].js'
     },
     devtool: require('./devtool'),
     module: require('./module'),

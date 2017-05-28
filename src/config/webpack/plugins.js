@@ -1,5 +1,7 @@
 const CleanWebpackPlugin = require('clean-webpack-plugin');
 const ExtractTextPlugin = require('extract-text-webpack-plugin');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const InlineManifestWebpackPlugin = require('inline-manifest-webpack-plugin');
 const { resolve } = require('path');
 const webpack = require('webpack');
 
@@ -37,6 +39,39 @@ const client = plugins.concat([
             }
             return module.context && module.context.indexOf("node_modules") !== -1;
         }
+    }),
+    new webpack.optimize.CommonsChunkPlugin({
+        name: "manifest",
+        minChunks: Infinity
+    }),
+    new InlineManifestWebpackPlugin({
+        name: 'webpackManifest'
+    }),
+    new HtmlWebpackPlugin({
+        title: 'Site Title',
+        filename: 'index.html',
+        template: require('html-webpack-template'),
+        inject: false,
+        favicon: false,
+        minify: p ? {
+            caseSensitive: true,
+            collapseBooleanAttributes: true,
+            collapseInlineTagWhitespace: true,
+            collapseWhitespace: true,
+            conservativeCollapse: true,
+            html5: true,
+            keepClosingSlash: true,
+            useShortDoctype: true
+        } : false,
+        hash: true,
+        cache: true,
+        showErrors: true,
+        xhtml: true,
+        appMountId: 'app',
+        baseHref: '/dist',
+        //devServer: 'http://localhost:8080',
+        mobile: true,
+        inlineManifestWebpackName: 'webpackManifest'
     })
 ]);
 
