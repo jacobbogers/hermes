@@ -1,4 +1,26 @@
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  font-family: 'myFontRegular', Arial, Helvetica, sans-serif;
+  font-size: 12px;
+  background-color: black;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility !important;
+}
+
 .main {
-    background-color: black;
-    color: yellow;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  position: absolute;
+  background: url(https://s3-us-west-2.amazonaws.com/s.cdpn.io/594328/17392781_1582183591809672_505764770_n.png);
+  background-repeat: no-repeat;
+  background-size: contain;
+  background-position: left center;
 }
