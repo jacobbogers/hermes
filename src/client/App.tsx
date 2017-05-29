@@ -15,11 +15,11 @@ export class App extends React.Component<{}, {}> {
   render() {
    console.log('[render] App');
     return (<div className={styles.main}>
-      <Authentication/>  
+      <div id="fake-header"></div>  
+      <Authentication />
       {this.props.children}
     </div>);
   }
- 
 }
 
 

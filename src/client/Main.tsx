@@ -152,9 +152,7 @@ window.onload = () => {
 
 
     ReactDOM.render(
-
         <Router history={browserHistory} >
-
             <Route path="/" component={App}  >
                 <IndexRedirect to="/welcome"  />
                 <Route path="/welcome" component={EmptyComponent} />
