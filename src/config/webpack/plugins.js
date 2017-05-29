@@ -1,14 +1,10 @@
-const CleanWebpackPlugin = require('clean-webpack-plugin');
-const ExtractTextPlugin = require('extract-text-webpack-plugin');
-const HtmlWebpackPlugin = require('html-webpack-plugin');
-const InlineManifestWebpackPlugin = require('inline-manifest-webpack-plugin');
 const { resolve } = require('path');
 const webpack = require('webpack');
 
 const p = process.env.NODE_ENV === 'production';
 
 const plugins = [
-    new CleanWebpackPlugin(['dist'], {
+    new (require('clean-webpack-plugin'))(['dist'], {
         root: resolve(),
         verbose: true
     })
@@ -26,7 +22,7 @@ if (p) {
 }
 
 const client = plugins.concat([
-    new HtmlWebpackPlugin({
+    new (require('html-webpack-plugin'))({
         title: 'BookBarter',
         filename: 'index.html',
         template: require('html-webpack-template'),
@@ -46,7 +42,6 @@ const client = plugins.concat([
         cache: p,
         showErrors: true,
         xhtml: true,
-        appMountId: 'app',
         baseHref: p ? 'https://www.jacob-bogers.com/' : false,
         mobile: true,
         inlineManifestWebpackName: p ? 'webpackManifest' : false,
@@ -58,7 +53,7 @@ const client = plugins.concat([
         meta: [
             {
                 name: 'description',
-                content: 'Book/DVD/BlueRay tradring club, dont copy but trade your second hand movies/books for others you havent seen.'
+                content: 'Book/DVD/Blu-ray trading club, don\'t copy but trade your second hand movies/books for others you haven\'t seen.'
             }
         ]
     })
@@ -66,7 +61,7 @@ const client = plugins.concat([
 
 if (p) client.concat([
     // Extract CSS from bundled JS
-    new ExtractTextPlugin('styles.css'),
+    new (require('extract-text-webpack-plugin'))('styles.css'),
     // Extract external code into a separate "vendor" bundle
     new webpack.optimize.CommonsChunkPlugin({
         name: "vendor",
@@ -83,7 +78,7 @@ if (p) client.concat([
         name: "manifest",
         minChunks: Infinity
     }),
-    new InlineManifestWebpackPlugin({
+    new (require('inline-manifest-webpack-plugin'))({
         name: 'webpackManifest'
     })
 ]);
