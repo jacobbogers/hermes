@@ -79,7 +79,7 @@ export class Authentication extends React.Component<{}, { authState: Authenticat
                     <div className={styles('content-title', 'forgot-type')}>Password Recovery</div>
                     <input onChange={(e) => this.updateEmail(e)} name="email" type="email" required
                         className={styles('lpc-input')} placeholder="Your Registered Mail Address"></input>
-                    <div className="form-section-button">
+                    <div className={styles('form-section-button')}>
                         <div>
                             <span
                                 onClick={() => this.changeFormState(AuthenticationState.LOGIN)}
