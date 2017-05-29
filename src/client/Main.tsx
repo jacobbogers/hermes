@@ -2,22 +2,24 @@
 //vendor
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-/*import {
-    // IndexRedirect, 
+import {
+    IndexRedirect,
     RouterState,
     RedirectFunction,
     Router,
     Route,
-    //browserHistory 
+    browserHistory
 } from 'react-router';
-*/
 
-import * as rr from 'react-router';
+
+
 
 //app
 import { App } from './App';
 
 const styles = require('./styles');
+
+styles; // i have to "use"" them or tsclin will nag me
 
 interface AuthInfo {
     isLoggedIn: boolean;
@@ -105,7 +107,11 @@ window.onload = () => {
             }
         };
 
-    function goToInvalid(
+    authOnEnter;
+    DudComponent;
+    EmptyComponent;
+
+    /*function goToInvalid(
         nextState: RouterState,
         replace: RedirectFunction
     ) {
@@ -114,35 +120,35 @@ window.onload = () => {
             state: { nextPathname: nextState.location.pathname }
         });
         return;
-    }
+    }*/
 
-    function createQueryValidation(props: string[]) {
-
-        if (!props || !(props instanceof Array) || props.length === 0) {
-            throw new Error('argument "props" needs to be an array of strings');
-        }
-
-        return (nextState: RouterState, replace: RedirectFunction) => {
-            console.log(nextState.location);
-
-            let loc = nextState.location;
-            let search = loc.search;
-
+    /* function createQueryValidation(props: string[]) {
+ 
+         if (!props || !(props instanceof Array) || props.length === 0) {
+             throw new Error('argument "props" needs to be an array of strings');
+         }
+ 
+         return (nextState: RouterState, replace: RedirectFunction) => {
+             console.log(nextState.location);
+ 
+           //  let loc = nextState.location;
+             //let search = loc.search;
+ 
             let qry = pocessQueryString(search);
-
-            if (
-                qry === undefined
-                ||
-                props.filter((prop) => {
-                    return (prop in qry.hash);
-                }).length !== props.length
-            ) {
-                goToInvalid(nextState, replace);
-                return;
-            }
-            //all ok
-        };
-    }
+ 
+             if (
+                 qry === undefined
+                 ||
+                 props.filter((prop) => {
+                     return (prop in qry.hash);
+                 }).length !== props.length
+             ) {
+                 goToInvalid(nextState, replace);
+                 return;
+             }
+             //all ok
+         };
+     }*/
 
 
     ReactDOM.render(
@@ -150,45 +156,10 @@ window.onload = () => {
         <Router history={browserHistory} >
 
             <Route path="/" component={App}  >
-                <IndexRedirect to="/welcome" />
-                <Route path="/welcome" component={EmptyComponent} onEnter={authOnEnter} />
-                {/* Nav Button paths */}
-                <Route path="/jobs" component={PaneJob} onEnter={authOnEnter} >
-                </Route>
-
-                <Route path="/testc" component={PaneTest} />
-
-                <Route path="/staff" component={EmptyComponent} onEnter={authOnEnter} />
-                <Route path="/admin" component={EmptyComponent} onEnter={authOnEnter} />
-                <Route path="/invoicing" component={EmptyComponent} onEnter={authOnEnter} />
-                <Route path="/faq" component={EmptyComponent} onEnter={authOnEnter} />
-                {/* forms  */}
-                {/* authenticated needed for these forms */}
-
-                {/* these paths must be reachable ONLY when NOT authentication */}
-                <Route path="/login" components={{ login: Login }} onEnter={authOnEnter} />
-                <Route path="/failed-facebook-login" component={NotifyFailLoginFaceBook} />
-                <Route
-                    path="/reset-password"
-                    component={CompletePasswordReset}
-                    onEnter={createQueryValidation(['email', 'token', 'expire'])} />
-                {/*<Route path="/register-user" component={RegistrationForm} />*/}
-                <Route
-                    path="/invitations"
-                    component={EmployerAcceptInvite}
-                    onEnter={createQueryValidation(['email', 'token', 'expire'])}
-                />
-                <Route path="/invitations/expired" component={EmployerInvitationExpired} />
-                <Route path="/invitations/invalid" component={EmptyComponent} />
-                <Route path="/invitations/success" component={EmptyComponent} />
-                <Route path="/invitations/request" component={RequestCompanyInvite} />
-                <Route path="/invalid" component={EmptyComponent} />
-                <Route path="/request-password-reset" component={RequestPasswordReset} />
-                <Route path="/register" component={EmployerRegistrationForm} />
-                <Route path="/dev-null" component={DudComponent} onEnter={authOnEnter} />
+                <IndexRedirect to="/welcome"  />
+                <Route path="/welcome" component={EmptyComponent} />
             </Route>
         </Router>
-
         , node
     );
 };
