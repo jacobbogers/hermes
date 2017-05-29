@@ -4,7 +4,7 @@ const p = process.env.NODE_ENV === 'production';
 
 module.exports = {
     entry: {
-        app: resolve('src/client/App.tsx')
+        app: resolve('src/client/Main.tsx')
     },
     output: {
         path: resolve('dist/client'),
