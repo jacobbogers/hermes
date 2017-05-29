@@ -1,12 +1,14 @@
 const { resolve } = require('path');
 
+const p = process.env.NODE_ENV === 'production';
+
 module.exports = {
     entry: {
-        app: resolve('src/client/app.tsx')
+        app: resolve('src/client/App.tsx')
     },
     output: {
         path: resolve('dist/client'),
-        filename: '[name].[chunkhash].js'
+        filename: p ? '[name].[chunkhash].js' : '[name].js'
     },
     devtool: require('./devtool'),
     module: require('./module'),

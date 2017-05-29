@@ -26,6 +26,45 @@ if (p) {
 }
 
 const client = plugins.concat([
+    new HtmlWebpackPlugin({
+        title: 'BookBarter',
+        filename: 'index.html',
+        template: require('html-webpack-template'),
+        inject: false,
+        favicon: false,
+        minify: p ? {
+            caseSensitive: true,
+            collapseBooleanAttributes: true,
+            collapseInlineTagWhitespace: true,
+            collapseWhitespace: true,
+            conservativeCollapse: true,
+            html5: true,
+            keepClosingSlash: true,
+            useShortDoctype: true
+        } : false,
+        hash: p,
+        cache: p,
+        showErrors: true,
+        xhtml: true,
+        appMountId: 'app',
+        baseHref: p ? 'https://www.jacob-bogers.com/' : false,
+        mobile: true,
+        inlineManifestWebpackName: p ? 'webpackManifest' : false,
+        links: [
+            'https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css',
+            'https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700',
+            'https://s3-us-west-2.amazonaws.com/s.cdpn.io/594328/fonts.css'
+        ],
+        meta: [
+            {
+                name: 'description',
+                content: 'Book/DVD/BlueRay tradring club, dont copy but trade your second hand movies/books for others you havent seen.'
+            }
+        ]
+    })
+]);
+
+if (p) client.concat([
     // Extract CSS from bundled JS
     new ExtractTextPlugin('styles.css'),
     // Extract external code into a separate "vendor" bundle
@@ -46,32 +85,6 @@ const client = plugins.concat([
     }),
     new InlineManifestWebpackPlugin({
         name: 'webpackManifest'
-    }),
-    new HtmlWebpackPlugin({
-        title: 'Site Title',
-        filename: 'index.html',
-        template: require('html-webpack-template'),
-        inject: false,
-        favicon: false,
-        minify: p ? {
-            caseSensitive: true,
-            collapseBooleanAttributes: true,
-            collapseInlineTagWhitespace: true,
-            collapseWhitespace: true,
-            conservativeCollapse: true,
-            html5: true,
-            keepClosingSlash: true,
-            useShortDoctype: true
-        } : false,
-        hash: true,
-        cache: true,
-        showErrors: true,
-        xhtml: true,
-        appMountId: 'app',
-        baseHref: '/dist',
-        //devServer: 'http://localhost:8080',
-        mobile: true,
-        inlineManifestWebpackName: 'webpackManifest'
     })
 ]);
 
