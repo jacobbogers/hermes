@@ -18,17 +18,17 @@ import { logger } from '../lib/logger';
 import {
     HermesStore,
     HermesStoreProperties,
-     UserProperties
+    UserProperties
 
 } from '../lib/hermes_store';
 
 /* init */
 /* init */
 
-
 SystemInfo.createSystemInfo({ maxErrors: 5000, maxWarnings: 5000 });
 
 let app = express();
+
 app.use(
     bodyParser.json({
         /*type: 'application/*+json',*/
@@ -166,40 +166,40 @@ function init() {
     //app.listen(4000, () => console.log('Now browse to localhost:4000/graphiql'));
 
     app.get('/', (req, res, next) => {
-         req;
-         next;
-         let session = req.session;
-         res.set({ 'Content-Type': 'text/html' });
+        req;
+        next;
+        let session = req.session;
+        res.set({ 'Content-Type': 'text/html' });
 
 
 
-         if (session && (!session._user || !session._hermes)) {
-             logger.error('session save called');
-             session.save((err) => {
-                 if (err) {
-                     return next(err);
-                 }
-                 logger.info('session looks like %j', req.session);
-                 res.send('Response:' + new Date());
-             });
-             return;
-         }
-         logger.info('setting some props');
-         if (session) {
-             session['COUNTRY'] = 'LU'; // = 'HENNY';
-             session['FIRST_NAME'] = 'HENRY';
-             session['CITY'] = 'VILLE';
-             let user = session._user as UserProperties;
-             user.id = undefined;
-             user.email = undefined;
-             user.name = 'lucifer696';
-             user.userProps = { LAST_NAME: 'Bovors', AUTH: 'admin', BLACKLISTED: '' };
+        if (session && (!session._user || !session._hermes)) {
+            logger.error('session save called');
+            session.save((err) => {
+                if (err) {
+                    return next(err);
+                }
+                logger.info('session looks like %j', req.session);
+                res.send('Response:' + new Date());
+            });
+            return;
+        }
+        logger.info('setting some props');
+        if (session) {
+            session['COUNTRY'] = 'LU'; // = 'HENNY';
+            session['FIRST_NAME'] = 'HENRY';
+            session['CITY'] = 'VILLE';
+            let user = session._user as UserProperties;
+            user.id = undefined;
+            user.email = undefined;
+            user.name = 'lucifer696';
+            user.userProps = { LAST_NAME: 'Bovors', AUTH: 'admin', BLACKLISTED: '' };
 
-         }
-         logger.info('session looks like %j', req.session);
-         res.send('Response:' + new Date());
+        }
+        logger.info('session looks like %j', req.session);
+        res.send('Response:' + new Date());
 
-     });
+    });
 
 }
 

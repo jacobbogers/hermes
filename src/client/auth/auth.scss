@@ -1,0 +1,271 @@
+/* authentication general pane */
+
+.auth {
+    width: 100%;
+    height: 100%;
+    position: fixed;
+    top: 0px;
+    right: 0px;
+    overflow: hidden;
+    z-index: 9999;
+    transform: translateX(100%);
+}
+
+
+/* authentication close button , baseline */
+
+.auth .auth-close {
+    width: 30px;
+    height: 30px;
+    position: absolute;
+    right: -50px;
+    /* normally not within the view */
+    top: 10px;
+    text-align: center;
+    line-height: 32px;
+    color: #fff;
+    border-radius: 50%;
+    font-size: 14px;
+    cursor: pointer;
+    transition: right 400ms cubic-bezier(0.66, -0.255, 0.57, 1.325);
+}
+
+.auth .auth-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+
+/* blue (default) login backdrop*/
+
+.li-backdrop {
+    width: 100%;
+    min-width: 500px;
+    height: 100%;
+    position: absolute;
+    left: 0;
+    top: 0;
+    background: linear-gradient(to right, rgba(0, 0, 224, 0) 0%, rgba(2, 171, 234, 0.83) 62%, #02abea 75%, #02abea 100%);
+}
+
+
+/* red (default) forgot password backdrop */
+
+.fp-backdrop {
+    width: 100%;
+    min-width: 500px;
+    height: 100%;
+    position: absolute;
+    left: 0;
+    top: 0;
+    transform: translateX( 100%);
+    background: linear-gradient(to right, rgba(255, 79, 79, 0) 0%, #ff4f4f 83%, #ff4f4f 100%);
+}
+
+
+/* form titles */
+
+.content-title {
+    text-align: right;
+    color: #fff;
+    letter-spacing: -1.4px;
+    line-height: 50px;
+}
+
+.content-title.login-type {
+    font-size: 35px;
+}
+
+.content-title.forgot-type {
+    font-size: 25px;
+}
+
+
+/* login form */
+
+.login-content {
+    width: 300px;
+    height: auto;
+    position: absolute;
+    right: -300px;
+    top: 25%;
+    color: #fff;
+    font-family: "myFontLight";
+    z-index: 9;
+    display: block;
+}
+
+
+/* forgot email form */
+
+.forgot-content {
+    width: 300px;
+    height: auto;
+    position: absolute;
+    color: #fff;
+    font-family: "myFontLight";
+    z-index: 9;
+    display: block;
+}
+
+
+/* form button-section for the forms forgot-password and login */
+
+.form-section-button {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+
+/* login form links  */
+
+.login-content span.forgot-password,
+.login-content a,
+
+/* forgot password form links */
+
+.forgot-content a,
+.forgot-content span.back-to-login {
+    text-decoration: none;
+    outline: unset;
+    color: #fff;
+    cursor: pointer;
+    font-size: 11px;
+}
+
+
+/* hover over login form links  */
+
+.login-content span.forgot-password:hover,
+.login-content a:hover,
+
+/* hover forgot password form links */
+
+.forgot-content a:hover,
+.forgot-content span.back-to-login:hover {
+    text-decoration: underline;
+}
+
+/* input controls */
+
+.auth .lpc-input {
+    width: 100%;
+    height: 40px;
+    color: #fff;
+    font-size: 14px;
+    background: none;
+    border: none;
+    outline: none;
+    text-align: right;
+    font-family: "myFontLight";
+    margin-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.auth .lpc-input::-webkit-input-placeholder {
+    color: #fff;
+}
+
+.auth .lpc-input::-moz-placeholder {
+  color: #fff;
+}
+
+.auth .lpc-input:-ms-input-placeholder {
+  color: #fff;
+}
+
+/* button */
+
+.auth .lpc-bt {
+  width: auto;
+  height: 35px;
+  color: #fff;
+  font-size: 14px;
+  font-family: "myFontLight";
+  border-radius: 2px;
+  background: none;
+  padding: 0 10px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  outline: none;
+}
+
+.auth .lpc-bt:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* activate authentication */
+
+.auth.active {
+    transform: translateX(0);
+}
+
+.auth.active .auth-close {
+    right: 10px;
+}
+
+.auth.active .login-content,
+.auth.active .forgot-content {
+    right: 30px;
+}
+
+
+/* login mode */
+
+
+/* hide forgot password content */
+
+.auth.active:not(.forgot) .forgot-content {
+    top: 120%;
+}
+
+
+/* forgot password mode */
+
+
+/* hide login backdrop */
+
+.auth.active.forgot .li-backdrop {
+    transform: translateX(100%);
+}
+
+
+/* show forgot-password backdrop */
+
+.auth.active.forgot .fp-backdrop {
+    transform: translateX(0);
+}
+
+
+/* hide  login-content */
+
+.auth.active.forgot .login-content {
+    top: -500px;
+}
+
+
+/* show forgot-password content */
+
+.auth.active.forgot .forgot-content {
+    top: 30%;
+}
+
+@media (max-width: 700px) {
+  .auth .li-backdrop {
+    width: 300%;
+    background:#02abea;
+   
+  }
+  .auth .fp-backdrop {
+    width: 300%;
+    background: #ff4f4f;
+  }
+}
+
+.auth,
+.login-content,
+.forgot-content,
+.fp-backdrop,
+.li-backdrop {
+  transition: .6s;
+}

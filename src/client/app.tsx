@@ -1,12 +1,25 @@
-import * as React from 'react';
-import * as ReactDOM from 'react-dom';
+'use strict';
 
+import * as React from 'react';
+import {Authentication } from './auth/Authentication';
+
+//styles for app
 const styles = require('./styles');
 
-const App = () => (
-    <div>
-        <h1 className={styles.main}>Hello, World!</h1>
-    </div>
-);
+export class App extends React.Component<{}, {}> {
 
-ReactDOM.render(<App />, document.getElementById('app'));
+  constructor(props: any) {
+    super(props);
+  }
+
+  render() {
+   console.log('[render] App');
+    return (<div className={styles.main}>
+      <Authentication/>  
+      {this.props.children}
+    </div>);
+  }
+ 
+}
+
+
