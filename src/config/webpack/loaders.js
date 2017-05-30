@@ -8,7 +8,7 @@ const p = process.env.NODE_ENV === 'production';
 
 const css = {
     loader: 'css-loader',
-    query: {
+    options: {
         // Enable CSS Modules
         modules: true,
         importLoaders: 1,
