@@ -32,7 +32,7 @@ class EmptyComponent extends React.Component<{}, {}>{
 }
 
 window.onload = () => {
-    let node = document.querySelector('body');
+    let node = document.querySelector('#app');
 
     //logged in?
     //gStore.dispatch(loadCredentialstoStore());
