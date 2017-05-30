@@ -16,6 +16,6 @@ module.exports = {
     resolve: require('./resolve'),
 };
 
-// Include <projectRoot>/client in loaders
+// Client files live in <projectRoot>/src/client
 for (const rule of module.exports.module.rules)
-    rule.include = rule.include.concat([resolve('src/client')]);
+    rule.include.push(resolve('src/client'));
