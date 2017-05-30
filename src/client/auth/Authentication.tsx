@@ -38,7 +38,7 @@ export class Authentication extends React.Component<{}, { authState: Authenticat
     }
 
     private changeFormState(newFormState: AuthenticationState) {
-        this.setState({ authState: newFormState, email: '', password: '', password2: '' });
+        this.setState({ authState: newFormState, email: '', password: '', password2: '', userName:'' });
     }
 
     private updateEmail(e: React.ChangeEvent<HTMLInputElement>) {
