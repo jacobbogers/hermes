@@ -26,7 +26,7 @@ set in user settings:
 
 ### core.autocrlf = false _( not selected )_
 
-This is the default, but most people are encouraged to change this immediately. The result of using false is that Git doesn’t ever mess with line endings on your file. You can check in files with LF or CRLF or CR or some random mix of those three and Git does not care. This can make diffs harder to read and merges more difficult. Most people working in a Unix/Linux world use this value because they don’t have CRLF problems and they don’t need Git to be doing extra work whenever files are written to the object database or written out into the working directory.
+→ This is the default, but most people are encouraged to change this immediately. The result of using false is that Git doesn’t ever mess with line endings on your file. You can check in files with LF or CRLF or CR or some random mix of those three and Git does not care. This can make diffs harder to read and merges more difficult. Most people working in a Unix/Linux world use this value because they don’t have CRLF problems and they don’t need Git to be doing extra work whenever files are written to the object database or written out into the working directory.
 
 ### core.autocrlf = true _( not selected )_
 
