@@ -19,3 +19,5 @@ module.exports = {
 // Client files live in <projectRoot>/src/client
 for (const rule of module.exports.module.rules)
     rule.include.push(resolve('src/client'));
+
+//console.log(require('util').inspect(module.exports, { depth: null }));

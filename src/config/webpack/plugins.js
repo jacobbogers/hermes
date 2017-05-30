@@ -26,6 +26,7 @@ const client = plugins.concat([
         title: 'BookBarter',
         filename: 'index.html',
         template: require('html-webpack-template'),
+        appMountId: 'app',
         inject: false,
         favicon: false,
         minify: p ? {
@@ -53,7 +54,7 @@ const client = plugins.concat([
         meta: [
             {
                 name: 'description',
-                content: 'Book/DVD/Blu-ray trading club, don\'t copy but trade your second hand movies/books for others you haven\'t seen.'
+                content: 'Book/DVD/Blue-ray trading club, don\'t copy but trade your second hand movies/books for others you haven\'t seen.'
             }
         ]
     })
