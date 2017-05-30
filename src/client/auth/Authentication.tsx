@@ -24,24 +24,29 @@ export class Authentication extends React.Component<{}, { authState: Authenticat
     private onSubmitLogin(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
         e.stopPropagation();
+        console.log('onsubmit login');
         //TODO: do some ajax /graphQL stuff here 
     }
 
     private onSubmitReset(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
         e.stopPropagation();
+        console.log('onsubmit reset');
         //TODO: do some stuff here 
     }
 
     private changeFormState(newFormState: AuthenticationState) {
-        this.setState({ authState: newFormState });
+
+        this.setState({ authState: newFormState, email: '', password: '' });
     }
 
     private updateEmail(e: React.ChangeEvent<HTMLInputElement>) {
+        console.log('email field changed');
         this.setState({ email: e.target.value });
     }
 
     private updatePassword(e: React.ChangeEvent<HTMLInputElement>) {
+        console.log('password field changed');
         this.setState({ password: e.target.value });
     }
 
@@ -69,6 +74,8 @@ export class Authentication extends React.Component<{}, { authState: Authenticat
                 break;
         }
 
+        let email = this.state.email;
+        let passw = this.state.password;
         return (<div className={classN}>
             <div className={styles('li-backdrop')}></div>
             <div className={styles('fp-backdrop')}></div>
@@ -77,8 +84,14 @@ export class Authentication extends React.Component<{}, { authState: Authenticat
             <div className={styles('forgot-content')}>
                 <form id="password-recovery" onSubmit={(e) => this.onSubmitReset(e)}>
                     <div className={styles('content-title', 'forgot-type')}>Password Recovery</div>
-                    <input onChange={(e) => this.updateEmail(e)} name="email" type="email" required
-                        className={styles('lpc-input')} placeholder="Your Registered Mail Address"></input>
+                    <input
+                        onChange={(e) => this.updateEmail(e)}
+                        name="email"
+                        type="email"
+                        required
+                        className={styles('lpc-input')}
+                        placeholder="Your Registered Mail Address"
+                        value={email}></input>
                     <div className={styles('form-section-button')}>
                         <div>
                             <span
@@ -100,7 +113,7 @@ export class Authentication extends React.Component<{}, { authState: Authenticat
                         required
                         pattern=".{3,20}" title="3 to 20 characters"
                         className={styles('lpc-input')}
-                        placeholder="email"></input>
+                        placeholder="Your Registered Mail Address" value={email}></input>
                     <input
                         onChange={(e) => this.updatePassword(e)}
                         name="password"
@@ -108,7 +121,8 @@ export class Authentication extends React.Component<{}, { authState: Authenticat
                         required pattern=".{6,16}"
                         title="6 to 16 characters"
                         className={styles('lpc-input')}
-                        placeholder="Password"></input>
+                        placeholder="Password"
+                        value={passw}></input>
                     <div className={styles('form-section-button')}>
                         <div>
                             <span
