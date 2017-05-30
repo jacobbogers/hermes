@@ -1,11 +1,11 @@
 
 # Cheat Sheet
 
-Some usefull commands setup related issues (do this before working with the project)
+Some useful commands setup related issues (do this before working with the project)
 
 ## Code editors
 
-### VSCode settings
+### VS_Code settings
 
 set in user settings:
 

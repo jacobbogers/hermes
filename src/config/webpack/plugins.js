@@ -1,6 +1,7 @@
 const { resolve } = require('path');
 const webpack = require('webpack');
 
+
 const p = process.env.NODE_ENV === 'production';
 
 const plugins = [
@@ -72,6 +73,7 @@ if (p) client.push(
             if (module.resource && (/^.*\.(css|scss)$/).test(module.resource)) {
                 return false;
             }
+            
             return module.context && module.context.indexOf("node_modules") !== -1;
         }
     }),
