@@ -59,7 +59,7 @@ const client = plugins.concat([
     })
 ]);
 
-if (p) client.concat([
+if (p) client.push(
     // Extract CSS from bundled JS
     new (require('extract-text-webpack-plugin'))('styles.css'),
     // Extract external code into a separate "vendor" bundle
@@ -81,7 +81,7 @@ if (p) client.concat([
     new (require('inline-manifest-webpack-plugin'))({
         name: 'webpackManifest'
     })
-]);
+);
 
 const server = plugins.concat([]);
 
