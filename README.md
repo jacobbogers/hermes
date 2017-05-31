@@ -23,6 +23,9 @@ authentication.
  ```
 
 ## GUI Demo
+
+Showing off some build in screens  _(ReactJs, GraphQL client Apollo)_
+
 ![Demo](https://media.giphy.com/media/26gR1OLV9ebnFgjQI/giphy.gif)
 
 
