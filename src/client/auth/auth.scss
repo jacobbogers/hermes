@@ -28,7 +28,8 @@
         transition: right 400ms cubic-bezier(0.66, -0.255, 0.57, 1.325);
     }
 
-    .auth .auth-close:hover, .auth .auth-close:focus {
+    .auth .auth-close:hover,
+    .auth .auth-close:focus {
         background: rgba(255, 255, 255, 0.1);
     }
     /* blue (default) login backdrop*/
@@ -52,7 +53,7 @@
     }
 
     .backdrop.register-bd {
-        background: linear-gradient(to left, rgba(21,21,28,1) 0%, rgba(21,21,28, 0.9) 75%, rgba(21, 21, 28, 0.83) 62%, rgba(21, 21, 28, 0.4) 100%);
+        background: linear-gradient(to left, rgba(21, 21, 28, 1) 0%, rgba(21, 21, 28, 0.9) 75%, rgba(21, 21, 28, 0.83) 62%, rgba(21, 21, 28, 0.4) 100%);
     }
     /* form titles */
 
@@ -121,14 +122,11 @@
     /* register-form links */
 
     .register-content span.slink,
-    
     /* login form links  */
 
     .login-content span.slink,
-    
     /* forgot password form links */
 
-    
     .forgot-content span.slink {
         text-decoration: none;
         outline: unset;
@@ -145,15 +143,12 @@
 
     .login-content span.slink:hover,
     .login-content span.slink:focus,
-    
     /* hover forgot password form links */
 
-    
     .forgot-content span.slink:hover,
     .forgot-content span.slink:focus,
     .register-content span.slink:hover,
-    .register-content span.slink:focus
-    {
+    .register-content span.slink:focus {
         text-decoration: underline;
     }
     /* input controls */
@@ -224,8 +219,7 @@
     }
 
     .auth .lpc-bt:hover,
-    .auth .lpc-bt:focus
-    {
+    .auth .lpc-bt:focus {
         background: rgba(255, 255, 255, 0.2);
     }
     /* activate authentication */
@@ -263,22 +257,26 @@
     .auth.active:not(.forgot):not(.register) .backdrop.login-bd {
         transform: translateX(0);
     }
+
     .auth.active:not(.forgot):not(.register) .backdrop.forgot-bd {
         transform: translateX(100%);
     }
+
     .auth.active:not(.forgot):not(.register) .backdrop.register-bd {
         transform: translateX(100%);
     }
     /* forgot password mode */
     /* forgot password mode */
     /* forgot password mode */
-   
+
     .auth.active.forgot .backdrop.login-bd {
         transform: translateX(100%);
     }
+
     .auth.active.forgot .backdrop.forgot-bd {
         transform: translateX(0);
     }
+
     .auth.active.forgot .backdrop.register-bd {
         transform: translateX(100%);
     }
@@ -312,17 +310,17 @@
         top: 220%;
     }
 
-
     .auth.active.register .backdrop.login-bd {
         transform: translateX(100%);
     }
+
     .auth.active.register .backdrop.forgot-bd {
         transform: translateX(100%);
     }
+
     .auth.active.register .backdrop.register-bd {
         transform: translateX(0);
     }
-
 
     @media (max-width: 700px) {
         .auth .login-bd {
@@ -334,8 +332,8 @@
             background: #ff4f4f;
         }
         .auth .register-bd {
-            width:300%;
-            background: rgba(21,21,28,1);
+            width: 300%;
+            background: rgba(21, 21, 28, 1);
         }
     }
 
@@ -343,8 +341,7 @@
     .login-content,
     .forgot-content,
     .register-content,
-    .fp-backdrop,
-    .li-backdrop {
+    .backdrop {
         transition: .6s;
     }
 
