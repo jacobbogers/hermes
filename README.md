@@ -23,6 +23,6 @@ authentication.
  ```
 
 ## GUI Demo
-![Demo](https://media.giphy.com/media/3o7buhG91Jk7T2KYqQ/giphy.gif)
+![Demo](https://media.giphy.com/media/26gR1OLV9ebnFgjQI/giphy.gif)
 
 
