@@ -236,61 +236,69 @@
     .auth.active .login-content,
     .auth.active .forgot-content {
         right: 30px;
+        transform: translateX(0);
+    }
+
+    .auth:not(.active) .register-content,
+    .auth:not(.active) .login-content,
+    .auth:not(.active) .forgot-content {
+        right: 0px;
+        transform: translateX(100%);
     }
     /* login mode */
     /* login mode */
     /* login mode */
     /* hide forgot password content */
 
-    .auth.active:not(.forgot):not(.register) .login-content {
+    .auth:not(.forgot):not(.register) .login-content {
         top: 30%;
     }
 
-    .auth.active:not(.forgot):not(.register) .forgot-content {
+    .auth:not(.forgot):not(.register) .forgot-content {
         top: 120%;
     }
 
-    .auth.active:not(.forgot):not(.register) .register-content {
+    .auth:not(.forgot):not(.register) .register-content {
         top: -500px;
     }
 
-    .auth.active:not(.forgot):not(.register) .backdrop.login-bd {
+    .auth:not(.forgot):not(.register) .backdrop.login-bd {
         transform: translateX(0);
     }
 
-    .auth.active:not(.forgot):not(.register) .backdrop.forgot-bd {
+    .auth:not(.forgot):not(.register) .backdrop.forgot-bd {
         transform: translateX(100%);
     }
 
-    .auth.active:not(.forgot):not(.register) .backdrop.register-bd {
+    .auth:not(.forgot):not(.register) .backdrop.register-bd {
         transform: translateX(100%);
     }
     /* forgot password mode */
     /* forgot password mode */
     /* forgot password mode */
 
-    .auth.active.forgot .backdrop.login-bd {
+    .auth.forgot .backdrop.login-bd {
         transform: translateX(100%);
     }
 
-    .auth.active.forgot .backdrop.forgot-bd {
+    .auth.forgot .backdrop.forgot-bd {
         transform: translateX(0);
     }
 
-    .auth.active.forgot .backdrop.register-bd {
+    .auth.forgot .backdrop.register-bd {
         transform: translateX(100%);
     }
 
-    .auth.active.forgot .login-content {
+    .auth.forgot .login-content {
         top: -500px;
     }
 
-    .auth.active.forgot .register-content {
+    .auth.forgot .register-content {
         top: calc( -100% - 500px);
     }
     /* show forgot-password content */
 
-    .auth.active.forgot .forgot-content {
+    .auth.forgot .forgot-content {
         top: 30%;
     }
     /* register user mode */
@@ -298,27 +306,27 @@
     /* register user mode */
     /* hide  login-content */
 
-    .auth.active.register .login-content {
+    .auth.register .login-content {
         top: 120%;
     }
 
-    .auth.active.register .register-content {
+    .auth.register .register-content {
         top: 30%;
     }
 
-    .auth.active.register .forgot-content {
+    .auth.register .forgot-content {
         top: 220%;
     }
 
-    .auth.active.register .backdrop.login-bd {
+    .auth.register .backdrop.login-bd {
         transform: translateX(100%);
     }
 
-    .auth.active.register .backdrop.forgot-bd {
+    .auth.register .backdrop.forgot-bd {
         transform: translateX(100%);
     }
 
-    .auth.active.register .backdrop.register-bd {
+    .auth.register .backdrop.register-bd {
         transform: translateX(0);
     }
 

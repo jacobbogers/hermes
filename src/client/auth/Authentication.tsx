@@ -17,6 +17,12 @@ export enum AuthenticationState {
 
 export class Authentication extends React.Component<{}, { authState: AuthenticationState, email: string, password: string; password2: string; userName: string }>{
 
+
+    private onClose(e: React.MouseEvent<HTMLDivElement>) {
+        e;
+        this.changeFormState(AuthenticationState.HIDDEN);
+    }
+
     private onSubmitLogin(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
         e.stopPropagation();
@@ -38,7 +44,7 @@ export class Authentication extends React.Component<{}, { authState: Authenticat
     }
 
     private changeFormState(newFormState: AuthenticationState) {
-        this.setState({ authState: newFormState, email: '', password: '', password2: '', userName:'' });
+        this.setState({ authState: newFormState, email: '', password: '', password2: '', userName: '' });
     }
 
     private updateEmail(e: React.ChangeEvent<HTMLInputElement>) {
@@ -102,7 +108,7 @@ export class Authentication extends React.Component<{}, { authState: Authenticat
             <div className={styles('backdrop', 'login-bd')}></div>
             <div className={styles('backdrop', 'forgot-bd')}></div>
             <div className={styles('backdrop', 'register-bd')}></div>
-            <div className={styles('auth-close')}><i className="fa fa-close"></i></div>
+            <div onClick={(e) => this.onClose(e)} className={styles('auth-close')}><i className="fa fa-close"></i></div>
             {/* registration */}
             <div className={styles('register-content')}>
                 <div className={styles('content-title', 'register-type')}>Register</div>

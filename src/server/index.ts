@@ -3,10 +3,12 @@
 import * as  express from 'express';
 import * as session from 'express-session';
 import * as bodyParser from 'body-parser';
+import * as path from 'path';
 import { GraphQLOptions } from 'graphql-server-core';
 import { graphqlExpress, graphiqlExpress } from 'graphql-server-express';
 import { makeExecutableSchema } from 'graphql-tools';
 import { SystemInfo } from '../lib/system';
+import { staticCast } from '../lib/utils';
 
 import {
     AdaptorPostgreSQL,
@@ -16,9 +18,11 @@ import { logger } from '../lib/logger';
 
 
 import {
+
     HermesStore,
     HermesStoreProperties,
-    UserProperties
+    UserProperties,
+    TokenProperties
 
 } from '../lib/hermes_store';
 
@@ -114,26 +118,68 @@ function init() {
 
     let typeDefs = [
         `
-        type Query {
-             hello: String
+        # Your User Information
+        type User {
+            # some more comments
+            name: String
+            email: String
+            expire: String
         }
 
+        type Query {
+             # Get the current authenticated user
+             currentUser: User
+        }
+
+        type Mutation {
+            login(email:String, password:String ): User
+        }
+
+        
         schema {
             query: Query
+            mutation: Mutation
         }
         `
     ];
 
     let resolvers = {
         Query: {
-            hello() {
-                /*
-                  Array.from(arguments).forEach((itm, idx) => {
-                     logger.info('%d. type:%s', idx + 1, typeof itm);
-                  });
-                 */
-                logger.info('ROOT: %d', Array.from(arguments).length);
-                return 'world';
+            currentUser(obj: any, args: any, context: any, info: any) {
+                info;
+                obj;
+                args;
+                Array.from(arguments).forEach((itm, idx) => {
+                    logger.info('%d. type:%s', idx + 1, typeof itm);
+                });
+                let req = context.req as Express.Request;
+                logger.info('number of arguments: %d', Array.from(arguments).length);
+                logger.info('sessioID %s', req.sessionID);
+                logger.info('session %j', req.session);
+
+                if (req.session) {
+                    let tokenProps = staticCast<TokenProperties>(req.session._hermes);
+                    let userProps = staticCast<UserProperties>(req.session._user);
+                    return { name: userProps.name, email: userProps.email, expire: new Date(tokenProps.tsExpire).toString() };
+                }  //{ sessionID: sid, sessionStore: self };
+
+                return {};
+            }
+        },
+        Mutation: {
+            login(obj: any, args: any, context: any, info: any) {
+                logger.info('number of arguments in (login): %d', Array.from(arguments).length);
+                obj;
+                args;
+                context;
+                info;
+                logger.info('args: %j', args);
+                //logger.info('info:%j', info);
+                //Array.from(arguments).forEach((itm, idx) => {
+                //    logger.info('%d. type:%s', idx + 1, typeof itm);
+                //});
+
+                return {};
             }
         }
     };
@@ -163,16 +209,14 @@ function init() {
 
     app.use('/graphiql', graphiqlExpress({ endpointURL: '/graphql' }));
 
-    //app.listen(4000, () => console.log('Now browse to localhost:4000/graphiql'));
 
-    app.get('/', (req, res, next) => {
+    /* fake middleware */
+    app.use((req, res, next) => {
+
         req;
         next;
         let session = req.session;
         res.set({ 'Content-Type': 'text/html' });
-
-
-
         if (session && (!session._user || !session._hermes)) {
             logger.error('session save called');
             session.save((err) => {
@@ -180,7 +224,8 @@ function init() {
                     return next(err);
                 }
                 logger.info('session looks like %j', req.session);
-                res.send('Response:' + new Date());
+                /*res.send('Response:' + new Date());*/
+                next();
             });
             return;
         }
@@ -194,12 +239,13 @@ function init() {
             user.email = undefined;
             user.name = 'lucifer696';
             user.userProps = { LAST_NAME: 'Bovors', AUTH: 'admin', BLACKLISTED: '' };
-
         }
         logger.info('session looks like %j', req.session);
-        res.send('Response:' + new Date());
-
+        next();
+        //res.send('Response:' + new Date());
     });
+
+    app.use('/', express.static(path.resolve('dist/client')));
 
 }
 
