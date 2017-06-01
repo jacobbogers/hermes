@@ -48,6 +48,8 @@ import express = require('express');
 const STKN = 'STKN';
 const USR_ANONYMOUS = 'anonymous';
 const TEMPLATE_DEFAULT_COOKIE = 'default_cookie';
+const LOGIN_PASSWORD_PROPERTY = 'password';
+const BLACKLISTED = 'BLACKLISTED';
 
 export interface SessionHash {
     [sid: string]: Express.SessionData;
@@ -92,12 +94,31 @@ export class HermesStoreError extends Error {
     constructor(message: string, connected: boolean) {
         super(message);
         this.message = message;
-        this.name = 'AdaptorError';
+        this.name = 'HermesStoreError';
         this._connected = connected;
     }
 
     public toString() {
         return `HermesStoreError: state:${this._connected ? '' : 'NOT'} connected  `;
+    }
+}
+
+//TODO move ot its own module
+export class AuthenticationError {
+
+    private context: string;
+    private message: string;
+
+    constructor(context: string, message: string) {
+        this.context = context;
+        this.message = message;
+    }
+
+    toString() {
+        return util.format('%s, %s', this.context || '', this.message);
+    }
+    value() {
+        return [this.context, this.message];
     }
 }
 
@@ -170,7 +191,7 @@ export class HermesStore extends Store {
             this.processUsersSelectAll(users);
             let anonymous = this.userMaps.get('name', USR_ANONYMOUS);
             if (!anonymous) {
-                let err = new HermesStoreError(`User ${USR_ANONYMOUS} doesnt exist`, this.connected );
+                let err = new HermesStoreError(`User ${USR_ANONYMOUS} doesnt exist`, this.connected);
                 _si.addError(err);
                 throw err;
             }
@@ -180,10 +201,10 @@ export class HermesStore extends Store {
             this.emit('connect');
         }).catch((err) => {
             logger.error('failed because of %j', err);
-            let errors = _si.systemErrors(null, Error /*AdaptorError*/ );
+            let errors = _si.systemErrors(null, Error /*AdaptorError*/);
             AdaptorError;
 
-            logger.error('All adaptor errors #(%d) from the adaptor: %j', errors.length, errors.length ? errors.map( (err) => String(err)) : 'NO ERRORS');
+            logger.error('All adaptor errors #(%d) from the adaptor: %j', errors.length, errors.length ? errors.map((err) => String(err)) : 'NO ERRORS');
 
             let warnings = _si.systemWarnings(null, AdaptorWarning);
             logger.warn('All warnings #(%d) from the adaptor %j', warnings.length, warnings.length ? warnings : 'NO WARNINGS');
@@ -594,7 +615,7 @@ export class HermesStore extends Store {
 
 
 
-    protected userInsert(user: UserProperties): Promise<UserMessageReturned> {
+    private userInsert(user: UserProperties): Promise<UserMessageReturned> {
 
 
 
@@ -642,9 +663,121 @@ export class HermesStore extends Store {
     }
 
 
+
+
+
+
     /* specific tooling */
     /* specific tooling */
     /* specific tooling */
+
+    //TODO move to authentication middleware
+    public mustAuthenticate(sess: Express.Session): boolean {
+
+        if (this.isAnonymous(sess)) {
+            return true;
+        }
+
+        if (this.isUserBlackListed(sess)) {
+            return true;
+        }
+
+        if (this.hasSessionExpired(sess)) {
+            return true;
+        }
+        return false;
+
+    }
+
+    public hasSessionExpired(sess: Express.Session): boolean {
+        let expires = this.normalizeCookieExpire(sess.cookie);
+
+        if (!expires || expires < Date.now()) {
+            return true;
+        }
+        return false;
+    }
+
+    public isAnonymous(sess: Express.Session): boolean {
+
+        let anonUser = staticCast<UserProperties>(this.getUserByName(USR_ANONYMOUS));
+        let sessUser = sess['_user'] as UserProperties;
+
+        if (sessUser.name === anonUser.name) {
+            return true;
+        }
+
+        if (!sessUser) {
+            return true;
+        }
+        return false;
+    }
+
+    public isUserBlackListed(sess: Express.Session): boolean {
+        let sessUser = sess['_user'] as UserProperties;
+        if (sessUser && sessUser.userProps && sessUser.userProps['BLACKLISTED']) {
+            return true;
+        }
+        return false;
+
+
+    }
+
+    public normalizeCookieExpire(cookie: Express.SessionCookieData): number | undefined {
+        let rc: number;
+        switch (true) {
+            case typeof cookie.expires === 'number':
+                rc = (cookie.expires as any);
+                break;
+            case cookie.expires instanceof Date:
+                rc = (cookie.expires as Date).getTime();
+                break;
+            default: // last ditch attempt
+                rc = new Date(cookie.expires as any).getTime();
+        }
+        return Number.isNaN(rc) ? undefined : rc;
+    }
+
+    public getUserById(userId: number): UserProperties | undefined {
+        return this.userMaps.get('id', userId);
+    }
+
+    public getUserByName(userName: string): UserProperties | undefined {
+        return this.userMaps.get('name', userName);
+    }
+
+    public getUserByEmail(email: string): UserProperties | undefined {
+        return this.userMaps.get('email', email);
+    }
+
+    //TODO move to authentication middleware
+    public authenticate(sess: Express.Session, email: string, password: string): AuthenticationError[] | undefined {
+
+        //check if already authenticated
+
+        if (this.mustAuthenticate(sess) === false) { // cant continue 
+            return [new AuthenticationError('user-logged-in', 'User must log out first')];
+        }
+
+        //potential User
+        let pUser = this.getUserByEmail(email);
+        if (!pUser) {
+            return [new AuthenticationError('email-not-exist', 'The Email and password combination are Unknown')];
+        }
+
+        if (pUser.userProps[BLACKLISTED]) {
+            sess['_user'] = pUser; // valid user but blacklisted
+            return [new AuthenticationError('email-black-listed', 'User is blacklisted')];
+        }
+        //password is the same (case sensitive compare)
+        let passw = pUser.userProps[LOGIN_PASSWORD_PROPERTY] || '';
+        if (passw.trim() !== password.trim()) {
+            return [new AuthenticationError('invalid-login', 'The Email and password combination are Unknown')];
+        }
+        //password is correct so..
+        sess['_user'] = pUser;
+        return;
+    }
 
     public get connected() {
         return this.adaptor.connected;

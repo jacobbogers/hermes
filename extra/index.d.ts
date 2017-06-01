@@ -11,6 +11,7 @@ declare namespace Express {
   export interface Request {
     session?: Session;
     sessionID?: string;
+    sessionStore:any;
   }
 
   export interface SessionData {
@@ -34,6 +35,7 @@ declare namespace Express {
 
   export interface Session extends SessionData {
     id: string;
+    req: Express.Request;
 
     regenerate: (callback: (err: any) => void) => void;
     destroy: (callback: (err: any) => void) => void;
