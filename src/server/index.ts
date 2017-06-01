@@ -147,7 +147,7 @@ function init() {
             });
             return;
         }
-        logger.info('setting some props');
+        /*logger.info('setting some props');
         if (session) {
             session['COUNTRY'] = 'LU'; // = 'HENNY';
             session['FIRST_NAME'] = 'HENRY';
@@ -158,7 +158,7 @@ function init() {
             user.name = 'lucifer696';
             user.userProps = { LAST_NAME: 'Bovors', AUTH: 'admin', BLACKLISTED: '' };
         }
-        logger.info('session looks like %j', req.session);
+        logger.info('session looks like %j', req.session);*/
         next();
         //res.send('Response:' + new Date());
     });
