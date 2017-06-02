@@ -29,15 +29,20 @@ import {
 /* init */
 /* init */
 
+export interface ServerInfo {
+    serverTime: string;
+}
+
 export interface UserInfo {
     name: string;
     email: string;
-    expire: number;
+    expire: string;
 }
 
 export interface AuthenticationResult {
     errors?: AuthenticationError[];
-    data: Partial<UserInfo>;
+    data?: Partial<UserInfo>;
+    serverInfo: ServerInfo;
 }
 
 
@@ -128,7 +133,7 @@ function init() {
         cookie: hermesStore.getDefaultCookieOptions()
     }));
 
-     /* fake middleware */
+    /* fake middleware */
     app.use((req, res, next) => {
 
         req;
@@ -166,14 +171,20 @@ function init() {
 
     let typeDefs = [
         `
+
+        type ServerInfo {
+            serverTime: String!
+        }
+
         type AuthError {
-             context:String
-             message:String!
+             context: String
+             message: String!
         }
 
         type AuthResult {
-            errors:[AuthError!]
+            errors: [AuthError!]
             data: UserInfo
+            serverInfo: ServerInfo!
         }
 
         # Your User Information
@@ -196,7 +207,7 @@ function init() {
         
         schema {
             query: Query
-        #    mutation: Mutation
+            mutation: Mutation
         }
         `
     ];
@@ -208,43 +219,105 @@ function init() {
                 args; // because ts
 
                 let request = context.req as Express.Request;
-                let session = request.session;
-                let sessionStore = request.sessionStore;
+                let session = request.session as Express.Session | undefined;
+                let sessionStore = request.sessionStore as HermesStore | undefined;
                 let errors: AuthenticationError[] | undefined;
                 switch (true) {
-                    case !!!session: //session middleware not functional
+                    case !session: //session middleware not functional
                         errors = [new AuthenticationError('no-session-object', 'internal error, express-session middleware offline')];
                         break;
                     case !(sessionStore instanceof HermesStore):
                         errors = [new AuthenticationError('no-store-object', 'internal error, hermes-store offline')];
                         break;
-                    case sessionStore.hasSessionExpired(session):
+                    case session && sessionStore && sessionStore.hasSessionExpired(session):
                         errors = [new AuthenticationError('session-expired', 'Session has expired')];
                         break;
-                    case sessionStore.isUserBlackListed(session):
+                    case session && sessionStore && sessionStore.isUserBlackListed(session):
                         errors = [new AuthenticationError('user-blacklisted', 'User has been blacklisted')];
                         break;
                     default:
                 }
                 if (errors) {
-                    return Promise.resolve<AuthenticationResult>({ errors, data: {} });
+                    return Promise.resolve<AuthenticationResult>({ errors, serverInfo: { serverTime: new Date().toString() } });
                 }
                 // ts doesnt see the type guard above, so we repeat
                 session = staticCast<Express.Session>(session);
                 let user = session['_user'] as UserProperties;
+                let expireMillis = sessionStore && sessionStore.getExpiredAsNumber(session);
+                let expire = expireMillis ? new Date(expireMillis).toString() : new Date('x').toString();
+
+
                 return Promise.resolve<AuthenticationResult>({
                     data: {
                         name: user.name,
                         email: user.email,
-                        expire: sessionStore.normalizeCookieExpire(session.cookie)
+                        expire
+                    },
+                    serverInfo: {
+                        serverTime: new Date().toString()
                     }
                 });
             }
         },
-        /* Mutation: {
-             login(obj: any, { password, email }: { password: string, email: string }, context: any, info: any) {
- 
-             });*/
+        Mutation: {
+            login(obj: any, { password, email }: { password: string, email: string }, context: any) {
+                obj;
+                let request = context.req as Express.Request;
+                let session = request.session as Express.Session | undefined;
+                let sessionStore = request.sessionStore as HermesStore | undefined;
+                let errors: AuthenticationError[] | undefined;
+                switch (true) {
+                    case !session: //session middleware not functional
+                        errors = [new AuthenticationError('no-session-object', 'internal error, express-session middleware offline')];
+                        break;
+                    case !(sessionStore instanceof HermesStore):
+                        errors = [new AuthenticationError('no-store-object', 'internal error, hermes-store offline')];
+                        break;
+                    case session && sessionStore && sessionStore.hasSessionExpired(session):
+                        errors = [new AuthenticationError('session-expired', 'Session has expired')];
+                        break;
+                    case session && sessionStore && sessionStore.isUserBlackListed(session):
+                        errors = [new AuthenticationError('user-blacklisted', 'User has been blacklisted')];
+                        break;
+                    default:
+                }
+                if (errors) {
+                    return Promise.resolve<AuthenticationResult>({ errors, serverInfo: { serverTime: new Date().toString() } });
+                }
+                session = staticCast<Express.Session>(session);
+                sessionStore = staticCast<HermesStore>(sessionStore);
+
+                errors = sessionStore.authenticate(session, email, password);
+                if (errors) {
+                    return Promise.resolve<AuthenticationResult>({ errors, serverInfo: { serverTime: new Date().toString() } });
+                }
+                let user = session['_user'] as UserProperties;
+                return new Promise<AuthenticationResult>((resolve) => {
+                    session = staticCast<Express.Session>(session);
+                    session.save((err) => {
+                        if (err) {
+                            errors = [new AuthenticationError('session-save', err.toString())];
+                            return resolve({ errors, serverInfo: { serverTime: new Date().toString() } });
+                        }
+                        let expireMillis = sessionStore && sessionStore.getExpiredAsNumber(session);
+                        let expire = expireMillis ? new Date(expireMillis).toString() : new Date('x').toString();
+                        return resolve({
+                            serverInfo: {
+                                serverTime: new Date().toString()
+                            },
+                            data: {
+                                name: user.name,
+                                email: user.email,
+                                expire
+
+                            }
+
+                        });
+                    });
+
+                });
+            }//login
+        }//Mutation
     };
 
 
@@ -274,7 +347,7 @@ function init() {
     app.use('/graphiql', graphiqlExpress({ endpointURL: '/graphql' }));
 
 
-   
+
     app.use('/', express.static(path.resolve('dist/client')));
 
 }

@@ -11,9 +11,9 @@ import { SystemInfo } from './system';
 
 import { logger } from './logger';
 
-import { 
-    makeObjectNull, 
-//    loadFiles 
+import {
+    makeObjectNull,
+    //    loadFiles 
 } from './utils';
 
 import {
@@ -158,9 +158,10 @@ export class AdaptorPostgreSQL extends AdaptorBase {
             port,
             host,
             ssl: qry['sslmode'] !== 'disable',
-            max: 20, //set pool max size  
-            min: 1, //set min pool size  
-            idleTimeoutMillis: 1000, //ms
+            max: 30, //set pool max size  
+            min: 20, //set min pool size  
+            idleTimeoutMillis: 1000 * 3600 * 24, //ms
+
             refreshIdle: true
         };
         pg.defaults.parseInt8 = true; // use bigint datatype
@@ -262,7 +263,7 @@ export class AdaptorPostgreSQL extends AdaptorBase {
                 //    logger.error(this.lastErr());
                 //    continue;
                 //}
-                
+
                 let qc: pg.QueryConfig = {
                     text: sql[_file],
                     name: _file
@@ -296,6 +297,7 @@ export class AdaptorPostgreSQL extends AdaptorBase {
                 if (err) {
                     this.addErr(err);
                     logger.error('could not aquire a client from the pool because:[%j]', err);
+                    client && client.emit('drain');
                     done();
                     return rejectFinal(err);
                 }
@@ -310,10 +312,12 @@ export class AdaptorPostgreSQL extends AdaptorBase {
                         if (nextQc !== undefined) {
                             return _do(nextQc);
                         }
+                        client.emit('drain');
                         done();
                         return fn(value, resolveFinal);
                     })
                         .catch((err) => {
+                            client.emit('drain');
                             done();
                             rejectFinal(err);
 

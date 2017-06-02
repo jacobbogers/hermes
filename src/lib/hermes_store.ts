@@ -672,7 +672,10 @@ export class HermesStore extends Store {
     /* specific tooling */
 
     //TODO move to authentication middleware
-    public mustAuthenticate(sess: Express.Session): boolean {
+    public mustAuthenticate(sess?: Express.Session): boolean {
+        if (!sess) {
+            return true;
+        }
 
         if (this.isAnonymous(sess)) {
             return true;
@@ -689,8 +692,9 @@ export class HermesStore extends Store {
 
     }
 
-    public hasSessionExpired(sess: Express.Session): boolean {
-        let expires = this.normalizeCookieExpire(sess.cookie);
+    public hasSessionExpired(sess?: Express.Session): boolean {
+       
+        let expires = this.getExpiredAsNumber(sess);
 
         if (!expires || expires < Date.now()) {
             return true;
@@ -698,7 +702,11 @@ export class HermesStore extends Store {
         return false;
     }
 
-    public isAnonymous(sess: Express.Session): boolean {
+    public isAnonymous(sess?: Express.Session): boolean {
+
+        if (!sess) {
+            return false;
+        }
 
         let anonUser = staticCast<UserProperties>(this.getUserByName(USR_ANONYMOUS));
         let sessUser = sess['_user'] as UserProperties;
@@ -713,7 +721,10 @@ export class HermesStore extends Store {
         return false;
     }
 
-    public isUserBlackListed(sess: Express.Session): boolean {
+    public isUserBlackListed(sess?: Express.Session): boolean {
+        if (!sess) {
+            return false;
+        }
         let sessUser = sess['_user'] as UserProperties;
         if (sessUser && sessUser.userProps && sessUser.userProps['BLACKLISTED']) {
             return true;
@@ -723,17 +734,20 @@ export class HermesStore extends Store {
 
     }
 
-    public normalizeCookieExpire(cookie: Express.SessionCookieData): number | undefined {
+    public getExpiredAsNumber(sess?: Express.Session): number | undefined {
         let rc: number;
+        if (!sess){
+            return undefined;
+        }
         switch (true) {
-            case typeof cookie.expires === 'number':
-                rc = (cookie.expires as any);
+            case typeof sess.cookie.expires === 'number':
+                rc = (sess.cookie.expires as any);
                 break;
-            case cookie.expires instanceof Date:
-                rc = (cookie.expires as Date).getTime();
+            case sess.cookie.expires instanceof Date:
+                rc = (sess.cookie.expires as Date).getTime();
                 break;
             default: // last ditch attempt
-                rc = new Date(cookie.expires as any).getTime();
+                rc = new Date(sess.cookie.expires as any).getTime();
         }
         return Number.isNaN(rc) ? undefined : rc;
     }
