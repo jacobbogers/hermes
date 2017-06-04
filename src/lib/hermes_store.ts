@@ -1,11 +1,11 @@
 
 'use strict';
 
+
 import { Store } from 'express-session';
 
 import { SystemInfo } from './system';
 
-//import * as express from 'express';
 import {
     //general
     AdaptorBase,
@@ -24,9 +24,6 @@ import {
     UserPropertiesModifyMessageReturned,
     //template
     TemplatePropsMessage,
-
-
-
 } from './db_adaptor_base';
 
 import { logger } from './logger';
@@ -41,15 +38,11 @@ import {
 } from './utils';
 
 import * as util from 'util';
-util;
-
 import express = require('express');
 
 const STKN = 'STKN';
-const USR_ANONYMOUS = 'anonymous';
+export const USR_ANONYMOUS = 'anonymous';
 const TEMPLATE_DEFAULT_COOKIE = 'default_cookie';
-const LOGIN_PASSWORD_PROPERTY = 'password';
-const BLACKLISTED = 'BLACKLISTED';
 
 export interface SessionHash {
     [sid: string]: Express.SessionData;
@@ -103,24 +96,7 @@ export class HermesStoreError extends Error {
     }
 }
 
-//TODO move ot its own module
-export class AuthenticationError {
 
-    private context: string;
-    private message: string;
-
-    constructor(context: string, message: string) {
-        this.context = context;
-        this.message = message;
-    }
-
-    toString() {
-        return util.format('%s, %s', this.context || '', this.message);
-    }
-    value() {
-        return [this.context, this.message];
-    }
-}
 
 
 /**
@@ -671,85 +647,9 @@ export class HermesStore extends Store {
     /* specific tooling */
     /* specific tooling */
 
-    //TODO move to authentication middleware
-    public mustAuthenticate(sess?: Express.Session): boolean {
-        if (!sess) {
-            return true;
-        }
 
-        if (this.isAnonymous(sess)) {
-            return true;
-        }
-
-        if (this.isUserBlackListed(sess)) {
-            return true;
-        }
-
-        if (this.hasSessionExpired(sess)) {
-            return true;
-        }
-        return false;
-
-    }
-
-    public hasSessionExpired(sess?: Express.Session): boolean {
-       
-        let expires = this.getExpiredAsNumber(sess);
-
-        if (!expires || expires < Date.now()) {
-            return true;
-        }
-        return false;
-    }
-
-    public isAnonymous(sess?: Express.Session): boolean {
-
-        if (!sess) {
-            return false;
-        }
-
-        let anonUser = staticCast<UserProperties>(this.getUserByName(USR_ANONYMOUS));
-        let sessUser = sess['_user'] as UserProperties;
-
-        if (sessUser.name === anonUser.name) {
-            return true;
-        }
-
-        if (!sessUser) {
-            return true;
-        }
-        return false;
-    }
-
-    public isUserBlackListed(sess?: Express.Session): boolean {
-        if (!sess) {
-            return false;
-        }
-        let sessUser = sess['_user'] as UserProperties;
-        if (sessUser && sessUser.userProps && sessUser.userProps['BLACKLISTED']) {
-            return true;
-        }
-        return false;
-
-
-    }
-
-    public getExpiredAsNumber(sess?: Express.Session): number | undefined {
-        let rc: number;
-        if (!sess){
-            return undefined;
-        }
-        switch (true) {
-            case typeof sess.cookie.expires === 'number':
-                rc = (sess.cookie.expires as any);
-                break;
-            case sess.cookie.expires instanceof Date:
-                rc = (sess.cookie.expires as Date).getTime();
-                break;
-            default: // last ditch attempt
-                rc = new Date(sess.cookie.expires as any).getTime();
-        }
-        return Number.isNaN(rc) ? undefined : rc;
+    public getAnonymousUser(): UserProperties {
+        return <UserProperties>this.userMaps.get('name', USR_ANONYMOUS);
     }
 
     public getUserById(userId: number): UserProperties | undefined {
@@ -762,35 +662,6 @@ export class HermesStore extends Store {
 
     public getUserByEmail(email: string): UserProperties | undefined {
         return this.userMaps.get('email', email);
-    }
-
-    //TODO move to authentication middleware
-    public authenticate(sess: Express.Session, email: string, password: string): AuthenticationError[] | undefined {
-
-        //check if already authenticated
-
-        if (this.mustAuthenticate(sess) === false) { // cant continue 
-            return [new AuthenticationError('user-logged-in', 'User must log out first')];
-        }
-
-        //potential User
-        let pUser = this.getUserByEmail(email);
-        if (!pUser) {
-            return [new AuthenticationError('email-not-exist', 'The Email and password combination are Unknown')];
-        }
-
-        if (pUser.userProps[BLACKLISTED]) {
-            sess['_user'] = pUser; // valid user but blacklisted
-            return [new AuthenticationError('email-black-listed', 'User is blacklisted')];
-        }
-        //password is the same (case sensitive compare)
-        let passw = pUser.userProps[LOGIN_PASSWORD_PROPERTY] || '';
-        if (passw.trim() !== password.trim()) {
-            return [new AuthenticationError('invalid-login', 'The Email and password combination are Unknown')];
-        }
-        //password is correct so..
-        sess['_user'] = pUser;
-        return;
     }
 
     public get connected() {

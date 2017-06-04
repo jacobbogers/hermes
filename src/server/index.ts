@@ -4,12 +4,9 @@ import * as  express from 'express';
 import * as session from 'express-session';
 import * as bodyParser from 'body-parser';
 import * as path from 'path';
-import { GraphQLOptions } from 'graphql-server-core';
-import { graphqlExpress, graphiqlExpress } from 'graphql-server-express';
-import { makeExecutableSchema } from 'graphql-tools';
-import { SystemInfo } from '../lib/system';
-import { staticCast } from '../lib/utils';
 
+import { SystemInfo } from '../lib/system';
+import { registerAuth } from '../lib/authentication';
 
 import {
     AdaptorPostgreSQL,
@@ -21,30 +18,10 @@ import { logger } from '../lib/logger';
 import {
     HermesStore,
     HermesStoreProperties,
-    UserProperties,
-    //TokenProperties,
-    AuthenticationError
 } from '../lib/hermes_store';
 
 /* init */
 /* init */
-
-export interface ServerInfo {
-    serverTime: string;
-}
-
-export interface UserInfo {
-    name: string;
-    email: string;
-    expire: string;
-}
-
-export interface AuthenticationResult {
-    errors?: AuthenticationError[];
-    data?: Partial<UserInfo>;
-    serverInfo: ServerInfo;
-}
-
 
 SystemInfo.createSystemInfo({ maxErrors: 5000, maxWarnings: 5000 });
 
@@ -134,219 +111,7 @@ function init() {
     }));
 
     /* fake middleware */
-    app.use((req, res, next) => {
-
-        req;
-        next;
-        let session = req.session;
-        res.set({ 'Content-Type': 'text/html' });
-        if (session && (!session._user || !session._hermes)) {
-            logger.error('session save called');
-            session.save((err) => {
-                if (err) {
-                    return next(err);
-                }
-                logger.info('session looks like %j', req.session);
-                /*res.send('Response:' + new Date());*/
-                next();
-            });
-            return;
-        }
-        /*logger.info('setting some props');
-        if (session) {
-            session['COUNTRY'] = 'LU'; // = 'HENNY';
-            session['FIRST_NAME'] = 'HENRY';
-            session['CITY'] = 'VILLE';
-            let user = session._user as UserProperties;
-            user.id = undefined;
-            user.email = undefined;
-            user.name = 'lucifer696';
-            user.userProps = { LAST_NAME: 'Bovors', AUTH: 'admin', BLACKLISTED: '' };
-        }
-        logger.info('session looks like %j', req.session);*/
-        next();
-        //res.send('Response:' + new Date());
-    });
-
-
-    let typeDefs = [
-        `
-
-        type ServerInfo {
-            serverTime: String!
-        }
-
-        type AuthError {
-             context: String
-             message: String!
-        }
-
-        type AuthResult {
-            errors: [AuthError!]
-            data: UserInfo
-            serverInfo: ServerInfo!
-        }
-
-        # Your User Information
-        type UserInfo {
-            # some more comments
-            name: String
-            email: String
-            expire: String
-        }
-
-        type Query {
-             # Get the current status of a visitor
-             currentUser: AuthResult
-        }
-
-        type Mutation {
-            login(email:String, password:String ): AuthResult
-        }
-
-        
-        schema {
-            query: Query
-            mutation: Mutation
-        }
-        `
-    ];
-
-    let resolvers = {
-        Query: {
-            currentUser(obj: any, args: any, context: any) {
-                obj; // beause ts
-                args; // because ts
-
-                let request = context.req as Express.Request;
-                let session = request.session as Express.Session | undefined;
-                let sessionStore = request.sessionStore as HermesStore | undefined;
-                let errors: AuthenticationError[] | undefined;
-                switch (true) {
-                    case !session: //session middleware not functional
-                        errors = [new AuthenticationError('no-session-object', 'internal error, express-session middleware offline')];
-                        break;
-                    case !(sessionStore instanceof HermesStore):
-                        errors = [new AuthenticationError('no-store-object', 'internal error, hermes-store offline')];
-                        break;
-                    case session && sessionStore && sessionStore.hasSessionExpired(session):
-                        errors = [new AuthenticationError('session-expired', 'Session has expired')];
-                        break;
-                    case session && sessionStore && sessionStore.isUserBlackListed(session):
-                        errors = [new AuthenticationError('user-blacklisted', 'User has been blacklisted')];
-                        break;
-                    default:
-                }
-                if (errors) {
-                    return Promise.resolve<AuthenticationResult>({ errors, serverInfo: { serverTime: new Date().toString() } });
-                }
-                // ts doesnt see the type guard above, so we repeat
-                session = staticCast<Express.Session>(session);
-                let user = session['_user'] as UserProperties;
-                let expireMillis = sessionStore && sessionStore.getExpiredAsNumber(session);
-                let expire = expireMillis ? new Date(expireMillis).toString() : new Date('x').toString();
-
-
-                return Promise.resolve<AuthenticationResult>({
-                    data: {
-                        name: user.name,
-                        email: user.email,
-                        expire
-                    },
-                    serverInfo: {
-                        serverTime: new Date().toString()
-                    }
-                });
-            }
-        },
-        Mutation: {
-            login(obj: any, { password, email }: { password: string, email: string }, context: any) {
-                obj;
-                let request = context.req as Express.Request;
-                let session = request.session as Express.Session | undefined;
-                let sessionStore = request.sessionStore as HermesStore | undefined;
-                let errors: AuthenticationError[] | undefined;
-                switch (true) {
-                    case !session: //session middleware not functional
-                        errors = [new AuthenticationError('no-session-object', 'internal error, express-session middleware offline')];
-                        break;
-                    case !(sessionStore instanceof HermesStore):
-                        errors = [new AuthenticationError('no-store-object', 'internal error, hermes-store offline')];
-                        break;
-                    case session && sessionStore && sessionStore.hasSessionExpired(session):
-                        errors = [new AuthenticationError('session-expired', 'Session has expired')];
-                        break;
-                    case session && sessionStore && sessionStore.isUserBlackListed(session):
-                        errors = [new AuthenticationError('user-blacklisted', 'User has been blacklisted')];
-                        break;
-                    default:
-                }
-                if (errors) {
-                    return Promise.resolve<AuthenticationResult>({ errors, serverInfo: { serverTime: new Date().toString() } });
-                }
-                session = staticCast<Express.Session>(session);
-                sessionStore = staticCast<HermesStore>(sessionStore);
-
-                errors = sessionStore.authenticate(session, email, password);
-                if (errors) {
-                    return Promise.resolve<AuthenticationResult>({ errors, serverInfo: { serverTime: new Date().toString() } });
-                }
-                let user = session['_user'] as UserProperties;
-                return new Promise<AuthenticationResult>((resolve) => {
-                    session = staticCast<Express.Session>(session);
-                    session.save((err) => {
-                        if (err) {
-                            errors = [new AuthenticationError('session-save', err.toString())];
-                            return resolve({ errors, serverInfo: { serverTime: new Date().toString() } });
-                        }
-                        let expireMillis = sessionStore && sessionStore.getExpiredAsNumber(session);
-                        let expire = expireMillis ? new Date(expireMillis).toString() : new Date('x').toString();
-                        return resolve({
-                            serverInfo: {
-                                serverTime: new Date().toString()
-                            },
-                            data: {
-                                name: user.name,
-                                email: user.email,
-                                expire
-
-                            }
-
-                        });
-                    });
-
-                });
-            }//login
-        }//Mutation
-    };
-
-
-    let schema = makeExecutableSchema({ typeDefs, resolvers });
-
-    const graphQLOptions: GraphQLOptions = {
-        schema: schema,
-        // values to be used as context and rootValue in resolvers
-        // context?: any,
-        // rootValue?: any,
-        // function used to format errors before returning them to clients
-        //formatError?: Function,
-        // additional validation rules to be applied to client-specified queries
-        ///validationRules?: Array < ValidationRule >,
-        // function applied for each query in a batch to format parameters before passing them to `runQuery`
-        //formatParams?: Function,
-        // function applied to each response before returning data to clients
-        //formatResponse?: Function,
-        // a boolean option that will trigger additional debug logging if execution errors occur
-        debug: true
-    };
-
-    app.use('/graphql', graphqlExpress((req?: Express.Request, resp?: Express.Response) => {
-        return Object.assign({}, graphQLOptions, { context: { req, resp } }) as GraphQLOptions;
-    }));
-
-    app.use('/graphiql', graphiqlExpress({ endpointURL: '/graphql' }));
-
-
+    registerAuth({ graphQL_url: '/graphql' }, app);
 
     app.use('/', express.static(path.resolve('dist/client')));
 
