@@ -177,7 +177,7 @@ export class HermesGraphQLConnector {
                 break;
             default:
         }
-        if (errors) {
+        if (errors.length) {
             return errors;
         }
         return new HermesGraphQLConnector(<HermesStore>hermesStore, <Express.Session>session, <UserProperties>user, <TokenProperties>token);

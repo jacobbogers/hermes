@@ -1,6 +1,7 @@
 
 import { HermesGraphQLConnector, AuthenticationError } from './hermes_connector';
 
+//import { logger } from './logger';
 
 export interface ServerInfo {
     serverTime: string;
@@ -19,9 +20,9 @@ export interface AuthenticationResult {
 }
 
 //query
-const currentUser = () => {
+const currentUser = (...rest: any[]) => {
 
-    let context = arguments[2]; // 'obj' and 'args' are cannot be made optional
+    let context = rest[2]; // 'obj' and 'args' are cannot be made optional
 
     if (context.errors) {
         return Promise.resolve<AuthenticationResult>({ errors: context.errors, serverInfo: { serverTime: new Date().toString() } });
@@ -58,8 +59,15 @@ const login = (obj: any, { password, email }: { password: string, email: string 
     return connector.save();
 };
 
-const logout = () => {
-    let context = arguments[2]; // 'obj' and 'args' are cannot be made optional
+const logout = (...rest: any[]) => {
+  
+    let context = rest[2]; // 'obj' and 'args' are cannot be made optional
+
+    if (context.errors) {
+        return Promise.resolve<AuthenticationResult>({ errors: context.errors, serverInfo: { serverTime: new Date().toString() } });
+    }
+
+
     if (context.errors) {
         return Promise.resolve<AuthenticationResult>({ errors: context.errors, serverInfo: { serverTime: new Date().toString() } });
     }

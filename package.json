@@ -106,6 +106,7 @@
   },
   "dependencies": {
     "body-parser": "^1.17.1",
+    "circular-json": "^0.3.1",
     "cross-env": "^4.0.0",
     "express": "^4.15.2",
     "express-session": "^1.15.2",

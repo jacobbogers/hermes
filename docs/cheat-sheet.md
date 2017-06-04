@@ -59,3 +59,44 @@ _In the example below , replace ```lib/**/*/ts``` with your specific fileglob if
 .\node_modules\.bin\tslint.cmd  -c .\tslint.json 'lib/**/*.ts'
 ```
 
+## Usefull Postgres Admin command
+
+show session activity
+
+```sql
+SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE pid <> pg_backend_pid() AND datname = 'bookbarter';
+```
+
+kill all sessions, except the one giving the kill order. 
+
+```sql
+ SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE pid <> pg_backend_pid() AND datname = 'bookbarter'
+```
+
+Sample table data
+
+```sql
+bookbarter=> select * from auth.user;
+ id |     name     |        email
+----+--------------+----------------------
+  1 | lucifer696   | vdingbats@gmail.com
+  7 | lucifer69c6  | vdwingbats@gmail.com
+ 15 | anonymous    |
+ 18 | lucifer696xx | changed@me.lu
+ 23 | jacobot      | email
+(5 rows)
+
+bookbarter=> select * from auth.user_props;
+ fk_user_id |  prop_name  |  prop_value  | invisible
+------------+-------------+--------------+-----------
+         23 | LAST_NAME   | Bovors       | f
+         23 | AUTH        | admin        | f
+         23 | zipcode     | L1311        | f
+          1 | LAST_NAME   | Bovors       | f
+          1 | AUTH        | admin        | f
+          1 | phoneNr     | +35262163973 | t
+          1 | BLACKLISTED |              | f
+         18 | password    | dingbats     | f
+```
+
+## GraphQL samples

@@ -1,4 +1,9 @@
 
+//general
+
+//const cjson = require('circular-json');
+
+//web
 import { NextFunction, Response, Request, Application, Router } from 'express';
 
 //graphql
@@ -58,6 +63,7 @@ export function registerAuth(options: AuthenticationOptions, app: Application | 
 
     app.use(options.graphQL_url, graphqlExpress((req?: Express.Request) => {
         let asset = HermesGraphQLConnector.createHermesGraphQLConnector(req);
+        
         let errors: AuthenticationError[] = null as any;
         let connector: HermesGraphQLConnector = null as any;
         if (asset instanceof Array) {
