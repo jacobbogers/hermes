@@ -1,6 +1,6 @@
 
 import { EventEmitter } from 'events';
-import { staticCast } from './utils';
+
 
 let _system: SystemInfo;
 
@@ -55,7 +55,7 @@ export class SystemInfo extends EventEmitter {
             opts.maxErrors = opts.maxErrors || 100;
             opts.maxWarnings = opts.maxWarnings || 100;
 
-            let _opts = staticCast<SystemInfoOptions>(opts);
+            let _opts = <SystemInfoOptions>(opts);
 
             if (_system) {
                 _system.maxErr = opts.maxErrors;
