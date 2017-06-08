@@ -1,6 +1,6 @@
 'use strict';
 
-const tracer = require('tracer');
+const _tracer = require('tracer');
 
 
 export type LogMethod = (...rest: any[]) => void;
@@ -16,10 +16,10 @@ export interface Tracer {
 
 export class Logger implements Tracer {
 
-    private tracer: Tracer;
+    private static tracer: Tracer = null as any;
 
-    constructor(tracer: any) {
-        let tr = this.tracer = tracer.colorConsole() as Tracer;
+    private constructor(tracer?: any) {
+        let tr = Logger.tracer = tracer || _tracer.colorConsole() as Tracer;
         this.log = tr.log.bind(tr);
         this.trace = tr.trace.bind(tr);
         this.debug = tr.debug.bind(tr);
@@ -35,6 +35,12 @@ export class Logger implements Tracer {
     public warn: LogMethod;
     public error: LogMethod;
 
+    public static getLogger(logger?: Tracer) {
+        if (Logger.tracer) {
+            return Logger.tracer;
+        }
+        return new Logger(logger);
+    }
 }
 
-export const logger = new Logger(tracer);
+export default Logger ;

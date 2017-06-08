@@ -9,7 +9,9 @@ import { SystemInfo } from './system';
 
 
 
-import { logger } from './logger';
+import Logger from './logger';
+
+const logger = Logger.getLogger();
 
 import {
     makeObjectNull,
@@ -40,7 +42,6 @@ import {
 import {
     ifNull,
     ifInvalidPortString,
-    staticCast,
     AnyObjProps
     // ifUndefined,
     // ifEmptyString
@@ -50,7 +51,7 @@ interface SQLFiles {
     sqlTokenInsertModifyProperty: string;
     sqlTokenAssociateWithUser: string;
     sqlTokenInsertModify: string;
-    sqlTokenDoExpire: string;
+    sqlTokenDoRevoke: string;
     sqlTokenGC: string;
     //
     sqlTokenSelectAllByFilter: string;
@@ -71,7 +72,7 @@ const sqlFiles: SQLFiles = {
     sqlTokenInsertModifyProperty: require('./sql/token_insert_modify_property.sql'),
     sqlTokenAssociateWithUser: require('./sql/token_associate_with_user.sql'),
     sqlTokenInsertModify: require('./sql/token_insert_modify.sql'),
-    sqlTokenDoExpire: require('./sql/token_do_expire.sql'),
+    sqlTokenDoRevoke: require('./sql/token_do_revoke.sql'),
     sqlTokenGC: require('./sql/token_gc.sql'),
     //
     sqlTokenSelectAllByFilter: require('./sql/token_select_all_by_filter.sql'),
@@ -366,7 +367,7 @@ export class AdaptorPostgreSQL extends AdaptorBase {
 
         logger.trace('inserting/updating token %j', t);
 
-        let qc = staticCast<pg.QueryConfig>(this.sql.get('sqlTokenInsertModify'));
+        let qc = <pg.QueryConfig>(this.sql.get('sqlTokenInsertModify'));
 
         let sqlObject = Object.assign({}, qc, { values: [t.tokenId, t.fkUserId, t.purpose, t.ipAddr, t.tsIssuance, t.tsRevoked, t.revokeReason, t.tsExpire, t.templateName] }) as pg.QueryConfig;
 
@@ -409,7 +410,7 @@ export class AdaptorPostgreSQL extends AdaptorBase {
         }
 
         logger.trace('token %s modification list %j', tokenId, modifications);
-        let qc = staticCast<pg.QueryConfig>(this.sql.get('sqlTokenInsertModifyProperty'));
+        let qc = <pg.QueryConfig>(this.sql.get('sqlTokenInsertModifyProperty'));
 
         let sqlObject = Object.assign({}, qc, { values: [tokenId, propNames, propValues, invisibles] }) as pg.QueryConfig;
 
@@ -439,7 +440,7 @@ export class AdaptorPostgreSQL extends AdaptorBase {
             return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
         }
 
-        let qc = staticCast<pg.QueryConfig>(this.sql.get('sqlTokenAssociateWithUser'));
+        let qc = <pg.QueryConfig>(this.sql.get('sqlTokenAssociateWithUser'));
 
         let sqlObject = Object.assign({}, qc, { values: [userId, tokenId] }) as pg.QueryConfig;
 
@@ -450,20 +451,20 @@ export class AdaptorPostgreSQL extends AdaptorBase {
         });
     }
 
-    public tokenDoExpire(tokenId: string, expireReason: string, expireTime?: number | null): Promise<boolean> {
+    public tokenDoRevoke(tokenId: string, revokeReason: string, revokeTime?: number | null): Promise<boolean> {
 
-        logger.trace('Expire token %s with reason %s at time %s', tokenId, expireReason, new Date(expireReason).toUTCString());
+        logger.trace('Expire token %s with reason %s', tokenId, revokeReason);
 
         if (!this.connected) {
             return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
         }
-        let qc = staticCast<pg.QueryConfig>(this.sql.get('sqlTokenDoExpire'));
+        let qc = <pg.QueryConfig>(this.sql.get('sqlTokenDoRevoke'));
 
-        if (expireTime === undefined) {
-            expireTime = null;
+        if (!revokeTime) { //remove JS "undefined"" for postgreql
+            revokeTime = null;
         }
 
-        let sqlObject = Object.assign({}, qc, { values: [tokenId, expireReason, expireTime] }) as pg.QueryConfig;
+        let sqlObject = Object.assign({}, qc, { values: [tokenId, revokeReason, revokeTime] }) as pg.QueryConfig;
 
         return this.executeSQLMutation<boolean>([sqlObject], (res, resolve) => {
             res;
@@ -472,17 +473,13 @@ export class AdaptorPostgreSQL extends AdaptorBase {
         });
     }
 
-    public tokenGC(deleteBeforeExpireTime: number): Promise<number> {
+    public tokenGC(deleteOlderThen: number): Promise<number> {
 
-        if (!deleteBeforeExpireTime) {
-            logger.error('No "deleteBeforeExpireTime" argument given!');
-            return Promise.reject(new AdaptorError('no cleanup time given,', this.state));
-        }
-        logger.trace('Remove all tokens expired before %s', new Date(deleteBeforeExpireTime).toUTCString());
+        logger.trace('Remove all tokens expired before %s', new Date(deleteOlderThen).toUTCString());
 
-        let qc = staticCast<pg.QueryConfig>(this.sql.get('sqlTokenGC'));
+        let qc = <pg.QueryConfig>(this.sql.get('sqlTokenGC'));
 
-        let sqlObject = Object.assign({}, qc, { values: [deleteBeforeExpireTime] }) as pg.QueryConfig;
+        let sqlObject = Object.assign({}, qc, { values: [deleteOlderThen] }) as pg.QueryConfig;
 
         return this.executeSQL<number>([sqlObject], (res, resolve) => {
             logger.trace('success: number of tokens expired %d', res.rowCount);
@@ -495,7 +492,7 @@ export class AdaptorPostgreSQL extends AdaptorBase {
         if (!this.connected) {
             return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
         }
-        let qc = staticCast<pg.QueryConfig>(this.sql.get('sqlTokenSelectAllByFilter'));
+        let qc = <pg.QueryConfig>(this.sql.get('sqlTokenSelectAllByFilter'));
 
         let sqlObject = Object.assign({}, qc, { values: [timestampExpire, startTimestampRevoked, endTimestampRevoked] }) as pg.QueryConfig;
 
@@ -533,7 +530,7 @@ export class AdaptorPostgreSQL extends AdaptorBase {
             return Promise.reject(this.lastErr());
         }
 
-        let qc = staticCast<pg.QueryConfig>(this.sql.get('sqlTemplateSelectAll'));
+        let qc = <pg.QueryConfig>(this.sql.get('sqlTemplateSelectAll'));
         let sqlObject = Object.assign({}, qc) as pg.QueryConfig;
         return this.executeSQL<TemplatePropsMessage[]>([sqlObject], (res, resolve) => {
 
@@ -563,7 +560,11 @@ export class AdaptorPostgreSQL extends AdaptorBase {
             return Promise.reject(new AdaptorError('Adaptor is not connected', this.state));
         }
 
-        let qc = staticCast<pg.QueryConfig>(this.sql.get('sqlTokenSelectByUserIdOrName'));
+        if ((userId === null && userName === null) || (userId !== null && userName !== null)){
+            return Promise.reject(new AdaptorError('wrong input, userId and userName cannot be both non null or both null.', this.state));
+        }
+
+        let qc = <pg.QueryConfig>(this.sql.get('sqlTokenSelectByUserIdOrName'));
 
         let sqlObject = Object.assign({}, qc, { values: [userId, userName] }) as pg.QueryConfig;
 
@@ -607,7 +608,7 @@ export class AdaptorPostgreSQL extends AdaptorBase {
             return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
         }
         logger.warn('select all non-blacklisted users and props, potential expensive operation');
-        let qc = staticCast<pg.QueryConfig>(this.sql.get('sqlUserSelectAll'));
+        let qc = <pg.QueryConfig>(this.sql.get('sqlUserSelectAll'));
         let sqlObject = Object.assign({}, qc) as pg.QueryConfig;
         return this.executeSQL<UsersAndPropsMessage[]>([sqlObject], (res, resolve) => {
 
@@ -636,7 +637,7 @@ export class AdaptorPostgreSQL extends AdaptorBase {
 
         logger.trace('Inserting user %j', u);
 
-        let qc = staticCast<pg.QueryConfig>(this.sql.get('sqlUserInsert'));
+        let qc = <pg.QueryConfig>(this.sql.get('sqlUserInsert'));
 
         let sqlObject = Object.assign({}, qc, { values: [u.userName, u.userEmail] }) as pg.QueryConfig;
 
@@ -652,8 +653,8 @@ export class AdaptorPostgreSQL extends AdaptorBase {
                 userName: row['name'] as string,
                 userEmail: row['email'] as string
             };
-            logger.debug('success: "creating token", returned values %j', rc);
-            resolve(rc);
+            logger.debug('success: "creating user", returned values %j', rc);
+            return resolve(rc);
         });
 
     }
@@ -672,8 +673,8 @@ export class AdaptorPostgreSQL extends AdaptorBase {
             invisibles.push(mod.invisible);
         }
 
-        logger.trace('token %s modification list %j', userId, modifications);
-        let qc = staticCast<pg.QueryConfig>(this.sql.get('sqlUserInsertModifyProperty'));
+        logger.trace('Modifying userId %d , properties modification %j', userId, modifications);
+        let qc = <pg.QueryConfig>(this.sql.get('sqlUserInsertModifyProperty'));
 
         let sqlObject = Object.assign({}, qc, { values: [userId, propNames, propValues, invisibles] }) as pg.QueryConfig;
 

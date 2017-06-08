@@ -7,7 +7,9 @@ import * as path from 'path';
 //app
 import { loadFiles, deepClone } from '../utils';
 import { SystemInfo } from '../system';
-import { logger } from '../logger';
+
+import Logger from '../logger';
+const logger = Logger.getLogger();
 
 interface HTMLTemplateFiles {
     actionEmailContentBlockButton: string;

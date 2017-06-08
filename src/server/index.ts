@@ -12,8 +12,9 @@ import {
     AdaptorPostgreSQL,
 } from '../lib/db_adaptor_postgresql';
 
-import { logger } from '../lib/logger';
+import  Logger  from '../lib/logger';
 
+const logger = Logger.getLogger();
 
 import {
     HermesStore,

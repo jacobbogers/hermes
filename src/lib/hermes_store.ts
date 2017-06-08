@@ -26,12 +26,14 @@ import {
     TemplatePropsMessage,
 } from './db_adaptor_base';
 
-import { logger } from './logger';
+import Logger from './logger';
+
+const logger = Logger.getLogger();
+
 
 import {
 
     MapWithIndexes,
-    staticCast,
     AnyObjProps,
     deepClone
 
@@ -47,11 +49,14 @@ const TEMPLATE_DEFAULT_COOKIE = 'default_cookie';
 export interface SessionHash {
     [sid: string]: Express.SessionData;
 }
+/*
+export interface User {
+    name: string;
+    email: string;
+    id: number;
+}*/
 
-export interface UserProperties {
-    name?: string;
-    email?: string;
-    id?: number;
+export interface UserProperties extends UserMessageReturned {
     userProps: {
         [name: string]: string;
     };
@@ -137,7 +142,7 @@ export class HermesStore extends Store {
 
         let _si = SystemInfo.createSystemInfo();
 
-        this.userMaps = new MapWithIndexes<UserProperties>('id', 'email', 'name');
+        this.userMaps = new MapWithIndexes<UserProperties>('userId', 'userEmail', 'userName');
         this.tokenMaps = new MapWithIndexes<TokenProperties>('tokenId');
         this.templateMaps = new MapWithIndexes<TemplateProperties>('templateName', 'id');
 
@@ -165,7 +170,7 @@ export class HermesStore extends Store {
             return this.adaptor.userSelectByFilter();
         }).then((users) => {
             this.processUsersSelectAll(users);
-            let anonymous = this.userMaps.get('name', USR_ANONYMOUS);
+            let anonymous = this.userMaps.get('userName', USR_ANONYMOUS);
             if (!anonymous) {
                 let err = new HermesStoreError(`User ${USR_ANONYMOUS} doesnt exist`, this.connected);
                 _si.addError(err);
@@ -226,15 +231,15 @@ export class HermesStore extends Store {
 
         for (let token of data) {
             //fetch user data
-            let uf: UserProperties | undefined = this.userMaps.get('id', token.fkUserId);
+            let uf: UserProperties | undefined = this.userMaps.get('userId', token.fkUserId);
 
             if (!uf) {
-                uf = { name: token.usrName, email: token.usrEmail, id: token.fkUserId, userProps: {} };
+                uf = { userName: token.usrName, userEmail: token.usrEmail, userId: token.fkUserId, userProps: {} };
                 this.userMaps.set(uf);
             }
 
             if (token.propName) {
-                uf.userProps[token.propName] = token.propValue;
+                uf.userProps[token.propName] = token.propValue || '';
             }
 
             //fetch token data
@@ -256,7 +261,7 @@ export class HermesStore extends Store {
                 this.tokenMaps.set(tf);
             }
             if (token.sessionPropName && ['id', 'cookie', '_hermes', '_user'].indexOf(token.sessionPropName) === -1) {
-                tf.sessionProps[token.sessionPropName] = token.sessionPropValue;
+                tf.sessionProps[token.sessionPropName] = token.sessionPropValue || '';
                 this.tokenMaps.set(tf);
             }
         }
@@ -267,14 +272,9 @@ export class HermesStore extends Store {
     private processUsersSelectAll(data: UsersAndPropsMessage[]) {
         this.userMaps.clear();
         for (let user of data) {
-            let uf = this.userMaps.get('id', user.userId);
-            if (!uf) {
-                uf = {
-                    name: user.userName,
-                    email: user.userEmail,
-                    id: user.userId,
-                    userProps: {}
-                } as UserProperties;
+            let uf = this.userMaps.get('userId', user.userId);
+            if (uf === undefined) {
+                uf = Object.assign({}, user, { userProps: {} }) as UserProperties;
                 this.userMaps.set(uf);
             }
             if (user.propName && uf) {
@@ -360,9 +360,12 @@ export class HermesStore extends Store {
         //convert TokenMessage to TokenMessageReturned
         let template = this.templateMaps.get('templateName', token.templateName || '');
         let templateId = (template && template.id) || null;
-        let tokenMsgReply = Object.assign({}, msg, { templateId: templateId }) as TokenMessageReturned;
 
-        delete staticCast<TokenMessage>(tokenMsgReply).templateName;
+        let msgCopy = Object.assign({}, msg);
+        delete msgCopy.templateName;
+
+        let tokenMsgReply = Object.assign({}, msgCopy, { templateId: templateId }) as TokenMessageReturned;
+
         return Promise.resolve(tokenMsgReply);
     }
 
@@ -400,7 +403,7 @@ export class HermesStore extends Store {
                 httpOnly: template.httpOnly,
                 path: template.path
             }),
-            _user: Object.seal(this.userMaps.get('id', token.fkUserId || USR_ANONYMOUS) || this.userMaps.get('id', USR_ANONYMOUS))
+            _user: Object.seal(this.userMaps.get('userId', token.fkUserId || USR_ANONYMOUS) || this.userMaps.get('userId', USR_ANONYMOUS))
 
         };
         for (let propName in token.sessionProps) {
@@ -450,15 +453,11 @@ export class HermesStore extends Store {
         let user = sess['_user'] as UserProperties;
 
         if (user === undefined) {// no user information, set it to anonymous
-            return staticCast<UserProperties>(this.userMaps.get('name', USR_ANONYMOUS));
+            return <UserProperties>(this.userMaps.get('userName', USR_ANONYMOUS));
         }
         //
-        let rc: UserProperties = {
-            name: user.name,
-            email: user.email,
-            id: user.id,
-            userProps: deepClone(user.userProps || {})
-        };
+        let rc: UserProperties = Object.assign({}, user, { userProps: deepClone(user.userProps || {}) });
+
         //collect props 
         for (let propName in user.userProps) {
             let value = user.userProps[propName];
@@ -492,11 +491,11 @@ export class HermesStore extends Store {
 
         // correct for missing user, set to anonymous
         if (!_hermes || !_hermes.fkUserId) {// not set? (should never happen) map to "anonymous"
-            let anoUser = this.userMaps.get('name', USR_ANONYMOUS);
+            let anoUser = this.userMaps.get('userName', USR_ANONYMOUS);
             if (!anoUser) {
                 throw new Error('anonymous user not found in cache');
             }
-            _hermes.fkUserId = anoUser.id;
+            _hermes.fkUserId = anoUser.userId;
         }
 
         let token = {
@@ -549,19 +548,19 @@ export class HermesStore extends Store {
 
     protected userPropertiesUpdateInsert(user: UserProperties): Promise<UserPropertiesModifyMessageReturned[]> {
 
-        let oldUser = this.userMaps.get('id', user.id);
+        let oldUser = this.userMaps.get('userId', user.userId);
         let oldProps = (oldUser && oldUser.userProps) || {}; //empty
         let newProps = user.userProps || {};
         let actions: PropertiesModifyMessage[] = [];
 
-        if (user.name === USR_ANONYMOUS) {
+        if (user.userName === USR_ANONYMOUS) {
             return Promise.resolve([] as UserPropertiesModifyMessageReturned[]);
         }
 
         //what to add/modify
         for (let props in newProps) {
             if (oldProps[props] !== newProps[props]) {
-                logger.trace('User %s, property userProp[\%s\'] has changed', user.email, props);
+                logger.trace('User %s, property userProp[\%s\'] has changed', user.userEmail, props);
                 actions.push({
                     propName: props,
                     propValue: newProps[props],
@@ -575,7 +574,7 @@ export class HermesStore extends Store {
         let deletes = Object.keys(oldProps).filter((propName) => {
             return listOfNewProps.indexOf(propName) === -1;
         }).map((propNameFiltered) => {
-            logger.trace('User:%s, property %s marked for deletion', user.name, propNameFiltered, user.name);
+            logger.trace('User:%s, property %s marked for deletion', user.userName, propNameFiltered, user.userName);
             let rc: PropertiesModifyMessage = { propName: propNameFiltered, propValue: oldProps[propNameFiltered], invisible: true };
             return rc;
         }) as PropertiesModifyMessage[];
@@ -583,7 +582,7 @@ export class HermesStore extends Store {
         actions.push.apply(actions, deletes);
 
         if (actions.length > 0) {//nothing to do 
-            return this.adaptor.userInsertModifyProperty(staticCast<number>(user.id), actions);
+            return this.adaptor.userInsertModifyProperty(<number>(user.userId), actions);
         }
         return Promise.resolve([] as UserPropertiesModifyMessageReturned[]);
 
@@ -595,45 +594,34 @@ export class HermesStore extends Store {
 
 
 
-        let userAnon = staticCast<UserProperties>(this.userMaps.get('name', USR_ANONYMOUS));
-        let rcAnon: UserMessageReturned = {
-            userName: staticCast<string>(userAnon.name),
-            userEmail: staticCast<string>(userAnon.email),
-            userId: staticCast<number>(userAnon.id)
-        };
+        let userAnon = <UserProperties>(this.userMaps.get('userName', USR_ANONYMOUS));
+        let rcAnon: UserMessageReturned = deepClone(userAnon);
 
-        if (user.id === userAnon.id || user.name === userAnon.name) {
+        if (user.userId === userAnon.userId || user.userName === userAnon.userName) {
             return Promise.resolve(rcAnon);
         }
 
-        if (user.id === undefined && user.name === undefined) {
+        if (user.userId === undefined && user.userName === undefined) {
             return Promise.resolve(rcAnon);
         }
         // at this point its not an anonymous user, we could have partial information , make the best of it      
-        let oldUser = this.userMaps.get('id', user.id);
+        let oldUser = this.userMaps.get('userId', user.userId);
         if (!oldUser) {
-            oldUser = this.userMaps.get('name', user.name);
+            oldUser = this.userMaps.get('userName', user.userName);
             if (!oldUser) {
-                oldUser = this.userMaps.get('email', user.email);
+                oldUser = this.userMaps.get('userEmail', user.userEmail);
             }
         }
 
         if (oldUser) { //correct possible mess and resolve
-            user.id = oldUser.id;
-            user.name = oldUser.name;
-            user.email = oldUser.email;
-            let reply: UserMessageReturned = {
-                userName: staticCast<string>(user.name),
-                userEmail: staticCast<string>(user.email),
-                userId: staticCast<number>(user.id)
-            };
+            user.userId = oldUser.userId;
+            user.userName = oldUser.userName;
+            user.userEmail = oldUser.userEmail;
+            let reply: UserMessageReturned = deepClone(user);
             return Promise.resolve(reply);
         }
 
-        let msg: UserMessageBase = {
-            userName: staticCast<string>(user.name),
-            userEmail: staticCast<string>(user.email),
-        };
+        let msg: UserMessageBase = deepClone(user);
         logger.trace('Will insert user %j', msg);
         return this.adaptor.userInsert(msg);
     }
@@ -649,19 +637,19 @@ export class HermesStore extends Store {
 
 
     public getAnonymousUser(): UserProperties {
-        return <UserProperties>this.userMaps.get('name', USR_ANONYMOUS);
+        return <UserProperties>this.userMaps.get('userName', USR_ANONYMOUS);
     }
 
     public getUserById(userId: number): UserProperties | undefined {
-        return this.userMaps.get('id', userId);
+        return this.userMaps.get('userId', userId);
     }
 
     public getUserByName(userName: string): UserProperties | undefined {
-        return this.userMaps.get('name', userName);
+        return this.userMaps.get('userName', userName);
     }
 
     public getUserByEmail(email: string): UserProperties | undefined {
-        return this.userMaps.get('email', email);
+        return this.userMaps.get('userEmail', email);
     }
 
     public get connected() {
@@ -713,7 +701,7 @@ export class HermesStore extends Store {
         let allSessions = this.tokenMaps.values().filter((token) => {
             return token.purpose === STKN;
         }).map((token) => {
-            let rc = staticCast<Express.SessionData>(this.getSession(token.tokenId));
+            let rc = <Express.SessionData>(this.getSession(token.tokenId));
             return rc;
         });
         //we have all sessions as an array
@@ -796,17 +784,12 @@ export class HermesStore extends Store {
         //
         this.userInsert(user).then((reply) => {
             logger.trace('%s: User %s tentative association.', sessionId, reply.userName);
-            let oldUser = this.userMaps.get('id', reply.userId) || { userProps: {} };
-            updatedUser = {
-                name: reply.userName,
-                email: reply.userEmail,
-                id: reply.userId,
-                userProps: deepClone(oldUser.userProps)
-            };
+            let oldUser = this.userMaps.get('userId', reply.userId) || { userProps: {} };
+            updatedUser = Object.assign({}, reply, { userProps: deepClone(oldUser.userProps) });
             this.userMaps.set(updatedUser);
             return this.userPropertiesUpdateInsert(user);
         }).then((reply) => {
-            logger.debug('%s: User %s exist/created, has %d properties', sessionId, updatedUser.name, Object.keys(updatedUser.userProps).length);
+            logger.debug('%s: User %s exist/created, has %d properties', sessionId, updatedUser.userName, Object.keys(updatedUser.userProps).length);
             let userProps = updatedUser.userProps;
             for (let msg of reply) {
                 if (msg.invisible === true) {
@@ -816,7 +799,7 @@ export class HermesStore extends Store {
                 userProps[msg.propName] = msg.propValue;
             }
             this.userMaps.set(updatedUser);
-            token.fkUserId = staticCast<number>(updatedUser.id); // associate
+            token.fkUserId = <number>(updatedUser.userId); // associate
             return this.tokenUpdateInsert(token);
         }).then((reply) => {
             logger.debug('%s: token updated', sessionId);

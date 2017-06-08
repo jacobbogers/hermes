@@ -53,7 +53,7 @@ export class HermesGraphQLConnector {
     }
 
     public isAnonymous(): boolean {
-        return this.user.name === this.store.getAnonymousUser().name;
+        return this.user.userName === this.store.getAnonymousUser().userName;
     }
 
     public isUserBlackListed(): boolean {
@@ -138,14 +138,14 @@ export class HermesGraphQLConnector {
                     });
                 }
                 let expire = this.getExpiredAsDate().toString();
-                let { name, email } = this.getUser();
+                let { userName, userEmail } = this.getUser();
                 return resolve({
                     serverInfo: {
                         serverTime: new Date().toString()
                     },
                     data: {
-                        name,
-                        email,
+                        name: userName,
+                        email: userEmail,
                         expire
                     }
                 });

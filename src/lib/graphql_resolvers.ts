@@ -29,13 +29,13 @@ const currentUser = (...rest: any[]) => {
     }
 
     let connector = context.connector as HermesGraphQLConnector;
-    let { name, email } = connector.getUser();
+    let { userName, userEmail } = connector.getUser();
     let expire = connector.getExpiredAsDate().toString();
 
     return Promise.resolve<AuthenticationResult>({
         data: {
-            name,
-            email,
+            name: userName,
+            email: userEmail,
             expire
         },
         serverInfo: {

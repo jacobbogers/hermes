@@ -24,10 +24,6 @@ export const ifInvalidPortString = validationFactory((s: any) => {
 });
 
 
-export function staticCast<T>(obj: any): T {
-    return obj as T;
-}
-
 export interface AnyObjProps {
     [index: string]: string;
 }

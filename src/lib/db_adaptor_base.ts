@@ -2,8 +2,14 @@
 
 import * as EventEmitter from 'events';
 import * as util from 'util';
-import { logger } from './logger';
+
+import Logger from './logger';
+const logger = Logger.getLogger();
+
 import { SystemInfo } from './system';
+
+
+export const DB_STR_BLACKLISTED = 'BLACKLISTED';
 
 export class AdaptorError extends Error {
     private _adaptorState: ADAPTOR_STATE;
@@ -94,6 +100,8 @@ export interface TokenPropertiesModifyMessageReturned extends PropertiesModifyMe
 }
 
 
+
+
 /* users and tokens */
 
 export interface TokensAndPropsMessage extends TokenMessage {
@@ -108,10 +116,10 @@ export interface TokensAndPropsMessage extends TokenMessage {
     blackListed: boolean; //its a repeat but ok
     tsRevoked: number | null;
     revokeReason: string | null;
-    sessionPropName: string;
-    sessionPropValue: string;
-    propName: string;
-    propValue: string;
+    sessionPropName: string | null;
+    sessionPropValue: string | null;
+    propName: string | null;
+    propValue: string | null;
 }
 
 /* template */
@@ -229,7 +237,7 @@ export abstract class AdaptorBase extends EventEmitter {
         return SystemInfo.createSystemInfo().systemWarnings<AdaptorWarning>(null, AdaptorError).map((warn) => String(warn));
     }
 
-    protected _state: ADAPTOR_STATE = ADAPTOR_STATE.UnInitialized;
+    private _state: ADAPTOR_STATE = ADAPTOR_STATE.UnInitialized;
 
     protected addErr(message: string | Error, ...rest: any[]) {
         //the last one is the error code
@@ -284,13 +292,13 @@ export abstract class AdaptorBase extends EventEmitter {
     /* user */
     public abstract userInsert(token: UserMessageBase): Promise<UserMessageReturned>;
     public abstract userInsertModifyProperty(userId: number, modifications: PropertiesModifyMessage[]): Promise<UserPropertiesModifyMessageReturned[]>;
-    public abstract userSelectByFilter(notHavingProp?: string): Promise<UsersAndPropsMessage[]>;
+    public abstract userSelectByFilter(): Promise<UsersAndPropsMessage[]>;
     /*tokens*/
     public abstract tokenInsertModify(token: TokenMessage): Promise<TokenMessageReturned>;
     public abstract tokenInsertModifyProperty(tokenId: string, modifications: PropertiesModifyMessage[]): Promise<TokenPropertiesModifyMessageReturned[]>;
     public abstract tokenAssociateWithUser(tokenId: string, userId: number): Promise<boolean>;
-    public abstract tokenDoExpire(tokenId: string, expireReason: string, expireTime?: number | null): Promise<boolean>;
-    public abstract tokenGC(deleteBeforeExpireTime: number): Promise<number>;
+    public abstract tokenDoRevoke(tokenId: string, revokeReason: string, revokeTime?: number | null): Promise<boolean>;
+    public abstract tokenGC(deleteOlderThen: number): Promise<number>;
     public abstract tokenSelectAllByFilter(timestampExpire: number | null, startTimestampRevoked: number, endTimestampRevoked: number): Promise<TokensAndPropsMessage[]>;
     public abstract tokenSelectAllByUserIdOrName(userId: number | null, userName: string | null): Promise<TokensAndPropsMessage[]>;
     /* templates */
