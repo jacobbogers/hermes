@@ -115,6 +115,14 @@ export class HermesGraphQLConnector {
         return;
     }
 
+    public emailExist(userEmail: string): boolean {
+        return !!this.store.getUserByEmail(userEmail);
+    }
+
+    public userNameExist(userName: string): boolean {
+        return !!this.store.getUserByName(userName);
+    }
+
     public getUser(): UserProperties {
         return deepClone(this.user);
     }

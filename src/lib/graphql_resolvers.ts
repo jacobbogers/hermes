@@ -19,6 +19,26 @@ export interface AuthenticationResult {
     serverInfo: ServerInfo;
 }
 
+
+const emailExist = (...rest: any[]) => {
+    let args = rest[1];
+    let context = rest[2];
+    if (context.errors) {
+        return Promise.resolve<AuthenticationResult>({ errors: context.errors, serverInfo: { serverTime: new Date().toString() } });
+    }
+    let email = <string>args['email'];
+    let connector = context.connector as HermesGraphQLConnector;
+    let result: AuthenticationResult = {
+        serverInfo: {
+            serverTime: new Date().toString()
+        }
+    };
+    if (connector.emailExist(email)) {
+        result.data = { email };
+    }
+    return Promise.resolve<AuthenticationResult>(result);
+};
+
 //query
 const currentUser = (...rest: any[]) => {
 
@@ -44,6 +64,7 @@ const currentUser = (...rest: any[]) => {
     });
 };
 
+
 const login = (obj: any, { password, email }: { password: string, email: string }, context: any) => {
     obj;
     if (context.errors) {
@@ -60,7 +81,7 @@ const login = (obj: any, { password, email }: { password: string, email: string 
 };
 
 const logout = (...rest: any[]) => {
-  
+
     let context = rest[2]; // 'obj' and 'args' are cannot be made optional
 
     if (context.errors) {
@@ -78,9 +99,30 @@ const logout = (...rest: any[]) => {
     return connector.save();
 };
 
+
+const userExist = (...rest: any[]) => {
+    let args = rest[1];
+    let context = rest[2];
+    if (context.errors) {
+        return Promise.resolve<AuthenticationResult>({ errors: context.errors, serverInfo: { serverTime: new Date().toString() } });
+    }
+    let name = <string>args['name'];
+    let connector = context.connector as HermesGraphQLConnector;
+    let result: AuthenticationResult = {
+        serverInfo: {
+            serverTime: new Date().toString()
+        }
+    };
+    if (connector.userNameExist(name)) {
+        result.data = { name };
+    }
+    return Promise.resolve<AuthenticationResult>(result);
+};
+
 export const resolvers = {
     Query: {
-        currentUser
+        currentUser,
+        emailExist,
     },
     Mutation: {
         login,
