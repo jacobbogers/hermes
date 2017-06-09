@@ -56,8 +56,61 @@ export class AdaptorMock extends AdaptorBase {
     }
 
     private populateMaps() {
-        //todo
+        //users
+        let users: UserProperties[] = [
+            { userId: 1, userName: 'lucifer696', userEmail: 'vdingbats@gmail.com', userProps: {} },
+            { userId: 7, userName: 'lucifer69c6', userEmail: 'vdwingbats@gmail.com', userProps: {} },
+            { userId: 15, userName: 'anonymous', userEmail: '', userProps: {} },
+            { userId: 18, userName: 'lucife696x', userEmail: 'change@me.lu', userProps: {} },
+            { userId: 23, userName: 'jacobot', userEmail: 'email', userProps: {} }
+        ];
+
+        users.forEach((u) => this.user.set(u));
+
+        // userProps
+        let userProps = [
+            { fk_user_id: 23, prop_name: 'LAST_NAME', prop_value: 'Bovors', invisible: false },
+            { fk_user_id: 23, prop_name: 'AUTH', prop_value: 'admin', invisible: false },
+            { fk_user_id: 23, prop_name: 'zipcode', prop_value: 'L1311', invisible: false },
+            { fk_user_id: 1, prop_name: 'LAST_NAME', prop_value: 'Bovors', invisible: false },
+            { fk_user_id: 1, prop_name: 'AUTH', prop_value: 'admin', invisible: false },
+            { fk_user_id: 1, prop_name: 'phoneNr', prop_value: '+352621630973', invisible: true },
+            { fk_user_id: 1, prop_name: 'BLACKLISTED', prop_value: '', invisible: false },
+            { fk_user_id: 18, prop_name: 'password', prop_value: 'dingbats', invisible: false }
+        ];
+
+        userProps.forEach((up) => {
+            let u = this.user.get('userId', up.fk_user_id);
+            if (u) {
+                u.userProps[up.prop_name] = up.prop_value;
+                this.user.set(u);
+            }
+        });
+
+
+        let templates = [
+            { id: 0, cookie_name: '', path: null, max_age: 86400000, http_only: null, secure: null, domain: null, same_site: null, rolling: null, template_name: 'default_token' },
+            { id: 1, cookie_name: 'hermes.session', path: '/', max_age: 10800000, http_only: true, secure: false, domain: null, same_site: true, rolling: true, template_name: 'default_cookie' },
+            { id: 3, cookie_name: 'hermes.session', path: '/', max_age: 10800000, http_only: true, secure: false, domain: null, same_site: true, rolling: true, template_name: 'secure_cookie' },
+        ];
+
+        templates.forEach((t) => {
+            this.template.set({
+                id: t.id,
+                cookieName: t.cookie_name,
+                path: t.path,
+                maxAge: t.max_age,
+                httpOnly: t.http_only,
+                secure: t.secure,
+                domain: t.domain,
+                sameSite: t.same_site,
+                rolling: t.rolling,
+                templateName: t.template_name
+            });
+
+        });
     }
+
 
     public constructor() {
         super();

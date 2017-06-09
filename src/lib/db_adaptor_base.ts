@@ -127,13 +127,13 @@ export interface TokensAndPropsMessage extends TokenMessage {
 export interface TemplatePropsMessage {
     id: number;
     cookieName: string;
-    path: string;
-    maxAge: number;
-    httpOnly: boolean;
-    secure: boolean;
-    domain: string;
-    sameSite: boolean;
-    rolling: boolean;
+    path: string | null;
+    maxAge: number | null;
+    httpOnly: boolean | null;
+    secure: boolean | null;
+    domain: string | null;
+    sameSite: boolean | null;
+    rolling: boolean | null;
     templateName: string;
 }
 

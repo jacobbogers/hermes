@@ -1,0 +1,82 @@
+bookbarter=> \dt auth.*
+                   List of relations
+ Schema |           Name           | Type  |   Owner
+--------+--------------------------+-------+------------
+ auth   | issued_user_tokens       | table | bookbarter
+ auth   | session_cookies_template | table | bookbarter
+ auth   | session_props            | table | bookbarter
+ auth   | user                     | table | bookbarter
+ auth   | user_props               | table | bookbarter
+(5 rows)
+
+bookbarter=>
+bookbarter=> select * from auth.issued_user_tokens ;
+                id                | fk_user_id | purpose | ip_addr | timestamp_issued | timestamp_revoked | revoke_reason | timestamp_expire | fk_cookie_template_id
+----------------------------------+------------+---------+---------+------------------+-------------------+---------------+------------------+-----------------------
+ OBZ4HMkNZe7mGhc6FggBxtUuA0yXLy6M |         15 | STKN    | ::1     |    1494740729154 |                   |               |    1494753838277 |                     1
+ Yc1slrIbwqpX4HadC0QTCUA_bynoOwum |         15 | STKN    | ::1     |    1494946986735 |                   |               |    1494973492249 |                     1
+ wvkeDyqJulnuJ8K4rZg9Rp_7Ns2NxHe5 |         15 | STKN    | ::1     |    1495551268274 |                   |               |    1495562068430 |                     1
+ 4BNkK6VpmCoAoxjdPoMViKQaddxt54sS |          1 | STKN    | ::1     |    1494755859193 |                   |               |    1494784082538 |                     1
+ D1ZqdIm_w4Jpu7KYHin5qUlguJ-UxlWg |         15 | STKN    | ::1     |    1496404269111 |                   |               |    1496415086278 |                     1
+ 1KoPfn0TDW4K6afTglvSncLrZZ91lh89 |         15 | STKN    | ::1     |    1494860220975 |                   |               |    1494880484837 |                     1
+ VBAqsQ7-qM-xvfDV8vaGWHqBPKitEXtW |         15 | STKN    | ::1     |    1494946986220 |                   |               |    1494957786214 |                     1
+ HDmwIUS8UfERni5t9hj_tmP-FKKncT1J |          1 | STKN    | ::1     |    1496239447815 |                   |               |    1496259856491 |                     1
+ 8e85FJwEkXY4k5rbWnbwJAjl0kTkGqQ7 |         15 | STKN    | ::1     |    1494842370084 |                   |               |    1494859185496 |                     1
+ -roxAAcb21ZntDt8UzODru1ASJ7hDDkT |          1 | STKN    | ::1     |    1496263771770 |                   |               |    1496275386589 |                     1
+ br2mDOeCuzrM8csUYVCLqxOBP1Cp-dbD |         15 | STKN    | ::1     |    1496578700547 |                   |               |    1496596499168 |                     1
+ uzF9h5TH3ky9kp9Xf10zNJaPzm8gzA-o |         18 | STKN    | ::1     |    1496341221670 |                   |               |    1496377281986 |                     1
+
+ bookbarter=> select * from auth.session_cookies_template ;
+ id |  cookie_name   | path | max_age  | http_only | secure | domain | same_site | rolling | template_name
+----+----------------+------+----------+-----------+--------+--------+-----------+---------+----------------
+  0 |                |      | 86400000 |           |        |        |           |         | default_token
+  1 | hermes.session | /    | 10800000 | t         | f      |        | t         | t       | default_cookie
+  3 | hermes.session | /    | 10800000 | t         | t      |        | t         | t       | secure_cookie
+
+bookbarter=> select * from auth.session_props;
+           fk_token_id            | session_prop_name | session_prop_value | invisible
+----------------------------------+-------------------+--------------------+-----------
+ OBZ4HMkNZe7mGhc6FggBxtUuA0yXLy6M | LAST_NAME         |                    | f
+ OBZ4HMkNZe7mGhc6FggBxtUuA0yXLy6M | AUTH              | 1                  | f
+ 4BNkK6VpmCoAoxjdPoMViKQaddxt54sS | LAST_NAME         |                    | f
+ 4BNkK6VpmCoAoxjdPoMViKQaddxt54sS | AUTH              | 1                  | f
+ 4BNkK6VpmCoAoxjdPoMViKQaddxt54sS | COUNTRY           | LU                 | f
+ 4BNkK6VpmCoAoxjdPoMViKQaddxt54sS | CITY              | VILLE              | f
+ 4BNkK6VpmCoAoxjdPoMViKQaddxt54sS | FIRST_NAME        | HENRY              | f
+ HDmwIUS8UfERni5t9hj_tmP-FKKncT1J | COUNTRY           | LU                 | f
+ HDmwIUS8UfERni5t9hj_tmP-FKKncT1J | FIRST_NAME        | HENRY              | f
+ HDmwIUS8UfERni5t9hj_tmP-FKKncT1J | CITY              | VILLE              | f
+ -roxAAcb21ZntDt8UzODru1ASJ7hDDkT | COUNTRY           | LU                 | f
+ -roxAAcb21ZntDt8UzODru1ASJ7hDDkT | FIRST_NAME        | HENRY              | f
+ -roxAAcb21ZntDt8UzODru1ASJ7hDDkT | CITY              | VILLE              | f
+ uzF9h5TH3ky9kp9Xf10zNJaPzm8gzA-o | COUNTRY           | LU                 | f
+ uzF9h5TH3ky9kp9Xf10zNJaPzm8gzA-o | FIRST_NAME        | HENRY              | f
+ uzF9h5TH3ky9kp9Xf10zNJaPzm8gzA-o | CITY              | VILLE              | f
+(16 rows)
+
+bookbarter=> select * from auth.user;
+ id |     name     |        email
+----+--------------+----------------------
+  1 | lucifer696   | vdingbats@gmail.com
+  7 | lucifer69c6  | vdwingbats@gmail.com
+ 15 | anonymous    |
+ 18 | lucifer696xx | changed@me.lu
+ 23 | jacobot      | email
+(5 rows)
+
+bookbarter=> select * from auth.user_props;
+ fk_user_id |  prop_name  |  prop_value  | invisible
+------------+-------------+--------------+-----------
+         23 | LAST_NAME   | Bovors       | f
+         23 | AUTH        | admin        | f
+         23 | zipcode     | L1311        | f
+          1 | LAST_NAME   | Bovors       | f
+          1 | AUTH        | admin        | f
+          1 | phoneNr     | +35262163973 | t
+          1 | BLACKLISTED |              | f
+         18 | password    | dingbats     | f
+(8 rows)
+
+
+
+  

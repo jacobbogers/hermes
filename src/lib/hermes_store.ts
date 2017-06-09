@@ -395,13 +395,13 @@ export class HermesStore extends Store {
 
             }) as TokenProperties,
             cookie: Object.seal({
-                maxAge: template.maxAge,
-                originalMaxAge: template.maxAge,
+                maxAge: <number>template.maxAge,
+                originalMaxAge: <number>template.maxAge,
                 expires: new Date(token.tsExpire),
-                domain: template.domain,
-                secure: template.secure,
-                httpOnly: template.httpOnly,
-                path: template.path
+                domain: <string>template.domain,
+                secure: <boolean>template.secure,
+                httpOnly: <boolean>template.httpOnly,
+                path: <string>template.path
             }),
             _user: Object.seal(this.userMaps.get('userId', token.fkUserId || USR_ANONYMOUS) || this.userMaps.get('userId', USR_ANONYMOUS))
 
@@ -667,15 +667,15 @@ export class HermesStore extends Store {
             throw new Error(err);
         }
         let rc: express.CookieOptions = {
-            maxAge: opt.maxAge,
+            maxAge: opt.maxAge || undefined,
             //signed: true,
             //expires:
-            httpOnly: opt.httpOnly,
-            path: opt.path,
-            domain: opt.domain,
-            secure: opt.secure,
+            httpOnly: opt.httpOnly || undefined,
+            path: opt.path || undefined,
+            domain: opt.domain || undefined,
+            secure: opt.secure || undefined,
             //encode
-            sameSite: opt.sameSite
+            sameSite: opt.sameSite || undefined
         };
         return rc;
     }
