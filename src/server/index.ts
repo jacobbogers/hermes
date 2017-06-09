@@ -9,10 +9,14 @@ import { SystemInfo } from '../lib/system';
 import { registerAuth } from '../lib/authentication';
 
 import {
-    AdaptorPostgreSQL,
+    //AdaptorPostgreSQL,
 } from '../lib/db_adaptor_postgresql';
 
-import  Logger  from '../lib/logger';
+import {
+    AdaptorMock
+} from '../lib/db_adaptor_mock';
+
+import Logger from '../lib/logger';
 
 const logger = Logger.getLogger();
 
@@ -79,9 +83,10 @@ app.use(bodyParser.raw({
 
 let props: HermesStoreProperties = {
     defaultCookieOptionsName: 'default_cookie',
-    adaptor: new AdaptorPostgreSQL({
+    adaptor: new AdaptorMock()
+    /*adaptor: new AdaptorPostgreSQL({
         url: 'postgresql://bookbarter:bookbarter@jacob-bogers.com:5432/bookbarter?sslmode=require'
-    })
+    })*/
 };
 
 

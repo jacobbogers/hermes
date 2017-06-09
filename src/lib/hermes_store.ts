@@ -146,7 +146,7 @@ export class HermesStore extends Store {
         this.tokenMaps = new MapWithIndexes<TokenProperties>('tokenId');
         this.templateMaps = new MapWithIndexes<TemplateProperties>('templateName', 'id');
 
-
+        /* disconnect event added by express-session inner workings*/
         this.once('newListener', (event: string, listener: () => void) => {
             if (event === 'disconnect') {
                 if (!this.adaptor.connected) {

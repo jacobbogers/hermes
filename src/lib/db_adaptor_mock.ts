@@ -109,6 +109,8 @@ export class AdaptorMock extends AdaptorBase {
             });
 
         });
+
+
     }
 
 
@@ -251,18 +253,20 @@ export class AdaptorMock extends AdaptorBase {
 
             //flatten users and props
             let rc = this.user.values().reduce((prev, user) => {
-                for (let p in user.userProps) {
+                let propKeys = Object.getOwnPropertyNames(user.userProps);
+                do {
+                    let pKey = propKeys.pop();
+                    let pValue = pKey && user.userProps[pKey];
                     prev.push({
                         userId: user.userId,
                         userName: user.userName,
                         userEmail: user.userEmail,
-                        propName: p,
-                        propValue: user.userProps[p]
+                        propName: pKey,
+                        propValue: pValue
                     } as UsersAndPropsMessage);
-                }
+                } while (propKeys.length);
                 return prev;
             }, [] as UsersAndPropsMessage[]);
-
             logger.trace('[selectUserProps]success: rows fetched %d', rc.length);
             resolve(rc);
         });
