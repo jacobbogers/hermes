@@ -16,8 +16,8 @@ create table user_props (
    constraint user_props_user_fk 
      FOREIGN KEY (fk_user_id) REFERENCES auth.user(id) on delete cascade 
 )
-create UNIQUE index user_props_user_udx on auth.user_props(fk_user_id, prop_name)  
-create index user_props_user_name_idx on auth.user_props(prop_name, fk_user_id)  
+create UNIQUE index user_props_user_udx on auth.user_props(fk_user_id, upper(prop_name))  
+create index user_props_user_name_idx on auth.user_props(upper(prop_name), fk_user_id)  
 --
 create table session_cookies_template ( -- insert a dummy '0' value
   id bigint,
@@ -33,7 +33,7 @@ create table session_cookies_template ( -- insert a dummy '0' value
  CONSTRAINT session_cookies_template_pk PRIMARY KEY (id)
 )
 create unique index sct_pk on session_cookies_template(id)
-create unique index sct_uix on session_cookies_template(template_name)
+create unique index sct_uix on session_cookies_template(upper(template_name))
 --
 create table issued_user_tokens (  
    id varchar(64), -- token id
@@ -59,7 +59,7 @@ create table session_props (
    session_prop_name varchar(30),
    session_prop_value varchar(120),
    invisible boolean default false,
-   CONSTRAINT pk_session_props PRIMARY KEY (fk_token_id, session_prop_name),
+   CONSTRAINT pk_session_props PRIMARY KEY (fk_token_id, upper(session_prop_name)),
    CONSTRAINT fk_token_id FOREIGN KEY (fk_token_id) REFERENCES auth.issued_user_tokens(id) on delete cascade
 )
-CREATE UNIQUE INDEX session_props_idx ON auth.session_props( fk_token_id, session_prop_name)
+CREATE UNIQUE INDEX session_props_idx ON auth.session_props( fk_token_id, upper(session_prop_name))

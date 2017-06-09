@@ -26,15 +26,16 @@ const isUserNameRegistered = (...rest: any[]) => {
     if (context.errors) {
         return Promise.resolve<AuthenticationResult>({ errors: context.errors, serverInfo: { serverTime: new Date().toString() } });
     }
-    let email = <string>args['email'];
+    let name = <string>args['name'];
     let connector = context.connector as HermesGraphQLConnector;
     let result: AuthenticationResult = {
         serverInfo: {
             serverTime: new Date().toString()
         }
     };
-    if (connector.emailExist(email)) {
-        result.data = { email };
+    let nameTest = connector.userNameExist(name || '') || null;
+    if (nameTest) {
+        result.data = { name: nameTest };
     }
     return Promise.resolve<AuthenticationResult>(result);
 };
@@ -103,15 +104,16 @@ const isEmailRegistered = (...rest: any[]) => {
     if (context.errors) {
         return Promise.resolve<AuthenticationResult>({ errors: context.errors, serverInfo: { serverTime: new Date().toString() } });
     }
-    let name = <string>args['name'];
+    let email = <string>args['email'];
     let connector = context.connector as HermesGraphQLConnector;
     let result: AuthenticationResult = {
         serverInfo: {
             serverTime: new Date().toString()
         }
     };
-    if (connector.userNameExist(name)) {
-        result.data = { name };
+    let emailTest = connector.emailExist(email || '') || null;
+    if (emailTest) {
+        result.data = { email: emailTest };
     }
     return Promise.resolve<AuthenticationResult>(result);
 };

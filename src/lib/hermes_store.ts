@@ -35,8 +35,8 @@ import {
 
     MapWithIndexes,
     AnyObjProps,
-    deepClone
-
+    deepClone,
+    makeValueslowerCase,
 } from './utils';
 
 import * as util from 'util';
@@ -273,6 +273,7 @@ export class HermesStore extends Store {
     private processUsersSelectAll(data: UsersAndPropsMessage[]) {
         this.userMaps.clear();
         for (let user of data) {
+            makeValueslowerCase(user, 'userEmail', 'userName');
             let uf = this.userMaps.get('userId', user.userId);
             if (uf === undefined) {
                 uf = Object.assign({}, user, { userProps: {} }) as UserProperties;
@@ -298,7 +299,7 @@ export class HermesStore extends Store {
             if (oldSessProps[props] !== newSessProps[props]) {
                 logger.debug('%s: property %s has changed', token.tokenId, props);
                 actions.push({
-                    propName: props,
+                    propName: props.toUpperCase(),
                     propValue: newSessProps[props],
                     invisible: false
                 });
@@ -312,7 +313,7 @@ export class HermesStore extends Store {
         }).map((propNameFiltered) => {
             logger.trace('%s: property %s marked for deletion', token.tokenId, propNameFiltered);
 
-            let rc: PropertiesModifyMessage = { propName: propNameFiltered, propValue: oldSessProps[propNameFiltered], invisible: true };
+            let rc: PropertiesModifyMessage = { propName: propNameFiltered.toLocaleLowerCase(), propValue: oldSessProps[propNameFiltered], invisible: true };
             return rc;
         }) as PropertiesModifyMessage[];
 
@@ -645,10 +646,12 @@ export class HermesStore extends Store {
     }
 
     public getUserByName(userName: string): UserProperties | undefined {
+        userName = userName.toLocaleLowerCase();
         return this.userMaps.get('userName', userName);
     }
 
     public getUserByEmail(email: string): UserProperties | undefined {
+        email = email.toLocaleLowerCase();
         return this.userMaps.get('userEmail', email);
     }
 
@@ -836,7 +839,7 @@ export class HermesStore extends Store {
             self.tokenMaps.set(updatedToken);
             //process change in user properties and user name
             return Promise.resolve('DONE');
-        }).then(function final(){
+        }).then(function final() {
             logger.debug('finalize session %s', token.tokenId);
             /* this only happens if the sessionId is newly created */
             if (!session._hermes || !session._user) {

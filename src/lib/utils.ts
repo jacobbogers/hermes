@@ -212,9 +212,19 @@ export function loadFiles<T>(files: T): Promise<T> {
                     results[fileNameAlias] = data as any;
                 }
                 if (toDo === 0) {
-                  return resolve(results);
+                    return resolve(results);
                 }
             });
         });
     });
+}
+
+
+export function makeValueslowerCase<I>(obj: I , ...props: (keyof I)[]) {
+    for (let prop of props){
+        if (typeof (obj[prop]) === 'string'){
+            let value: string = obj[prop] as any;
+            obj[prop] = value.toLocaleLowerCase() as any;
+        }
+    }
 }

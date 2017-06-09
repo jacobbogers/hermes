@@ -58,14 +58,18 @@ export class AdaptorMock extends AdaptorBase {
     private populateMaps() {
         //users
         let users: UserProperties[] = [
-            { userId: 1, userName: 'lucifer696', userEmail: 'vdingbats@gmail.com', userProps: {} },
+            { userId: 1, userName: 'Lucifer696', userEmail: 'vdingbats@gmail.com', userProps: {} },
             { userId: 7, userName: 'lucifer69c6', userEmail: 'vdwingbats@gmail.com', userProps: {} },
             { userId: 15, userName: 'anonymous', userEmail: '', userProps: {} },
             { userId: 18, userName: 'lucife696x', userEmail: 'change@me.lu', userProps: {} },
             { userId: 23, userName: 'jacobot', userEmail: 'email', userProps: {} }
         ];
 
-        users.forEach((u) => this.user.set(u));
+        users.forEach((u) => {
+            u.userName = u.userName.toLocaleLowerCase();
+            u.userEmail = u.userEmail.toLocaleLowerCase();
+            this.user.set(u);
+        });
 
         // userProps
         let userProps = [
@@ -82,6 +86,7 @@ export class AdaptorMock extends AdaptorBase {
         userProps.forEach((up) => {
             let u = this.user.get('userId', up.fk_user_id);
             if (u) {
+                up.prop_name = up.prop_name.toLocaleLowerCase();
                 u.userProps[up.prop_name] = up.prop_value;
                 this.user.set(u);
             }
@@ -97,7 +102,7 @@ export class AdaptorMock extends AdaptorBase {
         templates.forEach((t) => {
             this.template.set({
                 id: t.id,
-                cookieName: t.cookie_name,
+                cookieName: t.cookie_name.toLocaleLowerCase(),
                 path: t.path,
                 maxAge: t.max_age,
                 httpOnly: t.http_only,
@@ -105,7 +110,7 @@ export class AdaptorMock extends AdaptorBase {
                 domain: t.domain,
                 sameSite: t.same_site,
                 rolling: t.rolling,
-                templateName: t.template_name
+                templateName: t.template_name.toLocaleLowerCase()
             });
 
         });

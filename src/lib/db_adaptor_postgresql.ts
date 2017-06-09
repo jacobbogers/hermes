@@ -368,7 +368,9 @@ export class AdaptorPostgreSQL extends AdaptorBase {
         logger.trace('inserting/updating token %j', t);
 
         let qc = <pg.QueryConfig>(this.sql.get('sqlTokenInsertModify'));
-
+        
+        t.templateName = t.templateName && t.templateName.toLocaleLowerCase() || null;
+        
         let sqlObject = Object.assign({}, qc, { values: [t.tokenId, t.fkUserId, t.purpose, t.ipAddr, t.tsIssuance, t.tsRevoked, t.revokeReason, t.tsExpire, t.templateName] }) as pg.QueryConfig;
 
         return this.executeSQL<TokenMessageReturned>([sqlObject], (res, resolve) => {

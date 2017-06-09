@@ -34,7 +34,7 @@ export const typeDefs: string[] = [
         }
 
         type Mutation {
-            login(email:String, password:String ): AuthResult
+            login(email:String!, password:String! ): AuthResult
             logout: AuthResult
             createUser(name:String! , email:String!, password:String!): AuthResult
         }

@@ -115,12 +115,14 @@ export class HermesGraphQLConnector {
         return;
     }
 
-    public emailExist(userEmail: string): boolean {
-        return !!this.store.getUserByEmail(userEmail);
+    public emailExist(userEmail: string): string|undefined {
+        let u = this.store.getUserByEmail(userEmail) || { userEmail: undefined };
+        return u.userEmail;
     }
 
-    public userNameExist(userName: string): boolean {
-        return !!this.store.getUserByName(userName);
+    public userNameExist(userName: string): string| undefined {
+        let u = this.store.getUserByName(userName) || { userName: undefined };
+        return u.userName;
     }
 
     public getUser(): UserProperties {
