@@ -292,20 +292,22 @@ export class AdaptorMock extends AdaptorBase {
         makeObjectNull(t);
         t.tokenId = t.tokenId || uid;
 
-        return new Promise<TokenMessageReturned>((resolve, reject) => {
+        let self = this;
+
+        return new Promise<TokenMessageReturned>(function asyncTokenInsertModify(resolve, reject){
             //determine template
             t.templateName = token.templateName || 'default_token'; //is it is defaulted in the sql query
-            let template = this.template.get('templateName', t.templateName);
+            let template = self.template.get('templateName', t.templateName);
             if (template === undefined) {
                 return reject(new AdaptorError(
                     util.format('could not find template [%s]', t.templateName),
-                    this.state
+                    self.state
                 ));
             }
             //create-update tokenProperties
-            this.token.set(t); // a copy is saved!! not a reference to 't'
+            self.token.set(t); // a copy is saved!! not a reference to 't'
             //return value is the same less for sessionprops stripped off
-            logger.debug('success: "created/updated token", returned values %j', t);
+            logger.debug('success: "created/updated token": %j', t);
             return resolve({
                 tokenId: t.tokenId,
                 fkUserId: t.fkUserId,
@@ -315,6 +317,7 @@ export class AdaptorMock extends AdaptorBase {
                 tsRevoked: t.tsRevoked,
                 revokeReason: t.revokeReason,
                 tsExpire: t.tsExpire,
+                tsExpireCache: t.tsExpire,
                 templateId: template.id
             });
         });
@@ -451,6 +454,7 @@ export class AdaptorMock extends AdaptorBase {
                     tsIssuance: token.tsIssuance,
                     tsRevoked: token.tsRevoked,
                     tsExpire: token.tsExpire,
+                    tsExpireCache: token.tsExpire,
                     revokeReason: token.revokeReason,
                     templateName: token.templateName,
                     sessionPropName: tPropName || null,

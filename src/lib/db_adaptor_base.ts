@@ -84,6 +84,7 @@ export interface TokenMessageBase {
     tsRevoked: number | null;
     revokeReason: string | null;
     tsExpire: number;
+    tsExpireCache: number;
 }
 
 export interface TokenMessage extends TokenMessageBase {

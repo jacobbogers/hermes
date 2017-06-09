@@ -387,6 +387,7 @@ export class AdaptorPostgreSQL extends AdaptorBase {
                 tsRevoked: row['timestamp_revoked'] as number,
                 revokeReason: row['revoke_reason'] as string,
                 tsExpire: row['timestamp_expire'] as number,
+                tsExpireCache: row['timestamp_expire'] as number,
                 templateId: row['fk_cookie_template_id'] as number
             };
             logger.debug('success: "creating token", returned values %j', rc);
@@ -511,6 +512,7 @@ export class AdaptorPostgreSQL extends AdaptorBase {
                     tsIssuance: raw['timestamp_issued'],
                     tsRevoked: raw['timestamp_revoked'],
                     tsExpire: raw['timestamp_expire'],
+                    tsExpireCache: raw['timestamp_expire'],
                     revokeReason: raw['revoke_reason'],
                     templateName: raw['template_name'],
                     sessionPropName: raw['session_prop_name'],
@@ -560,7 +562,7 @@ export class AdaptorPostgreSQL extends AdaptorBase {
             return Promise.reject(new AdaptorError('Adaptor is not connected', this.state));
         }
 
-        if ((userId === null && userName === null) || (userId !== null && userName !== null)){
+        if ((userId === null && userName === null) || (userId !== null && userName !== null)) {
             return Promise.reject(new AdaptorError('wrong input, userId and userName cannot be both non null or both null.', this.state));
         }
 
@@ -583,7 +585,8 @@ export class AdaptorPostgreSQL extends AdaptorBase {
                     ipAddr: raw['ip_addr'],
                     tsIssuance: raw['timestamp_issued'],
                     tsRevoked: raw['timestamp_revoked'],
-                    tsExpire: raw['timestamp_'],
+                    tsExpire: raw['timestamp_expire'],
+                    tsExpireCache: raw['timestamp_expire'],
                     revokeReason: raw['revoke_reason'],
                     templateName: raw['template_name'],
                     sessionPropName: raw['session_prop_name'],
@@ -667,11 +670,16 @@ export class AdaptorPostgreSQL extends AdaptorBase {
         let propValues: string[] = [];
         let invisibles: boolean[] = [];
 
+        if (!modifications.length) {
+            return Promise.resolve([]);
+        }
+
         for (let mod of modifications) {
             propNames.push(mod.propName);
             propValues.push(mod.propValue);
             invisibles.push(mod.invisible);
         }
+
 
         logger.trace('Modifying userId %d , properties modification %j', userId, modifications);
         let qc = <pg.QueryConfig>(this.sql.get('sqlUserInsertModifyProperty'));
