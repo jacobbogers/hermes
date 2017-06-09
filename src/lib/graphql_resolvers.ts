@@ -20,7 +20,7 @@ export interface AuthenticationResult {
 }
 
 
-const emailExist = (...rest: any[]) => {
+const isUserNameRegistered = (...rest: any[]) => {
     let args = rest[1];
     let context = rest[2];
     if (context.errors) {
@@ -64,7 +64,6 @@ const currentUser = (...rest: any[]) => {
     });
 };
 
-
 const login = (obj: any, { password, email }: { password: string, email: string }, context: any) => {
     obj;
     if (context.errors) {
@@ -88,7 +87,6 @@ const logout = (...rest: any[]) => {
         return Promise.resolve<AuthenticationResult>({ errors: context.errors, serverInfo: { serverTime: new Date().toString() } });
     }
 
-
     if (context.errors) {
         return Promise.resolve<AuthenticationResult>({ errors: context.errors, serverInfo: { serverTime: new Date().toString() } });
     }
@@ -99,8 +97,7 @@ const logout = (...rest: any[]) => {
     return connector.save();
 };
 
-
-const userExist = (...rest: any[]) => {
+const isEmailRegistered = (...rest: any[]) => {
     let args = rest[1];
     let context = rest[2];
     if (context.errors) {
@@ -122,7 +119,8 @@ const userExist = (...rest: any[]) => {
 export const resolvers = {
     Query: {
         currentUser,
-        emailExist,
+        isEmailRegistered,
+        isUserNameRegistered
     },
     Mutation: {
         login,
