@@ -1,21 +1,20 @@
 
 //vendor
-import * as UID from 'uid-safe';
+//import * as UID from 'uid-safe';
 
 //app
 import Logger from './logger';
 const logger = Logger.getLogger();
 
-import { MapWithIndexes } from './utils';
-//import { SystemInfo } from './system';
-import { makeObjectNull } from './utils';
+import { MapWithIndexes, makeObjectNull } from './utils';
+import { Constants } from './property_names';
+
 import {
     //general
     AdaptorBase,
     ADAPTOR_STATE,
     AdaptorError,
     PropertiesModifyMessage,
-    DB_STR_BLACKLISTED,
     //user
     UsersAndPropsMessage,
     UserMessageBase,
@@ -79,8 +78,12 @@ export class AdaptorMock extends AdaptorBase {
             { fk_user_id: 1, prop_name: 'LAST_NAME', prop_value: 'Bovors', invisible: false },
             { fk_user_id: 1, prop_name: 'AUTH', prop_value: 'admin', invisible: false },
             { fk_user_id: 1, prop_name: 'phoneNr', prop_value: '+352621630973', invisible: true },
-            { fk_user_id: 1, prop_name: 'BLACKLISTED', prop_value: '', invisible: false },
-            { fk_user_id: 18, prop_name: 'password', prop_value: 'dingbats', invisible: false }
+            { fk_user_id: 1, prop_name: 'blacklisted', prop_value: '', invisible: false },
+            { fk_user_id: 1, prop_name: 'password', prop_value: 'itsme', invisible: false },
+            { fk_user_id: 18, prop_name: 'password', prop_value: 'dingbats', invisible: false },
+            { fk_user_id: 23, prop_name: 'password', prop_value: 'jacobot', invisible: false },
+            //{ fk_user_id: 23, prop_name: 'no-acl', prop_value: 'tokenbladibla:0', invisible: false }
+            //{ fk_user_id: 15, prop_name: 'await-activation', prop_value: 'tokenbladibla:0', invisible: false }
         ];
 
         userProps.forEach((up) => {
@@ -122,7 +125,7 @@ export class AdaptorMock extends AdaptorBase {
     public constructor() {
         super();
         this.user = new MapWithIndexes<UserProperties>('userId', 'userName', 'userEmail');
-        this.token = new MapWithIndexes<TokenProperties>('tokenId', 'fkUserId');
+        this.token = new MapWithIndexes<TokenProperties>('tokenId');
         this.template = new MapWithIndexes<TemplateProperties>('id', 'templateName');
     }
 
@@ -184,16 +187,20 @@ export class AdaptorMock extends AdaptorBase {
                     this.state)
                 );
             }
-            let newUser: UserProperties = {
+            console.info('creating new user...');
+            let msg: UserMessageReturned = {
                 userEmail: user.userEmail,
                 userName: user.userName,
                 userId: this.newUserPk(),
+            };
+            let newUser: UserProperties = {
+                ...msg,
                 userProps: {}
             };
             this.user.set(newUser);
-            logger.debug('success: "creating user", returned values %j', newUser);
+            logger.info('success: "creating user", returned values %j', msg);
             delete newUser.userProps;
-            return resolve(newUser);
+            return resolve(msg);
         });
     }
 
@@ -288,18 +295,18 @@ export class AdaptorMock extends AdaptorBase {
             return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
         }
 
-        let uid = UID.sync(18);
+        //let uid = UID.sync(18);
 
         let t = Object.assign({}, this.token.get('tokenId', token.tokenId), token) as TokenProperties;
         if (!t.sessionProps) {
             t.sessionProps = {};
         }
         makeObjectNull(t);
-        t.tokenId = t.tokenId || uid;
+        //t.tokenId = t.tokenId; // || uid;
 
         let self = this;
 
-        return new Promise<TokenMessageReturned>(function asyncTokenInsertModify(resolve, reject){
+        return new Promise<TokenMessageReturned>(function asyncTokenInsertModify(resolve, reject) {
             //determine template
             t.templateName = token.templateName || 'default_token'; //is it is defaulted in the sql query
             let template = self.template.get('templateName', t.templateName);
@@ -444,7 +451,10 @@ export class AdaptorMock extends AdaptorBase {
             let u = <UserProperties>this.user.get('userId', <number>token.fkUserId);
             let uPropKeys = Object.getOwnPropertyNames(u.userProps);
             let tPropKeys = Object.getOwnPropertyNames(token.sessionProps);
-            let blackListed = uPropKeys.indexOf(DB_STR_BLACKLISTED) >= 0;
+
+            let blacklisted: Constants = 'blacklisted';
+
+            let blackListed = uPropKeys.indexOf(blacklisted) >= 0;
             while (uPropKeys.length || tPropKeys.length) {
                 let uPropName = uPropKeys.pop();
                 let tPropName = tPropKeys.pop();

@@ -2,7 +2,6 @@
 
 export const typeDefs: string[] = [
     `
-
         type ServerInfo {
             serverTime: String!
         }
@@ -15,7 +14,6 @@ export const typeDefs: string[] = [
         type AuthResult {
             errors: [AuthError!]
             data: UserInfo
-            serverInfo: ServerInfo!
         }
 
         # Your User Information
@@ -23,7 +21,12 @@ export const typeDefs: string[] = [
             # some more comments
             name: String
             email: String
-            expire: String
+            state: String
+        }
+
+        type TokenExpire {
+            expire:String
+            errors: [AuthError!]
         }
 
         type Query {
@@ -31,6 +34,8 @@ export const typeDefs: string[] = [
              currentUser: AuthResult
              isEmailRegistered (email: String!): AuthResult
              isUserNameRegistered(name: String!): AuthResult
+             serverInfo: ServerInfo
+             tokenExpire: TokenExpire
         }
 
         type Mutation {
@@ -39,9 +44,9 @@ export const typeDefs: string[] = [
             createUser(name:String! , email:String!, password:String!): AuthResult
         }
         
-        schema {
-            query: Query
-            mutation: Mutation
-        }
+        #schema {
+        #    query: Query
+        #    mutation: Mutation
+        #}
         `
 ];

@@ -1,6 +1,6 @@
 with blacklisted_users as (
     select SS1.fk_user_id from auth.user_props SS1 where 
-        SS1.prop_name = 'BLACKLISTED')
+        SS1.prop_name = 'blacklisted')
 )
 SELECT 
  iut.id token_id,

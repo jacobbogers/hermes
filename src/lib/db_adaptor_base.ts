@@ -9,7 +9,7 @@ const logger = Logger.getLogger();
 import { SystemInfo } from './system';
 
 
-export const DB_STR_BLACKLISTED = 'BLACKLISTED';
+
 
 export class AdaptorError extends Error {
     private _adaptorState: ADAPTOR_STATE;
@@ -71,6 +71,7 @@ export interface UsersAndPropsMessage {
     propName: string;
     propValue: string;
 }
+
 
 
 /* tokens */

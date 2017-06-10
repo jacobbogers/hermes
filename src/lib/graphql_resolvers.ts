@@ -3,6 +3,9 @@ import { HermesGraphQLConnector, AuthenticationError } from './hermes_connector'
 
 //import { logger } from './logger';
 
+import { Constants } from './property_names';
+
+
 export interface ServerInfo {
     serverTime: string;
 }
@@ -10,74 +13,115 @@ export interface ServerInfo {
 export interface UserInfo {
     name: string;
     email: string;
+    state: Constants;
+}
+
+export interface TokenExpire {
     expire: string;
+    errors?: AuthenticationError[];
 }
 
 export interface AuthenticationResult {
     errors?: AuthenticationError[];
     data?: Partial<UserInfo>;
-    serverInfo: ServerInfo;
 }
+
+
+//query
+const isEmailRegistered = (...rest: any[]) => {
+    let args = rest[1];
+    let context = rest[2];
+    if (context.errors) {
+        return Promise.resolve<AuthenticationResult>({ errors: context.errors });
+    }
+    let email = (<string>args['email'] || '').trim();
+    let connector = context.connector as HermesGraphQLConnector;
+    let result: AuthenticationResult = {};
+
+    let emailTest = connector.emailExist(email);
+    result.data = { email: emailTest || email, state: emailTest ? 'email-unavailable' : 'email-available' };
+
+    return Promise.resolve<AuthenticationResult>(result);
+};
 
 
 const isUserNameRegistered = (...rest: any[]) => {
     let args = rest[1];
     let context = rest[2];
     if (context.errors) {
-        return Promise.resolve<AuthenticationResult>({ errors: context.errors, serverInfo: { serverTime: new Date().toString() } });
+        return Promise.resolve<AuthenticationResult>({ errors: context.errors });
     }
-    let name = <string>args['name'];
+    let name = (<string>args['name'] || '').trim();
+
     let connector = context.connector as HermesGraphQLConnector;
-    let result: AuthenticationResult = {
-        serverInfo: {
-            serverTime: new Date().toString()
-        }
-    };
-    let nameTest = connector.userNameExist(name || '') || null;
-    if (nameTest) {
-        result.data = { name: nameTest };
-    }
+    let result: AuthenticationResult = {};
+
+    let nameTest = connector.userNameExist(name);
+    result.data = { name: nameTest || name, state: nameTest ? 'name-unavailable' : 'name-available' };
+
     return Promise.resolve<AuthenticationResult>(result);
 };
 
-//query
+
 const currentUser = (...rest: any[]) => {
 
     let context = rest[2]; // 'obj' and 'args' are cannot be made optional
 
     if (context.errors) {
-        return Promise.resolve<AuthenticationResult>({ errors: context.errors, serverInfo: { serverTime: new Date().toString() } });
+        return Promise.resolve<AuthenticationResult>({ errors: context.errors });
     }
 
     let connector = context.connector as HermesGraphQLConnector;
-    let { userName, userEmail } = connector.getUser();
-    let expire = connector.getExpiredAsDate().toString();
+    let { userName, userEmail, userProps } = connector.getUser();
+
+    //determne state
+    let excludeStates: Constants[] = ['blacklisted', 'await-activation', 'no-acl'];
+    //let includeStates: Constants[] = ['password'];
+    let mustNotHave = excludeStates.filter((ps) => ps in userProps);
+    //let mustHave = includeStates.filter((ps) => !(ps in userProps));
+    let state: Constants = (mustNotHave.length /*|| mustHave.length*/) ? mustNotHave[0] /*|| 'no-' + mustHave[0]*/ : 'ok';
 
     return Promise.resolve<AuthenticationResult>({
         data: {
             name: userName,
             email: userEmail,
-            expire
-        },
-        serverInfo: {
-            serverTime: new Date().toString()
+            state
         }
     });
 };
 
+
 const login = (obj: any, { password, email }: { password: string, email: string }, context: any) => {
     obj;
     if (context.errors) {
-        return Promise.resolve<AuthenticationResult>({ errors: context.errors, serverInfo: { serverTime: new Date().toString() } });
+        return Promise.resolve<AuthenticationResult>({ errors: context.errors });
     }
     let connector = context.connector as HermesGraphQLConnector;
 
     let errors = connector.authenticate(email, password);
     if (errors) {
-        return Promise.resolve<AuthenticationResult>({ errors, serverInfo: { serverTime: new Date().toString() } });
+        return Promise.resolve<AuthenticationResult>({ errors });
     }
-
     return connector.save();
+};
+
+const tokenExpire = (...rest: any[]) => {
+    let context = rest[2]; // 'obj' and 'args' are cannot be made optional
+
+    if (context.errors) {
+        return Promise.resolve<AuthenticationResult>({ errors: context.errors });
+    }
+    let connector = context.connector as HermesGraphQLConnector;
+
+    let expire = connector.getExpiredAsDate().toString();
+
+
+    return Promise.resolve({ expire });
+};
+
+const serverInfo = () => {
+
+    return Promise.resolve({ serverTime: new Date().toString() });
 };
 
 const logout = (...rest: any[]) => {
@@ -85,11 +129,7 @@ const logout = (...rest: any[]) => {
     let context = rest[2]; // 'obj' and 'args' are cannot be made optional
 
     if (context.errors) {
-        return Promise.resolve<AuthenticationResult>({ errors: context.errors, serverInfo: { serverTime: new Date().toString() } });
-    }
-
-    if (context.errors) {
-        return Promise.resolve<AuthenticationResult>({ errors: context.errors, serverInfo: { serverTime: new Date().toString() } });
+        return Promise.resolve<AuthenticationResult>({ errors: context.errors });
     }
 
     let connector = context.connector as HermesGraphQLConnector;
@@ -98,34 +138,35 @@ const logout = (...rest: any[]) => {
     return connector.save();
 };
 
-const isEmailRegistered = (...rest: any[]) => {
-    let args = rest[1];
-    let context = rest[2];
+const createUser = (...rest: any[]) => {
+    let context = rest[2]; // 'obj' and 'args' are cannot be made optional
+
     if (context.errors) {
-        return Promise.resolve<AuthenticationResult>({ errors: context.errors, serverInfo: { serverTime: new Date().toString() } });
+        return Promise.resolve<AuthenticationResult>({ errors: context.errors });
     }
-    let email = <string>args['email'];
+
+
+    let { name, email, password }: { name: string, email: string, password: string } = rest[1];
+
     let connector = context.connector as HermesGraphQLConnector;
-    let result: AuthenticationResult = {
-        serverInfo: {
-            serverTime: new Date().toString()
-        }
-    };
-    let emailTest = connector.emailExist(email || '') || null;
-    if (emailTest) {
-        result.data = { email: emailTest };
+    let errors = connector.createUser(name, email, password);
+    if (errors) {
+        return Promise.resolve<AuthenticationResult>({ errors: errors });
     }
-    return Promise.resolve<AuthenticationResult>(result);
+    return connector.save();
 };
 
 export const resolvers = {
     Query: {
         currentUser,
         isEmailRegistered,
-        isUserNameRegistered
+        isUserNameRegistered,
+        serverInfo,
+        tokenExpire
     },
     Mutation: {
         login,
-        logout
+        logout,
+        createUser
     }
 };

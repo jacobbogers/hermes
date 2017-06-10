@@ -2,20 +2,24 @@
 //node
 import * as util from 'util';
 
+//vender
+import * as UID from 'uid-safe';
+
 //app
 import { HermesStore, UserProperties, TokenProperties } from './hermes_store';
 import { deepClone } from './utils';
 import { AuthenticationResult } from './graphql_resolvers';
+import { Constants } from './property_names';
 
-const BLACKLISTED = 'BLACKLISTED';
-const LOGIN_PASSWORD_PROPERTY = 'password';
+const PASSWORD: Constants = 'password';
+//const BLACKLISTED: Constants = 'blacklisted';
 
 export class AuthenticationError {
 
-    private context: string;
+    private context: Constants;
     private message: string;
 
-    constructor(context: string, message: string) {
+    constructor(context: Constants, message: string) {
         this.context = context;
         this.message = message;
     }
@@ -42,6 +46,57 @@ export class HermesGraphQLConnector {
         this.token = hermes;
     }
 
+
+    public createUser(name: string, email: string, password: string): AuthenticationError[] | undefined {
+
+        let errors: AuthenticationError[] = [];
+
+        if (this.mustAuthenticate() === false) { // cant continue 
+            errors.push(new AuthenticationError('user-logged-in', 'User must log out first'));
+            return errors;
+        }
+
+        name = (name || '').trim().toLocaleLowerCase();
+        email = (email || '').trim().toLocaleLowerCase();
+
+
+
+        if (name === '') {
+            errors.push(new AuthenticationError('no-username', 'user should provide a "user name"'));
+        }
+
+        if (email === '') {
+            errors.push(new AuthenticationError('no-email', 'user should provide an email'));
+        }
+
+        if (password === '') {
+            errors.push(new AuthenticationError('no-password', 'user should provide a password'));
+        }
+
+        let findName = this.userNameExist(name); // normalize
+        if (findName) {
+            errors.push(new AuthenticationError('username-exist', 'username already in use'));
+        }
+
+        let findEmail = this.emailExist(email);
+        if (findEmail) {
+            errors.push(new AuthenticationError('email-exist', 'email already in use'));
+        }
+
+        if (errors.length > 0) {
+            return errors;
+        }
+
+        let newUser: UserProperties = {
+            userName: name,
+            userEmail: email,
+            userId: -1, //-1 doesnt exist as valid userId, because all in range [0,+inf)
+            userProps: { password: password, 'await-activation': UID.sync(18) + ':' + Date.now() }
+        };
+        this.user = newUser;
+        return;
+    }
+
     public hasSessionExpired(): boolean {
 
         let expires = this.getExpiredAsNumber();
@@ -57,7 +112,8 @@ export class HermesGraphQLConnector {
     }
 
     public isUserBlackListed(): boolean {
-        return !!(this.user.userProps[BLACKLISTED]);
+        let blacklisted: Constants = 'blacklisted';
+        return !!(this.user.userProps[blacklisted]);
     }
 
     public getExpiredAsNumber(): number | undefined {
@@ -95,32 +151,42 @@ export class HermesGraphQLConnector {
             return [new AuthenticationError('user-logged-in', 'User must log out first')];
         }
 
-        //potential User
-        let pUser = this.store.getUserByEmail(email);
-        if (!pUser) {
-            return [new AuthenticationError('email-not-exist', 'The Email and password combination are Unknown')];
+        let errors: AuthenticationError[] = [];
+
+        if (email === '') {
+            errors.push(new AuthenticationError('auth-failed', 'user should provide an email'));
         }
 
-        if (pUser.userProps[BLACKLISTED]) {
-            this.session['_user'] = pUser; // valid user but blacklisted
-            return [new AuthenticationError('email-black-listed', 'User is blacklisted')];
+        if (password === '') {
+            errors.push(new AuthenticationError('auth-failed', 'user should provide a password'));
         }
-        let passw = pUser.userProps[LOGIN_PASSWORD_PROPERTY] || '';
+
+        if (errors.length) {
+            return errors;
+        }
+        //potential User
+        let pUser = this.store.getUserByEmail(email);
+
+        if (!pUser) {
+            return [new AuthenticationError('auth-failed', 'The Email and password combination are Unknown')];
+        }
+
+        let passw = pUser.userProps[PASSWORD] || '';
         if (passw.trim() !== password.trim()) {
-            return [new AuthenticationError('invalid-login', 'The Email and password combination are Unknown')];
+            return [new AuthenticationError('auth-failed', 'The Email and password combination are Unknown')];
         }
         //password is correct so..
-        this.session['_user'] = pUser;
+
         this.user = pUser;
         return;
     }
 
-    public emailExist(userEmail: string): string|undefined {
+    public emailExist(userEmail: string): string | undefined {
         let u = this.store.getUserByEmail(userEmail) || { userEmail: undefined };
         return u.userEmail;
     }
 
-    public userNameExist(userName: string): string| undefined {
+    public userNameExist(userName: string): string | undefined {
         let u = this.store.getUserByName(userName) || { userName: undefined };
         return u.userName;
     }
@@ -137,26 +203,54 @@ export class HermesGraphQLConnector {
     public save(): Promise<AuthenticationResult> {
 
         return new Promise<AuthenticationResult>((resolve) => {
+            this.session['_user'] = this.user;
+            this.session['_hermes'] = this.token;
+
+            let usrName = this.user.userName;
+            let usrEmail = this.user.userEmail;
+
             this.session.save((err) => {
                 if (err) {
                     return resolve({
                         errors: [
-                            new AuthenticationError('session-save', 'call to session.save failed'),
-                            new AuthenticationError('auxiliary', String(err))
+                            new AuthenticationError('err-session-save', 'call to session.save failed'),
+                            new AuthenticationError('err-auxiliary', String(err))
                         ],
-                        serverInfo: { serverTime: new Date().toString() }
-                    });
+                        data: {
+                            name: usrName,
+                            email: usrEmail,
+                            state: 'err-session-save' 
+                        }
+                   });
                 }
-                let expire = this.getExpiredAsDate().toString();
-                let { userName, userEmail } = this.getUser();
+                this.user = this.session['_user'];
+                this.token = this.session['_hermes'];
+                let { userName, userEmail, userProps } = this.getUser();
+
+                //post login checks
+                const ACTIVATION: Constants = 'await-activation';
+                const BLACKLISTED: Constants = 'blacklisted';
+                const NO_ACL: Constants = 'no-acl';
+
+                let state: Constants;
+                switch (true) {
+                    case (BLACKLISTED in userProps):
+                        state = BLACKLISTED;
+                        break;
+                    case (ACTIVATION in userProps):
+                        state = ACTIVATION;
+                        break;
+                    case (NO_ACL in userProps):
+                        state = NO_ACL;
+                        break;
+                    default:
+                        state = 'ok';
+                }
                 return resolve({
-                    serverInfo: {
-                        serverTime: new Date().toString()
-                    },
-                    data: {
+                   data: {
                         name: userName,
                         email: userEmail,
-                        expire
+                        state
                     }
                 });
             });
@@ -174,16 +268,16 @@ export class HermesGraphQLConnector {
 
         switch (true) {
             case !session: //session middleware not functional
-                errors = [new AuthenticationError('no-session-object', 'internal error, express-session middleware may be offline')];
+                errors = [new AuthenticationError('err-session-object', 'internal error, express-session middleware may be offline')];
                 break;
             case !(hermesStore instanceof HermesStore):
-                errors = [new AuthenticationError('no-store-object', 'internal error, hermes-store offline')];
+                errors = [new AuthenticationError('err-no-store-object', 'internal error, hermes-store offline')];
                 break;
             case !user:
-                errors = [new AuthenticationError('no-user', 'anonymous user not associated with this session')];
+                errors = [new AuthenticationError('err-no-anon-user', 'anonymous user not associated with this session')];
                 break;
             case !token:
-                errors = [new AuthenticationError('no-hermes-token', 'this session is not associated with hermes')];
+                errors = [new AuthenticationError('err-no-hermes-token', 'this session is not associated with hermes')];
                 break;
             default:
         }
