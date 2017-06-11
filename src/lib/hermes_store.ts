@@ -125,9 +125,9 @@ export class HermesStore extends Store {
 
     private adaptor: AdaptorBase;
     //userMaps
-    private userMaps: MapWithIndexes<UserProperties>;
-    private tokenMaps: MapWithIndexes<TokenProperties>;
-    private templateMaps: MapWithIndexes<TemplateProperties>;
+    private userMaps: MapWithIndexes<UserProperties, any, any, any, any>;
+    private tokenMaps: MapWithIndexes<TokenProperties, any, any, any, any>;
+    private templateMaps: MapWithIndexes<TemplateProperties, any, any, any, any>;
     private defaultTemplate: string;
 
 
@@ -141,9 +141,9 @@ export class HermesStore extends Store {
 
         let _si = SystemInfo.createSystemInfo();
 
-        this.userMaps = new MapWithIndexes<UserProperties>('userId', 'userEmail', 'userName');
-        this.tokenMaps = new MapWithIndexes<TokenProperties>('tokenId');
-        this.templateMaps = new MapWithIndexes<TemplateProperties>('templateName', 'id');
+        this.userMaps = new MapWithIndexes<UserProperties, any, any, any, any>(['userId'], ['userEmail'], ['userName']);
+        this.tokenMaps = new MapWithIndexes<TokenProperties, any, any, any, any>(['tokenId'], ['fkUserId', 'tokenId']);
+        this.templateMaps = new MapWithIndexes<TemplateProperties, any, any, any, any>(['templateName'], ['id']);
 
         /* disconnect event added by express-session inner workings*/
         this.once('newListener', (event: string, listener: () => void) => {
@@ -169,14 +169,14 @@ export class HermesStore extends Store {
             return this.adaptor.userSelectByFilter();
         }).then((users) => {
             this.processUsersSelectAll(users);
-            let anonymous = this.userMaps.get('userName', <Constants>'anonymous');
-            if (!anonymous) {
+            let anonymous = this.userMaps.get({userName: <Constants>'anonymous'}).collected;
+            if (!anonymous || anonymous.length !== 1) {
                 let err = new HermesStoreError(`User ${<Constants>'anonymous'} doesnt exist`, this.connected);
                 _si.addError(err);
                 throw err;
             }
             // make user anonymous readonly
-            this.userMaps.set(anonymous, true);
+            this.userMaps.set(anonymous[0], true);
             logger.info('...all db data cached');
             this.emit('connect');
         }).catch((err) => {
