@@ -47,9 +47,16 @@
   },
   "keywords": [
     "login",
-    "activation-email",
+    "signup",
+    "sign up",
+    "activation",
     "password",
-    "reset user-login"
+    "authentication",
+    "reset",
+    "account",
+    "access",
+    "response email",
+    "auth0"
   ],
   "author": "Jacob K.F. Bogers",
   "license": "MIT",
