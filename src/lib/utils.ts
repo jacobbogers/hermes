@@ -37,144 +37,286 @@ export function makeObjectNull(obj: any) {
 }
 
 //entries<T extends { [key: string]: any }, K extends keyof T>(o: T): [keyof T, T[K]][];
+export const flatten = (...rest: any[]): any[] => {
+    let rc = [];
+    for (let itm of rest) {
+        if (itm instanceof Array) {
+            let rc2 = flatten(...itm);
+            rc.push(...rc2);
+            continue;
+        }
+        rc.push(itm);
+    }
+    return rc;
+};
 
-
-
-export interface Access<T> {
-    [index: string]: Map<T[keyof T], { readOnly: boolean, obj: T }>;
+export interface OperationResult<I> {
+    inserted?: number;
+    errors: number;
+    collected?: I[];
+    deleted?: number;
 }
 
-export class MapWithIndexes<T> {
-    private access: Access<T> = {};
-    constructor(primary: keyof T, ...rest: (keyof T)[]) {
-        this.access[primary] = new Map<T[keyof T], { readOnly: boolean, obj: T }>();
-        for (let key of rest) {
-            this.access[key] = new Map<T[keyof T], { readOnly: boolean, obj: T }>();
+export function flatMap<T, F extends { obj: T} , Mc extends Map<T[keyof T], Mc | F>>(map: Mc): F[] {
+    let rc: F[] = [];
+    for (let itm of map.values()) {
+        if (itm instanceof Map) {
+            let rc2 = flatMap(itm);
+            rc.push(...(rc2 as F[]));
+            continue;
         }
+        rc.push(itm);
     }
+    return rc;
+}
 
-    public values(): T[] {
-        let rc: T[] = [];
-        for (let firstKey in this.access) {
-            return Array.from(this.access[firstKey].values()).map((wrap) => {
-                return wrap.obj;
-            });
+export class MapWithIndexes<T, K extends keyof T, F extends { readOnly: boolean, obj: T }, Me extends Map<T[K], F>, Mc extends Map<T[K], Mc | Me>> {
 
+    private access: { [index: string]: Map<T[K], F | Mc | Me> };
+
+    private flatMap(map: Mc): Array<{ readOnly: boolean, obj: T }> {
+        let rc = [];
+        for (let itm of map.values()) {
+            if (itm instanceof Map) {
+                let rc2 = this.flatMap(<Mc>itm);
+                rc.push(...rc2);
+                continue;
+            }
+            rc.push(itm);
         }
         return rc;
     }
 
-    public clear() {
-        let allKeys = Object.keys(this.access) as [keyof T];
-        allKeys.forEach((key) => {
-            this.access[key].clear();
-        });
+    constructor(...composites: ((keyof T)[])[]) {
+
+        for (let composite of composites) {
+            let masterKey = composite.join('#');
+            this.access[masterKey] = new Map<T[K], F | Mc | Me>();
+        }
     }
 
+    public values(): T[] {
+        for (let firstKey in this.access) {
+            let objs = this.flatMap(<Mc>(this.access[firstKey]));
+            return objs.map((obj) => obj.obj);
+        }
+        return [];
+    }
+
+    public clear() {
+        for (let key in this.access) {
+            this.access[key].clear();
+        }
+    }
 
     //store a copy
-    public set(data: T, readOnly: boolean = false) {
 
+    public set(data: T, readOnly: boolean = false): OperationResult<T> {
+        let inserted = 0;
+        let errors = 0;
         if (!data) {
             let err = 'data argument is undefined';
-            //logger.error(err);
             throw new Error(err);
         }
-        let _rc = JSON.parse(JSON.stringify(data)) as T;
+        let dataCopy = JSON.parse(JSON.stringify(data)) as T;
+        for (let composite in this.access) {
+            let currentMap = this.access[composite];
+            let path: (keyof T)[] = composite.split('#') as any;
+            nextComposite:
+            do {
+                let keyName = path.shift();
+                if (!keyName) {
+                    errors++;
+                    break;
+                }
+                if (!(keyName in dataCopy)) {
+                    errors++;
+                    break;
+                }
+                let keyValue = dataCopy[keyName];
+                let peek = currentMap.get(keyValue);
 
-        for (let key in this.access) {
-            let keyValue = _rc[key as keyof T];
-            let exist = this.access[key].get(keyValue);
-            if (exist && exist.readOnly) {
-                break;
-            }
-            this.access[key].set(keyValue, { readOnly, obj: _rc });
+                //premature termination of structure , composite key larger then structure
+                if (path.length && peek && !(peek instanceof Map)) {
+                    errors++;
+                    break;
+                }
+
+                //premature termination of key, structure extends beyond key
+                if (peek instanceof Map && !path.length) {
+                    currentMap = <Mc>currentMap.get(keyValue);
+                    continue;
+                }
+
+
+                // "peek" variable is either undefined or NOT a Map object
+                switch (true) {
+                    //set new
+                    case (!peek && !path.length):
+                        let newRecord = <F>{ readOnly, obj: dataCopy }; // = { readOnly: true, obj: data };
+                        currentMap.set(keyValue, newRecord);
+                        inserted++;
+                        break;
+                    //set replace    
+                    case (peek && !path.length): // previous inserted object found, optionally override
+                        let finalObj = <F>(peek);
+                        if (!finalObj.readOnly) {
+                            finalObj.readOnly = readOnly;
+                            finalObj.obj = dataCopy;
+                            currentMap.set(keyValue, finalObj);
+                            inserted++;
+                        }
+                        break;
+                    //set add path    
+                    case (!peek && path.length): // create extra path (inserting new objects)
+                        let map = <Mc>(new Map());
+                        currentMap.set(keyValue, map);
+                        currentMap = map;
+                        break;
+                    default:
+                        errors++;
+                        break nextComposite;
+
+                }
+            } while (path.length && currentMap);
         }
+        return { errors, inserted };
     }
 
-
-
-    public remove(data: T /* might be 'Partial' forced by caller*/): boolean {
-
-        let searchKeys = Object.keys(data).filter((key) => {
-            return key in this.access;
-        });
-
-        if (!searchKeys.length) {
-            return false;
+    public delete(data: T): OperationResult<T> {
+        if (!data) {
+            let err = 'data argument is undefined';
+            throw new Error(err);
         }
+        let dataCopy = JSON.parse(JSON.stringify(data)) as T;
 
-        let indexedObjects = (searchKeys as (keyof T)[]).reduce((col, key) => {
-            let itm = this.access[key].get(data[key]);
-            if (itm) {
-                col[key] = itm.obj;
+        let deleted = 0;
+        let errors = 0;
+
+        for (let composite in this.access) {
+            let currentMap = this.access[composite];
+            let path: (keyof T)[] = composite.split('#') as any;
+
+            do {
+                let keyName = path.shift();
+                if (!keyName) {
+                    errors++;
+                    break;
+                }
+                if (!(keyName in dataCopy)) {
+                    errors++;
+                    break;
+                }
+                let keyValue = dataCopy[keyName];
+                let peek = currentMap.get(keyValue);
+                //premature termination of structure , composite key larger then structure
+                if (path.length && peek && !(peek instanceof Map)) {
+                    errors++;
+                    break;
+                }
+                //premature termination of path, composite key shorter then structure
+                if (peek instanceof Map && !path.length) {
+                    errors++;
+                    break;
+                }
+                if (peek instanceof Map) {
+                    currentMap = <Mc>currentMap.get(keyValue);
+                    continue;
+                }//
+                //found something to delete
+                if (peek) {
+                    currentMap.delete(keyValue);
+                    deleted++;
+                }
+            } while (path.length && currentMap);
+        }
+        return { errors, deleted };
+
+    }
+
+    public get(queryObject: Partial<T>): OperationResult<T> {
+        if (!queryObject) {
+            let err = 'data argument is undefined';
+            throw new Error(err);
+        }
+        let query = JSON.parse(JSON.stringify(queryObject)) as Partial<T>;
+        let qNames = Object.getOwnPropertyNames(query);
+        let errors = 0;
+        let collected: T[] = [];
+
+        let selected: string | undefined = undefined;
+        for (let composites in this.access) {
+            let paths = composites.split('#');
+
+            paths.reverse(); // because i want to ise "fromIndex" argument in [].findIndex(..);
+
+            if (paths.length < qNames.length) {
+                continue;
             }
-            return col;
-        }, {} as { [index: string]: T });
-        //
-        // check it must all be the same object
-        //
-        let ok = true;
-        outer:
-        for (let i = 0; i < searchKeys.length; i++) {
-            for (let j = i + 1; j < searchKeys.length; j++) {
-                if (indexedObjects[searchKeys[i]] !== indexedObjects[searchKeys[j]]) {
-                    ok = false;
-                    break outer;
+            //contains at least all MY names
+            if (qNames.slice(0).filter((name) => paths.indexOf(name, path.length - qNames.length) >= 0).length === qNames.length) {
+                // the shortest one
+                selected = selected || composites;
+                if (paths.length < selected.split('#').length) {
+                    selected = composites;
                 }
             }
         }
-        if (!ok) {
-            return false;
+        //so after all this we have the composite path that is the best fit or no fit at all
+        if (!selected) {
+            throw new Error(util.format('the  query %j object doesnt match any of the composite paths', query));
         }
-        //pick one, its all has been checked to be the same object anyway
-        let obj: T = indexedObjects[searchKeys[0]];
-        for (let key in this.access) {
-            let keyValue = obj[key as keyof T];
-            this.access[key].delete(keyValue as any);
-        }
-        return true;
-    }
 
-    //get a copy not the reference
-    public get(by: keyof T, keyValue: T[keyof T]): T | undefined {
-        let map = this.access[by];
-        if (map === undefined) {
-            throw new Error(util.format('nothing is indexed by key %s', by));
-        }
-        let _rc = map.get(keyValue);
-        if (_rc) {
-            _rc = JSON.parse(JSON.stringify(_rc));
-        }
-        return _rc && _rc.obj;
-    }
+        let currentMap = this.access[selected];
 
-    public get stats() {
-        let allKeys = Object.keys(this.access) as [keyof T];
-        let _stats = allKeys.reduce((prev, key) => {
-            let map = this.access[key];
-            prev.push(`Nr of items in key ${key} is ${map.size}`);
-            return prev;
-        }, [] as string[]);
-        return _stats.join(', ');
-    }
+        let path: (keyof T)[] = selected.split('#') as any;
 
-    public prettyPrint() {
-        //collect all properties first
-        let firstPick = Object.keys(this.access)[0];
-        let firstMap = this.access[firstPick];
-        let stats = Array.from(firstMap.values()).reduce((prev, itm) => {
-            for (let prop in itm.obj) {
-                prev[prop] = prev[prop] || 0;
-                prev[prop] = Math.max(prev[prop], String(itm.obj[prop]).length);
-                console.log(prop, String(itm.obj[prop]), String(itm.obj[prop]).length);
+        do {
+            let keyName = path.shift(); //pop
+            if (!keyName) { //very bad
+                errors++;
+                break;
             }
-            return prev;
-        }, {} as { [index: string]: number; });
-        return String(util.inspect(stats));
+            if (!(keyName in query)) {// the rest is *wildcard*
+                path.unshift(keyName); // put it back to be processed later;
+                break;
+            }
+            let keyValue = query[keyName] as T[K];
+            let peek = currentMap.get(keyValue);
+            //premature termination of structure , composite key larger then structure
+            if (path.length && peek && !(peek instanceof Map)) {
+                errors++;
+                break;
+            }
+            //premature termination of path, composite key shorter then structure
+            if (peek instanceof Map && !path.length) {
+                errors++;
+                break;
+            }
+            if (peek instanceof Map) {
+                currentMap = <Mc>currentMap.get(keyValue);
+                continue;
+            }//
+            //at the end
+            if (peek && !path.length) {
+                collected.push(deepClone(peek.obj));
+            }
+        } while (path.length && currentMap);
+        if (errors) {
+            return { errors };
+        }
+        if (!path.length) {
+            return { errors, collected };
+        }
+        //wildcard search from here collect everything in this map
+        let rc = flatMap(currentMap).map((itm) => deepClone(itm.obj)) as T[];
+        collected.push(...rc);
+        return { errors, collected: collected.length ? collected : undefined };
     }
 
-    public get length() {
+
+
+    public length() {
         for (let firstPick in this.access) {
             return this.access[firstPick].size;
         }
@@ -220,9 +362,9 @@ export function loadFiles<T>(files: T): Promise<T> {
 }
 
 
-export function makeValueslowerCase<I>(obj: I , ...props: (keyof I)[]) {
-    for (let prop of props){
-        if (typeof (obj[prop]) === 'string'){
+export function makeValueslowerCase<I>(obj: I, ...props: (keyof I)[]) {
+    for (let prop of props) {
+        if (typeof (obj[prop]) === 'string') {
             let value: string = obj[prop] as any;
             obj[prop] = value.toLocaleLowerCase() as any;
         }
