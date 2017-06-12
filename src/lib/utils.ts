@@ -50,14 +50,33 @@ export const flatten = (...rest: any[]): any[] => {
     return rc;
 };
 
-export interface OperationResult<I> {
-    inserted?: number;
-    errors: number;
-    collected?: I[];
-    deleted?: number;
+export class OperationResult<I> {
+    private _inserted: number | undefined;
+    private _errors = 0;
+    private _collected: I[] | undefined;
+    private _deleted: number | undefined;
+    get inserted() {
+        return this._inserted;
+    }
+    get errors() {
+        return this._errors;
+    }
+    /*get collected(): I[] | undefined {
+        return this.collected;
+    }*/
+    get first(): I | undefined {
+        return this._collected && this._collected[0];
+    }
+    constructor(props: { inserted?: number, errors: number, collected?: I[], deleted?: number }) {
+        this._inserted = props.inserted;
+        this._errors = props.errors;
+        this._deleted = props.deleted;
+        this._collected = props.collected && props.collected.splice(0);
+    }
+    
 }
 
-export function flatMap<T, F extends { obj: T} , Mc extends Map<T[keyof T], Mc | F>>(map: Mc): F[] {
+export function flatMap<T, F extends { obj: T }, Mc extends Map<T[keyof T], Mc | F>>(map: Mc): F[] {
     let rc: F[] = [];
     for (let itm of map.values()) {
         if (itm instanceof Map) {
@@ -180,7 +199,7 @@ export class MapWithIndexes<T, K extends keyof T, F extends { readOnly: boolean,
                 }
             } while (path.length && currentMap);
         }
-        return { errors, inserted };
+        return new OperationResult<T>({ errors, inserted });
     }
 
     public delete(data: T): OperationResult<T> {
@@ -230,7 +249,7 @@ export class MapWithIndexes<T, K extends keyof T, F extends { readOnly: boolean,
                 }
             } while (path.length && currentMap);
         }
-        return { errors, deleted };
+        return new OperationResult<T>({ errors, deleted });
 
     }
 
@@ -303,15 +322,15 @@ export class MapWithIndexes<T, K extends keyof T, F extends { readOnly: boolean,
             }
         } while (path.length && currentMap);
         if (errors) {
-            return { errors };
+            return new OperationResult<T>({ errors });
         }
         if (!path.length) {
-            return { errors, collected };
+            return new OperationResult<T>({ errors, collected });
         }
         //wildcard search from here collect everything in this map
         let rc = flatMap(currentMap).map((itm) => deepClone(itm.obj)) as T[];
         collected.push(...rc);
-        return { errors, collected: collected.length ? collected : undefined };
+        return new OperationResult({ errors, collected });
     }
 
 

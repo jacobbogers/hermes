@@ -88,12 +88,11 @@ export class AdaptorMock extends AdaptorBase {
         ];
 
         userProps.forEach((up) => {
-            let result = this.user.get({ userId: up.fk_user_id });
-            let u = result.collected;
+            let u = this.user.get({ userId: up.fk_user_id }).first;
             if (u) {
                 up.prop_name = up.prop_name.toLocaleLowerCase();
-                u[0].userProps[up.prop_name] = up.prop_value;
-                this.user.set(u[0]);
+                u.userProps[up.prop_name] = up.prop_value;
+                this.user.set(u);
             }
         });
 
@@ -175,16 +174,16 @@ export class AdaptorMock extends AdaptorBase {
 
         return new Promise<UserMessageReturned>((resolve, reject) => {
             // username is unique
-            let conflict = this.user.get({ userName: u.userName });
-            if (conflict.collected) {
+            let conflict = this.user.get({ userName: u.userName }).first;
+            if (conflict) {
                 return reject(new AdaptorError(
                     util.format('unique key violation, [userName] already exist: %s', u.userName),
                     this.state)
                 );
             }
             //email is unique
-            conflict = this.user.get({ userEmail: u.userEmail });
-            if (conflict.collected) {
+            conflict = this.user.get({ userEmail: u.userEmail }).first;
+            if (conflict) {
                 return reject(new AdaptorError(
                     util.format('unique key violation, [userEmail] already exist: %s', u.userName),
                     this.state)
@@ -217,17 +216,15 @@ export class AdaptorMock extends AdaptorBase {
 
         //check 1 user must exist
         return new Promise<UserPropertiesModifyMessageReturned[]>((resolve, reject) => {
-            let result = this.user.get({ userId: userId });
-            let u = result.collected;
-            if (!u) {
+            let uc = this.user.get({ userId: userId }).first;
+            if (!uc) {
                 return reject(new AdaptorError(
                     util.format('foreign key violation, [userId] does not exist: %d', userId),
                     this.state)
                 );
             }
             let rc: UserPropertiesModifyMessageReturned[] = [];
-            let uc = u[0];
-
+            
             for (let mod of modifications) {
                 //switch is just for logging/tracing
                 switch (true) {
@@ -300,24 +297,21 @@ export class AdaptorMock extends AdaptorBase {
         }
 
         //let uid = UID.sync(18);
-        let tArr = this.token.get({ tokenId: token.tokenId, fkUserId: token.fkUserId }).collected as TokenProperties[];
-        let t = tArr[0];
+        let t = this.token.get({ tokenId: token.tokenId }).first as TokenProperties;
         if (!(t.sessionProps)) {
             t.sessionProps = {};
         }
         makeObjectNull(t);
-
         let self = this;
-
         return new Promise<TokenMessageReturned>(function asyncTokenInsertModify(resolve, reject) {
             //determine template
             t.templateName = token.templateName || 'default_token'; //is it is defaulted in the sql query
 
-            let templateArr = self.template.get({
+            let template = self.template.get({
                 templateName: t.templateName
-            }).collected;
+            }).first;
 
-            if (templateArr === undefined) {
+            if (template === undefined) {
                 return reject(new AdaptorError(
                     util.format('could not find template [%s]', t.templateName),
                     self.state
@@ -337,7 +331,7 @@ export class AdaptorMock extends AdaptorBase {
                 revokeReason: t.revokeReason,
                 tsExpire: t.tsExpire,
                 tsExpireCache: t.tsExpire,
-                templateId: templateArr[0].id
+                templateId: template.id
             });
         });
     }
@@ -351,7 +345,7 @@ export class AdaptorMock extends AdaptorBase {
 
         return new Promise<TokenPropertiesModifyMessageReturned[]>((resolve, reject) => {
             //check 1 user must exist
-            let t = this.token.get({ tokenId: tokenId }).collected;
+            let t = this.token.get({ tokenId: tokenId }).first;
             if (!t) {
                 return reject(new AdaptorError(
                     util.format('foreign key violation, [tokenId] does not exist: %d', tokenId),
@@ -359,7 +353,7 @@ export class AdaptorMock extends AdaptorBase {
                 );
             }
             let rc: TokenPropertiesModifyMessageReturned[] = [];
-            let tc = <TokenProperties>t[0];
+            let tc = <TokenProperties>t;
 
             for (let mod of modifications) {
                 //switch is just for logging/tracing
@@ -400,18 +394,17 @@ export class AdaptorMock extends AdaptorBase {
             return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
         }
 
-        let t = this.token.get({ tokenId }).collected;
+        let t = this.token.get({ tokenId }).first;
         if (t) {
-            let u = this.user.get({ userId }).collected;
-
+            let u = this.user.get({ userId }).first;
             if (!u) {
                 return Promise.reject(new AdaptorError(
                     util.format('User with Id: %d doesnt exist!', userId),
                     this.state
                 ));
             }
-            t[0].fkUserId = u[0].userId;
-            this.token.set(t[0]);
+            t.fkUserId = u.userId;
+            this.token.set(t);
         }
         return Promise.resolve(true); //
     }
@@ -431,11 +424,11 @@ export class AdaptorMock extends AdaptorBase {
         //
         //token exist?
         //
-        let t = this.token.get({ tokenId }).collected;
+        let t = this.token.get({ tokenId }).first;
         if (t) {
-            t[0].revokeReason = revokeReason;
-            t[0].tsRevoked = revokeTime;
-            this.token.set(t[0]);
+            t.revokeReason = revokeReason;
+            t.tsRevoked = revokeTime;
+            this.token.set(t);
         }
         return Promise.resolve(true);
     }
@@ -452,13 +445,13 @@ export class AdaptorMock extends AdaptorBase {
         return Promise.resolve(rc.length);
     }
 
-    private getTokensByFilter(filter: (token: TokenProperties) => boolean): TokensAndPropsMessage[] {
+    private getTokensByFilter(filter: (xyz: TokenProperties) => boolean): TokensAndPropsMessage[] {
         let result: TokensAndPropsMessage[] = [];
 
-        this.token.values().filter(filter).reduce((prev, token) => {
-            let u = <UserProperties[]>(this.user.get({ userId: <number>token.fkUserId }).collected);
-            let uPropKeys = Object.getOwnPropertyNames(u[0].userProps);
-            let tPropKeys = Object.getOwnPropertyNames(token.sessionProps);
+        this.token.values().filter(filter).reduce((prev, _token) => {
+            let u = <UserProperties>(this.user.get({ userId: <number>_token.fkUserId }).first);
+            let uPropKeys = Object.getOwnPropertyNames(u.userProps);
+            let tPropKeys = Object.getOwnPropertyNames(_token.sessionProps);
 
             let blacklisted: Constants = 'blacklisted';
 
@@ -467,23 +460,23 @@ export class AdaptorMock extends AdaptorBase {
                 let uPropName = uPropKeys.pop();
                 let tPropName = tPropKeys.pop();
                 prev.push({
-                    tokenId: token.tokenId,
-                    fkUserId: u[0].userId,
-                    usrName: u[0].userName,
-                    usrEmail: u[0].userEmail,
+                    tokenId: _token.tokenId,
+                    fkUserId: u.userId,
+                    usrName: u.userName,
+                    usrEmail: u.userEmail,
                     blackListed: blackListed,
-                    purpose: token.purpose,
-                    ipAddr: token.ipAddr,
-                    tsIssuance: token.tsIssuance,
-                    tsRevoked: token.tsRevoked,
-                    tsExpire: token.tsExpire,
-                    tsExpireCache: token.tsExpire,
-                    revokeReason: token.revokeReason,
-                    templateName: token.templateName,
+                    purpose: _token.purpose,
+                    ipAddr: _token.ipAddr,
+                    tsIssuance: _token.tsIssuance,
+                    tsRevoked: _token.tsRevoked,
+                    tsExpire: _token.tsExpire,
+                    tsExpireCache: _token.tsExpire,
+                    revokeReason: _token.revokeReason,
+                    templateName: _token.templateName,
                     sessionPropName: tPropName || null,
-                    sessionPropValue: (tPropName && token.sessionProps[tPropName]) || null,
+                    sessionPropValue: (tPropName && _token.sessionProps[tPropName]) || null,
                     propName: uPropName || null,
-                    propValue: uPropName && u[0].userProps[uPropName] || null
+                    propValue: uPropName && u.userProps[uPropName] || null
                 });
 
             }
@@ -527,9 +520,9 @@ export class AdaptorMock extends AdaptorBase {
                 rc = token.fkUserId === userId;
             }
             if (userName) {
-                let u = this.user.get({userName}).collected;
+                let u = this.user.get({userName}).first;
                 if (u) {
-                    rc = token.fkUserId === u[0].userId;
+                    rc = token.fkUserId === u.userId;
                 }
             }
             return rc;
