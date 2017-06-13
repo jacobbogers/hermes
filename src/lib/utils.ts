@@ -91,7 +91,7 @@ export function flatMap<T, F extends { obj: T }, Mc extends Map<T[keyof T], Mc |
 
 export class MapWithIndexes<T, K extends keyof T, F extends { readOnly: boolean, obj: T }, Me extends Map<T[K], F>, Mc extends Map<T[K], Mc | Me>> {
 
-    private access: { [index: string]: Map<T[K], F | Mc | Me> };
+    private access: { [index: string]: Map<T[K], F | Mc | Me> } = {};
 
     private flatMap(map: Mc): Array<{ readOnly: boolean, obj: T }> {
         let rc = [];
@@ -273,7 +273,7 @@ export class MapWithIndexes<T, K extends keyof T, F extends { readOnly: boolean,
                 continue;
             }
             //contains at least all MY names
-            if (qNames.slice(0).filter((name) => paths.indexOf(name, path.length - qNames.length) >= 0).length === qNames.length) {
+            if (qNames.slice(0).filter((name) => paths.indexOf(name, paths.length - qNames.length) >= 0).length === qNames.length) {
                 // the shortest one
                 selected = selected || composites;
                 if (paths.length < selected.split('#').length) {
@@ -288,27 +288,27 @@ export class MapWithIndexes<T, K extends keyof T, F extends { readOnly: boolean,
 
         let currentMap = this.access[selected];
 
-        let path: (keyof T)[] = selected.split('#') as any;
+        let spath: (keyof T)[] = selected.split('#') as any;
 
         do {
-            let keyName = path.shift(); //pop
+            let keyName = spath.shift(); //pop
             if (!keyName) { //very bad
                 errors++;
                 break;
             }
             if (!(keyName in query)) {// the rest is *wildcard*
-                path.unshift(keyName); // put it back to be processed later;
+                spath.unshift(keyName); // put it back to be processed later;
                 break;
             }
             let keyValue = query[keyName] as T[K];
             let peek = currentMap.get(keyValue);
             //premature termination of structure , composite key larger then structure
-            if (path.length && peek && !(peek instanceof Map)) {
+            if (spath.length && peek && !(peek instanceof Map)) {
                 errors++;
                 break;
             }
             //premature termination of path, composite key shorter then structure
-            if (peek instanceof Map && !path.length) {
+            if (peek instanceof Map && !spath.length) {
                 errors++;
                 break;
             }
@@ -317,14 +317,14 @@ export class MapWithIndexes<T, K extends keyof T, F extends { readOnly: boolean,
                 continue;
             }//
             //at the end
-            if (peek && !path.length) {
+            if (peek && !spath.length) {
                 collected.push(deepClone(peek.obj));
             }
-        } while (path.length && currentMap);
+        } while (spath.length && currentMap);
         if (errors) {
             return new OperationResult<T>({ errors });
         }
-        if (!path.length) {
+        if (!spath.length) {
             return new OperationResult<T>({ errors, collected });
         }
         //wildcard search from here collect everything in this map

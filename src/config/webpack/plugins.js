@@ -4,15 +4,14 @@ const CleanWebpackPlugin = require('clean-webpack-plugin');
 
 const p = process.env.NODE_ENV === 'production';
 
+/* this is more for documentation
 new CleanWebpackPlugin(['dist', 'build'], {
     root: '/full/project/path',
     verbose: true,
     dry: false,
     exclude: ['shared.js']
 })
-
-
-
+*/
 
 const cleanClient = new (require('clean-webpack-plugin'))(['client'], {
     root: resolve('dist'),
@@ -34,9 +33,6 @@ const sharedProd = !p ? [] : flatten(
         sourceMap: true
     })
 );
-
-
-
 
 const html = new (require('html-webpack-plugin'))({
     title: 'BookBarter',

@@ -51,7 +51,7 @@ export class AdaptorMock extends AdaptorBase {
         do {
             AdaptorMock.userPk++; //bump
         }
-        while (this.user.get({ userId: AdaptorMock.userPk }) !== undefined);
+        while  ( this.user.get({ userId: AdaptorMock.userPk }).first !== undefined);
         return AdaptorMock.userPk;
     }
 
@@ -224,7 +224,7 @@ export class AdaptorMock extends AdaptorBase {
                 );
             }
             let rc: UserPropertiesModifyMessageReturned[] = [];
-            
+
             for (let mod of modifications) {
                 //switch is just for logging/tracing
                 switch (true) {
@@ -291,17 +291,15 @@ export class AdaptorMock extends AdaptorBase {
     /*tokens*/
 
     public tokenInsertModify(token: TokenMessage): Promise<TokenMessageReturned> {
-
         if (!this.connected) {
             return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
         }
-
-        //let uid = UID.sync(18);
-        let t = this.token.get({ tokenId: token.tokenId }).first as TokenProperties;
-        if (!(t.sessionProps)) {
-            t.sessionProps = {};
-        }
+        //update all except the sessionProps this will be done in another call 'tokenInsertModifyProperty'
+        let findToken = this.token.get({ tokenId: token.tokenId }).first;
+        let oldSessionProps = Object.assign({ sessionProps: {} }, findToken).sessionProps;
+        let t = Object.assign({}, token, { sessionProps: oldSessionProps });
         makeObjectNull(t);
+        
         let self = this;
         return new Promise<TokenMessageReturned>(function asyncTokenInsertModify(resolve, reject) {
             //determine template
@@ -520,7 +518,7 @@ export class AdaptorMock extends AdaptorBase {
                 rc = token.fkUserId === userId;
             }
             if (userName) {
-                let u = this.user.get({userName}).first;
+                let u = this.user.get({ userName }).first;
                 if (u) {
                     rc = token.fkUserId === u.userId;
                 }
