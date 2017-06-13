@@ -51,7 +51,7 @@ interface SQLFiles {
     sqlTokenInsertModifyProperty: string;
     sqlTokenAssociateWithUser: string;
     sqlTokenInsertModify: string;
-    sqlTokenDoRevoke: string;
+    sqlInsertRevoke: string;
     sqlTokenGC: string;
     //
     sqlTokenSelectAllByFilter: string;
@@ -72,7 +72,7 @@ const sqlFiles: SQLFiles = {
     sqlTokenInsertModifyProperty: require('./sql/token_insert_modify_property.sql'),
     sqlTokenAssociateWithUser: require('./sql/token_associate_with_user.sql'),
     sqlTokenInsertModify: require('./sql/token_insert_modify.sql'),
-    sqlTokenDoRevoke: require('./sql/token_do_revoke.sql'),
+    sqlInsertRevoke: require('./sql/token_insert_revoke.sql'),
     sqlTokenGC: require('./sql/token_gc.sql'),
     //
     sqlTokenSelectAllByFilter: require('./sql/token_select_all_by_filter.sql'),
@@ -342,7 +342,7 @@ export class AdaptorPostgreSQL extends AdaptorBase {
             //no error but did we actually update something
             if (res.rowCount === 0) {
                 logger.error('Nothing was mutated. %j', res);
-                throw new Error(util.format('Nothing was updated mutated. %j', res));
+                throw new AdaptorError(util.format('Nothing was updated mutated. %j', res), this.state);
             }
             logger.trace('Success: number of rows mutated %d', res.rowCount);
             return fn(res, resolve);
@@ -368,9 +368,9 @@ export class AdaptorPostgreSQL extends AdaptorBase {
         logger.trace('inserting/updating token %j', t);
 
         let qc = <pg.QueryConfig>(this.sql.get('sqlTokenInsertModify'));
-        
+
         t.templateName = t.templateName && t.templateName.toLocaleLowerCase() || null;
-        
+
         let sqlObject = Object.assign({}, qc, { values: [t.tokenId, t.fkUserId, t.purpose, t.ipAddr, t.tsIssuance, t.tsRevoked, t.revokeReason, t.tsExpire, t.templateName] }) as pg.QueryConfig;
 
         return this.executeSQL<TokenMessageReturned>([sqlObject], (res, resolve) => {
@@ -454,25 +454,48 @@ export class AdaptorPostgreSQL extends AdaptorBase {
         });
     }
 
-    public tokenDoRevoke(tokenId: string, revokeReason: string, revokeTime?: number | null): Promise<boolean> {
+    public tokenInsertRevoke(fkUserId: number, purpose: string, ipAddr: string): Promise<TokenMessageReturned> {
 
-        logger.trace('Expire token %s with reason %s', tokenId, revokeReason);
+        logger.trace('insert new token type [%s] and expire older ones for user %d', purpose, fkUserId);
 
         if (!this.connected) {
             return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
         }
-        let qc = <pg.QueryConfig>(this.sql.get('sqlTokenDoRevoke'));
+        //--  1 token id, 2 fk_user_id, 3 ip, 4 issuance/rovoke timestamp, 5 purpose
 
-        if (!revokeTime) { //remove JS "undefined"" for postgreql
-            revokeTime = null;
-        }
-
-        let sqlObject = Object.assign({}, qc, { values: [tokenId, revokeReason, revokeTime] }) as pg.QueryConfig;
-
-        return this.executeSQLMutation<boolean>([sqlObject], (res, resolve) => {
-            res;
-            logger.trace('success: token %s expired', tokenId);
-            resolve(true);
+        let qc = <pg.QueryConfig>(this.sql.get('sqlInsertRevoke'));
+        let revokeTime = Date.now();
+        let tokenId = UID.sync(18);
+        let sqlObject = Object.assign({}, qc, { values: [tokenId, fkUserId, ipAddr, revokeTime, purpose] }) as pg.QueryConfig;
+        let nrRevoked = 0;
+        let nrInserted = 0;
+        return this.executeSQLMutation<TokenMessageReturned>([sqlObject], (res, resolve) => {
+            let result: TokenMessageReturned = res.rows.map((raw: any) => {
+                let rc: TokenMessageReturned = {
+                    tokenId: raw['id'],
+                    fkUserId: raw['fk_user_id'],
+                    purpose: raw['purpose'],
+                    ipAddr: raw['ip_addr'],
+                    tsIssuance: raw['timestamp_issued'],
+                    tsRevoked: raw['timestamp_revoked'],
+                    revokeReason: raw['revoke_reason'],
+                    tsExpire: raw['timestamp_expire'],
+                    tsExpireCache: raw['timestamp_expire'],
+                    templateId: raw['fk_cookie_template_id']
+                };
+                if (!rc.revokeReason) {
+                    nrInserted++;
+                }
+                else {
+                    nrRevoked++;
+                }
+                return rc;
+            }).filter((t) => t.tokenId === tokenId)[0]; // only pick the one inserted
+            logger.trace('success: new token %s inserted [%d], %d expired', tokenId, nrInserted, nrRevoked);
+            if (result) {
+                return resolve(result);
+            }
+            throw new AdaptorError(`no token type ${purpose} was inserted for user ${fkUserId}`, this.state);
         });
     }
 

@@ -8,6 +8,7 @@ const logger = Logger.getLogger();
 
 import { MapWithIndexes, makeObjectNull } from './utils';
 import { Constants } from './property_names';
+import * as UID from 'uid-safe';
 
 import {
     //general
@@ -51,7 +52,7 @@ export class AdaptorMock extends AdaptorBase {
         do {
             AdaptorMock.userPk++; //bump
         }
-        while  ( this.user.get({ userId: AdaptorMock.userPk }).first !== undefined);
+        while (this.user.get({ userId: AdaptorMock.userPk }).first !== undefined);
         return AdaptorMock.userPk;
     }
 
@@ -290,6 +291,62 @@ export class AdaptorMock extends AdaptorBase {
     /*tokens*/
     /*tokens*/
 
+    public tokenInsertRevoke(fkUserId: number, purpose: string, ipAddr: string): Promise<TokenMessageReturned> {
+        logger.trace('insert new token type [%s] and expire older ones for user %d', purpose, fkUserId);
+
+        if (!this.connected) {
+            return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
+        }
+        //--  1 token id, 2 fk_user_id, 3 ip, 4 issuance/rovoke timestamp, 5 purpose
+        let u = this.user.get({ userId: fkUserId }).first;
+        if (!u) {
+            return Promise.reject(new AdaptorError(`User with id ${fkUserId} doesn't exist`, this.state));
+        }
+        //get all tokens from this user
+        let collected = this.token.get({ fkUserId }).collected;
+        let nrRevoked = 0;
+        if (collected) {
+            for (let token of collected) {
+                token.revokeReason = 'RE';
+                token.tsRevoked = Date.now();
+                this.token.set(token);
+            }
+            nrRevoked = collected.length;
+        }
+
+        let tsExpire = new Date().setFullYear(9999);
+        let tokenId = UID.sync(18);
+        let nt: TokenProperties = {
+            tokenId,
+            fkUserId,
+            purpose,
+            ipAddr,
+            tsIssuance: Date.now(),
+            tsRevoked: null,
+            revokeReason: null,
+            tsExpire, // never expire
+            tsExpireCache: tsExpire,
+            sessionProps: {},
+            templateName: 'default_token'
+        };
+        this.token.set(nt);
+        logger.trace('success: new token %s inserted, %d expired', tokenId, nrRevoked);
+        let rc: TokenMessageReturned = {
+            templateId: 0,
+            tokenId: nt.tokenId,
+            fkUserId: nt.fkUserId,
+            purpose: nt.purpose,
+            ipAddr: nt.ipAddr,
+            tsIssuance: nt.tsIssuance,
+            tsRevoked: null,
+            revokeReason: null,
+            tsExpire: nt.tsExpire,
+            tsExpireCache: nt.tsExpire,
+        };
+        return Promise.resolve(rc);
+    }
+
+
     public tokenInsertModify(token: TokenMessage): Promise<TokenMessageReturned> {
         if (!this.connected) {
             return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
@@ -299,7 +356,7 @@ export class AdaptorMock extends AdaptorBase {
         let oldSessionProps = Object.assign({ sessionProps: {} }, findToken).sessionProps;
         let t = Object.assign({}, token, { sessionProps: oldSessionProps });
         makeObjectNull(t);
-        
+
         let self = this;
         return new Promise<TokenMessageReturned>(function asyncTokenInsertModify(resolve, reject) {
             //determine template

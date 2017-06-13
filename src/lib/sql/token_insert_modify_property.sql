@@ -8,6 +8,8 @@ INSERT INTO auth.session_props (fk_token_id, session_prop_name, session_prop_val
 ON CONFLICT (fk_token_id,session_prop_name) DO UPDATE 
   SET session_prop_value = EXCLUDED.session_prop_value,
       invisible = EXCLUDED.invisible
-RETURNING fk_token_id, session_prop_name, session_prop_value, invisible      
+RETURNING fk_token_id, session_prop_name, session_prop_value, invisible  
+
+    
 
 

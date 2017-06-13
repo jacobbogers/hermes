@@ -41,12 +41,18 @@ export const typeDefs: string[] = [
         type Mutation {
             login(email:String!, password:String! ): AuthResult
             logout: AuthResult
-            createUser(name:String! , email:String!, password:String!): AuthResult
+            createUser(name:String!, email:String!, password:String!): AuthResult
+            activate(email:String!, token:String!): AuthResult
+            requestPasswordReset(email:String!): AuthResult
+            reSendActivation(token:String!): AuthResult
+            resetPassword(token:String, password:String):AuthResult
+            tokenStatus(token:String!):AuthResult
+
         }
         
-        #schema {
+        # schema {
         #    query: Query
         #    mutation: Mutation
-        #}
+        # }
         `
 ];

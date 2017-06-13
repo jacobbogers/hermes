@@ -11,6 +11,7 @@ import { deepClone } from './utils';
 import { AuthenticationResult } from './graphql_resolvers';
 import { Constants } from './property_names';
 
+
 const PASSWORD: Constants = 'password';
 //const BLACKLISTED: Constants = 'blacklisted';
 
@@ -87,11 +88,14 @@ export class HermesGraphQLConnector {
             return errors;
         }
 
+        let authKey = UID.sync(18);
+        console.log('authKey:', authKey);
+
         let newUser: UserProperties = {
             userName: name,
             userEmail: email,
             userId: -1, //-1 doesnt exist as valid userId, because all in range [0,+inf)
-            userProps: { password: password, 'await-activation': UID.sync(18) + ':' + Date.now() }
+            userProps: { password: password, 'await-activation': authKey + ':' + Date.now() }
         };
         this.user = newUser;
         return;
@@ -105,6 +109,11 @@ export class HermesGraphQLConnector {
             return true;
         }
         return false;
+    }
+
+    public ipAddr(): string {
+        let req = this.session.req as any;
+        return req && req.ip;
     }
 
     public isAnonymous(): boolean {
@@ -200,6 +209,53 @@ export class HermesGraphQLConnector {
         this.user = this.store.getAnonymousUser();
     }
 
+    public activate(email: string, token: string): AuthenticationError[] | undefined {
+        //is this user in activation state?
+        let findUser = this.store.getUserByEmail(email);
+
+        if (!findUser) {
+            return [new AuthenticationError('no-user-found', 'User with this email doesnt exist')];
+        }
+        let fu = findUser;
+        const awaitActivation: Constants = 'await-activation';
+        if (!(awaitActivation in findUser.userProps)) {
+            return [new AuthenticationError('user-already-activated', 'User has already been activated')];
+        }
+        // check token
+        let tokenParts = fu.userProps[awaitActivation].split(':');
+        if (tokenParts[0] === token) {
+            delete fu.userProps[awaitActivation];
+        }
+        else {
+            return [new AuthenticationError('unmatched-activation-token', 'This token does not match the activation token')];
+        }
+        this.user = fu;
+    }
+
+    public requestPasswordReset(email: string): Promise<AuthenticationResult> {
+        email = email.toLocaleLowerCase().trim();
+        return this.store.requestResetPw(email, this.ipAddr())
+            .then(() => {
+                let pw_reset_state: Constants = 'pw-reset-requested';
+                let rc: AuthenticationResult = {
+                    data: {
+                        email,
+                        state: pw_reset_state
+                    }
+                };
+                return rc;
+            })
+            .catch((err) => {
+                let rc: AuthenticationResult = {
+                    errors: [new AuthenticationError('err-password-reset', err.toString())],
+                    data: {
+                        email,
+                    }
+                };
+                return rc;
+            });
+    }
+
     public save(): Promise<AuthenticationResult> {
 
         return new Promise<AuthenticationResult>((resolve) => {
@@ -219,9 +275,9 @@ export class HermesGraphQLConnector {
                         data: {
                             name: usrName,
                             email: usrEmail,
-                            state: 'err-session-save' 
+                            state: 'err-session-save'
                         }
-                   });
+                    });
                 }
                 this.user = this.session['_user'];
                 this.token = this.session['_hermes'];
@@ -247,7 +303,7 @@ export class HermesGraphQLConnector {
                         state = 'ok';
                 }
                 return resolve({
-                   data: {
+                    data: {
                         name: userName,
                         email: userEmail,
                         state

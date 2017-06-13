@@ -354,7 +354,7 @@ export class HermesStore extends Store {
         let msg: TokenMessage = {
             tokenId: _token.tokenId,
             fkUserId: _token.fkUserId,
-            purpose: stkn,
+            purpose: _token.purpose || stkn,
             ipAddr: _token.ipAddr,
             tsIssuance: _token.tsIssuance,
             tsRevoked: null,
@@ -642,6 +642,35 @@ export class HermesStore extends Store {
     /* specific tooling */
     /* specific tooling */
 
+    public requestResetPw(email: string, ipAddr: string): Promise<TokenProperties> {
+
+        email = email.toLocaleLowerCase();
+        let fu = this.userMaps.get({ userEmail: email }).first;
+        if (!fu) {
+            return Promise.reject(new HermesStoreError('user with this email doesnt exist', this.connected));
+        }
+        let u = fu;
+        let purpose: Constants = 'rstp';
+        let revoke_reason: Constants = 'RE';
+        let default_template: Constants = 'default_token';
+        return this.adaptor.tokenInsertRevoke(u.userId, purpose, ipAddr, revoke_reason).then((tmr: TokenMessageReturned) => {
+            let rc: TokenProperties = {
+                tokenId: tmr.tokenId,
+                sessionProps:{},
+                templateName:default_template,
+                fkUserId:tmr.fkUserId,
+                purpose:tmr.purpose,
+                ipAddr:tmr.ipAddr,
+                tsIssuance: tmr.tsIssuance,
+                tsRevoked: tmr.tsRevoked,
+                revokeReason: tmr.revokeReason,
+                tsExpire:tmr.tsExpire,
+                tsExpireCache:tmr.tsExpireCache
+            };
+            return rc;
+        });
+    }
+
     public getAnonymousUser(): UserProperties {
         const anon: Constants = 'anonymous';
         let rc = this.userMaps.get({ userName: anon }).first;
@@ -711,6 +740,8 @@ export class HermesStore extends Store {
     }
 
 
+
+
     /* interface methods of Store */
     /* interface methods of Store */
     /* interface methods of Store */
@@ -766,9 +797,22 @@ export class HermesStore extends Store {
         // ge the token
         let token = this.getTokenById(sessionId);
         if (token) {
-            this.tokenMaps.delete(token);
+            let tc = token; // typescript typeguard above only goes so many levels of nesting
+            let self = this;
+            token.tsRevoked = Date.now();
+            token.revokeReason = 'destruction';
+            this.tokenUpdateInsert(token)
+                .then(() => {
+                    return undefined;
+                })
+                .catch((err) => { //error can be many things, best to let all middleware fail after this.
+                    return err;
+                })
+                .then((err) => {
+                    self.tokenMaps.set(tc);
+                    callback && defer(callback, err);
+                });
         }
-        callback && defer(callback);
     }
 
     /**

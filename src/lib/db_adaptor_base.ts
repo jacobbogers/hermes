@@ -299,7 +299,7 @@ export abstract class AdaptorBase extends EventEmitter {
     public abstract tokenInsertModify(token: TokenMessage): Promise<TokenMessageReturned>;
     public abstract tokenInsertModifyProperty(tokenId: string, modifications: PropertiesModifyMessage[]): Promise<TokenPropertiesModifyMessageReturned[]>;
     public abstract tokenAssociateWithUser(tokenId: string, userId: number): Promise<boolean>;
-    public abstract tokenDoRevoke(tokenId: string, revokeReason: string, revokeTime?: number | null): Promise<boolean>;
+    public abstract tokenInsertRevoke(fkUserId: number, purpose: string, ipAddr: string, revokeReason: string): Promise<TokenMessageReturned>;
     public abstract tokenGC(deleteOlderThen: number): Promise<number>;
     public abstract tokenSelectAllByFilter(timestampExpire: number | null, startTimestampRevoked: number, endTimestampRevoked: number): Promise<TokensAndPropsMessage[]>;
     public abstract tokenSelectAllByUserIdOrName(userId: number | null, userName: string | null): Promise<TokensAndPropsMessage[]>;

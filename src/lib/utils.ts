@@ -61,9 +61,9 @@ export class OperationResult<I> {
     get errors() {
         return this._errors;
     }
-    /*get collected(): I[] | undefined {
+    get collected(): I[] | undefined {
         return this.collected;
-    }*/
+    }
     get first(): I | undefined {
         return this._collected && this._collected[0];
     }

@@ -5,7 +5,6 @@ import { HermesGraphQLConnector, AuthenticationError } from './hermes_connector'
 
 import { Constants } from './property_names';
 
-
 export interface ServerInfo {
     serverTime: string;
 }
@@ -145,7 +144,6 @@ const createUser = (...rest: any[]) => {
         return Promise.resolve<AuthenticationResult>({ errors: context.errors });
     }
 
-
     let { name, email, password }: { name: string, email: string, password: string } = rest[1];
 
     let connector = context.connector as HermesGraphQLConnector;
@@ -154,6 +152,38 @@ const createUser = (...rest: any[]) => {
         return Promise.resolve<AuthenticationResult>({ errors: errors });
     }
     return connector.save();
+};
+
+const activate = (...rest: any[]) => {
+    let context = rest[2];
+
+    if (context.errors) {
+        return Promise.resolve<AuthenticationResult>({ errors: context.errors });
+    }
+    let connector = context.connector as HermesGraphQLConnector;
+
+    let { token, email }: { email: string, token: string } = rest[1];
+    let errors = connector.activate(email, token);
+    if (errors) {
+        return Promise.resolve<AuthenticationResult>({ errors: errors, data: { email } });
+    }
+    return connector.save();
+
+};
+
+const requestPasswordReset = (...rest: any[]) => {
+
+    let context = rest[2];
+
+    if (context.errors) {
+        return Promise.resolve<AuthenticationResult>({ errors: context.errors });
+    }
+
+    let connector = context.connector as HermesGraphQLConnector;
+
+    let { email }: { email: string } = rest[1];
+   
+    return connector.requestPasswordReset(email);
 };
 
 export const resolvers = {
@@ -167,6 +197,8 @@ export const resolvers = {
     Mutation: {
         login,
         logout,
-        createUser
+        createUser,
+        activate,
+        requestPasswordReset
     }
 };

@@ -14,19 +14,32 @@ export interface GlobalPropsEnum {
     'stkn': string;
     'anonymous': string;
     'default_cookie': string;
+    'default_token': string;
     'user-logged-in': string;
-    
+    'no-user-found': string;
+    'user-already-activated': string;
+    'could-not-destroy-session': string;
+    'could-not-activate-user': string;
+    'unmatched-activation-token': string;
+    'pw-reset-requested': string;
+
+    //token issue purpose
+    'rstp': string;
+    'RE': string;
+
+
     //field-entry
     'no-username': string;
     'no-email': string;
     'no-password': string;
-    
+
     //authentication and creation
     'username-exist': string;
     'email-exist': string;
     'auth-failed': string;
-    
+
     //sytem  infrastructure errors
+    'err-password-reset':string;
     'err-auxiliary': string;
     'err-session-save': string;
     'err-session-object': string;
