@@ -142,7 +142,7 @@ export class HermesStore extends Store {
         let _si = SystemInfo.createSystemInfo();
 
         this.userMaps = new MapWithIndexes<UserProperties, any, any, any, any>(['userId'], ['userEmail'], ['userName']);
-        this.tokenMaps = new MapWithIndexes<TokenProperties, any, any, any, any>(['tokenId'], ['fkUserId', 'tokenId']);
+        this.tokenMaps = new MapWithIndexes<TokenProperties, any, any, any, any>(['tokenId'], ['fkUserId', 'purpose', 'tokenId']);
         this.templateMaps = new MapWithIndexes<TemplateProperties, any, any, any, any>(['templateName'], ['id']);
 
         /* disconnect event added by express-session inner workings*/
@@ -642,6 +642,7 @@ export class HermesStore extends Store {
     /* specific tooling */
     /* specific tooling */
 
+
     public requestResetPw(email: string, ipAddr: string): Promise<TokenProperties> {
 
         email = email.toLocaleLowerCase();
@@ -860,7 +861,7 @@ export class HermesStore extends Store {
                 ...reply,
                 userProps: { ...user.userProps }
             };
-            console.log('user:', user);
+            //console.log('user:', user);
             let findUser = self.getUserById(reply.userId) || { userProps: {} };
             // partially change user and update to cache
             updatedUser = {

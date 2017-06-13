@@ -128,8 +128,21 @@ export class AdaptorMock extends AdaptorBase {
         super();
         this.user = new MapWithIndexes<UserProperties, any, any, any, any>(['userId'], ['userName'], ['userEmail']);
         //composite))
-        this.token = new MapWithIndexes<TokenProperties, any, any, any, any>(['tokenId'], ['fkUserId', 'tokenId']);
+        this.token = new MapWithIndexes<TokenProperties, any, any, any, any>(['tokenId'], ['fkUserId', 'purpose', 'tokenId']);
         this.template = new MapWithIndexes<TemplateProperties, any, any, any, any>(['id'], ['templateName']);
+    }
+
+    public shutDown(): Promise<boolean> {
+        return super.destroy()
+            .then(() => {
+                this.transition(ADAPTOR_STATE.Disconnected, true);
+                return true;
+            })
+            .catch(() => false)
+            .then((rc: boolean) => {
+                this.emit('diconnect');
+                return rc;
+            });
     }
 
     public init(): Promise<boolean> {
@@ -303,15 +316,18 @@ export class AdaptorMock extends AdaptorBase {
             return Promise.reject(new AdaptorError(`User with id ${fkUserId} doesn't exist`, this.state));
         }
         //get all tokens from this user
-        let collected = this.token.get({ fkUserId }).collected;
+        let collected = this.token.get({ fkUserId, purpose }).collected;
         let nrRevoked = 0;
         if (collected) {
             for (let token of collected) {
+                if (token.revokeReason !== null) {
+                    continue;
+                }
                 token.revokeReason = 'RE';
                 token.tsRevoked = Date.now();
                 this.token.set(token);
+                nrRevoked++;
             }
-            nrRevoked = collected.length;
         }
 
         let tsExpire = new Date().setFullYear(9999);

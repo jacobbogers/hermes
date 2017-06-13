@@ -111,9 +111,7 @@ const tokenExpire = (...rest: any[]) => {
         return Promise.resolve<AuthenticationResult>({ errors: context.errors });
     }
     let connector = context.connector as HermesGraphQLConnector;
-
     let expire = connector.getExpiredAsDate().toString();
-
 
     return Promise.resolve({ expire });
 };

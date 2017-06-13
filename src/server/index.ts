@@ -81,9 +81,13 @@ app.use(bodyParser.raw({
     limit: '100kb',
 }));
 
+let adaptor = new AdaptorMock(); /*new AdaptorPostgreSQL({
+    url: 'postgresql://bookbarter:bookbarter@jacob-bogers.com:5432/bookbarter?sslmode=require'
+});*/
+
 let props: HermesStoreProperties = {
     defaultCookieOptionsName: 'default_cookie',
-    adaptor: new AdaptorMock()
+    adaptor
     /*adaptor: new AdaptorPostgreSQL({
         url: 'postgresql://bookbarter:bookbarter@jacob-bogers.com:5432/bookbarter?sslmode=require'
     })*/
@@ -129,5 +133,5 @@ process.on('exit', () => {
 
 process.on('SIGINT', () => {
     logger.warn('Caught [SIGINT] interrupt signal');
-    process.exit(0);
+    adaptor.shutDown().then(() => process.exit(0));
 });

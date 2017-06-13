@@ -1,4 +1,3 @@
-'use strict';
 
 import * as util from 'util';
 import * as fs from 'fs';
@@ -62,7 +61,7 @@ export class OperationResult<I> {
         return this._errors;
     }
     get collected(): I[] | undefined {
-        return this.collected;
+        return this._collected;
     }
     get first(): I | undefined {
         return this._collected && this._collected[0];
@@ -73,7 +72,7 @@ export class OperationResult<I> {
         this._deleted = props.deleted;
         this._collected = props.collected && props.collected.splice(0);
     }
-    
+
 }
 
 export function flatMap<T, F extends { obj: T }, Mc extends Map<T[keyof T], Mc | F>>(map: Mc): F[] {
@@ -156,28 +155,31 @@ export class MapWithIndexes<T, K extends keyof T, F extends { readOnly: boolean,
                 let peek = currentMap.get(keyValue);
 
                 //premature termination of structure , composite key larger then structure
-                if (path.length && peek && !(peek instanceof Map)) {
+                if (path.length === 0 && (peek instanceof Map)) {
                     errors++;
                     break;
                 }
 
                 //premature termination of key, structure extends beyond key
-                if (peek instanceof Map && !path.length) {
-                    currentMap = <Mc>currentMap.get(keyValue);
+                if (peek !== undefined && !(peek instanceof Map) && path.length > 0) {
+                    errors++;
+                    break;
+                }
+                //walk up the tree
+                if (peek instanceof Map && path.length > 0) {
+                    currentMap = peek;
                     continue;
                 }
-
-
                 // "peek" variable is either undefined or NOT a Map object
                 switch (true) {
                     //set new
-                    case (!peek && !path.length):
+                    case (peek === undefined && path.length === 0): //dont even try (!peek && !path.length) seriously!!
                         let newRecord = <F>{ readOnly, obj: dataCopy }; // = { readOnly: true, obj: data };
                         currentMap.set(keyValue, newRecord);
                         inserted++;
                         break;
                     //set replace    
-                    case (peek && !path.length): // previous inserted object found, optionally override
+                    case (peek !== undefined && path.length === 0): // previous inserted object found, optionally override
                         let finalObj = <F>(peek);
                         if (!finalObj.readOnly) {
                             finalObj.readOnly = readOnly;
@@ -187,7 +189,7 @@ export class MapWithIndexes<T, K extends keyof T, F extends { readOnly: boolean,
                         }
                         break;
                     //set add path    
-                    case (!peek && path.length): // create extra path (inserting new objects)
+                    case (peek === undefined && path.length > 0): // create extra path (inserting new objects)
                         let map = <Mc>(new Map());
                         currentMap.set(keyValue, map);
                         currentMap = map;
@@ -239,7 +241,7 @@ export class MapWithIndexes<T, K extends keyof T, F extends { readOnly: boolean,
                     break;
                 }
                 if (peek instanceof Map) {
-                    currentMap = <Mc>currentMap.get(keyValue);
+                    currentMap = peek;
                     continue;
                 }//
                 //found something to delete
@@ -289,7 +291,7 @@ export class MapWithIndexes<T, K extends keyof T, F extends { readOnly: boolean,
         let currentMap = this.access[selected];
 
         let spath: (keyof T)[] = selected.split('#') as any;
-
+        //let parentMap = currentMap; // init dummy value
         do {
             let keyName = spath.shift(); //pop
             if (!keyName) { //very bad
@@ -298,10 +300,15 @@ export class MapWithIndexes<T, K extends keyof T, F extends { readOnly: boolean,
             }
             if (!(keyName in query)) {// the rest is *wildcard*
                 spath.unshift(keyName); // put it back to be processed later;
+                //currentMap = parentMap;
                 break;
             }
             let keyValue = query[keyName] as T[K];
             let peek = currentMap.get(keyValue);
+            if (!peek) { //not found regardless
+                errors++;
+                break;
+            }
             //premature termination of structure , composite key larger then structure
             if (spath.length && peek && !(peek instanceof Map)) {
                 errors++;
@@ -313,7 +320,8 @@ export class MapWithIndexes<T, K extends keyof T, F extends { readOnly: boolean,
                 break;
             }
             if (peek instanceof Map) {
-                currentMap = <Mc>currentMap.get(keyValue);
+                //parentMap = currentMap;
+                currentMap = peek;
                 continue;
             }//
             //at the end
@@ -321,16 +329,15 @@ export class MapWithIndexes<T, K extends keyof T, F extends { readOnly: boolean,
                 collected.push(deepClone(peek.obj));
             }
         } while (spath.length && currentMap);
-        if (errors) {
-            return new OperationResult<T>({ errors });
-        }
-        if (!spath.length) {
+        if (spath.length === 0) {
             return new OperationResult<T>({ errors, collected });
         }
         //wildcard search from here collect everything in this map
+
         let rc = flatMap(currentMap).map((itm) => deepClone(itm.obj)) as T[];
         collected.push(...rc);
         return new OperationResult({ errors, collected });
+
     }
 
 

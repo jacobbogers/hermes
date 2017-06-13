@@ -284,6 +284,8 @@ export abstract class AdaptorBase extends EventEmitter {
         return alwaysReject ? Promise.reject(false) : Promise.resolve(true);
     }
 
+    
+
     public get state(): ADAPTOR_STATE {
         return this._state;
     }
@@ -291,6 +293,7 @@ export abstract class AdaptorBase extends EventEmitter {
     /* general */
     public abstract init(): Promise<boolean>;
     public abstract get poolSize(): number;
+    public abstract shutDown(): Promise<boolean>;
     /* user */
     public abstract userInsert(token: UserMessageBase): Promise<UserMessageReturned>;
     public abstract userInsertModifyProperty(userId: number, modifications: PropertiesModifyMessage[]): Promise<UserPropertiesModifyMessageReturned[]>;
