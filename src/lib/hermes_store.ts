@@ -655,19 +655,36 @@ export class HermesStore extends Store {
         let revoke_reason: Constants = 'RE';
         let default_template: Constants = 'default_token';
         return this.adaptor.tokenInsertRevoke(u.userId, purpose, ipAddr, revoke_reason).then((tmr: TokenMessageReturned) => {
+
             let rc: TokenProperties = {
                 tokenId: tmr.tokenId,
-                sessionProps:{},
-                templateName:default_template,
-                fkUserId:tmr.fkUserId,
-                purpose:tmr.purpose,
-                ipAddr:tmr.ipAddr,
+                sessionProps: {},
+                templateName: default_template,
+                fkUserId: tmr.fkUserId,
+                purpose: tmr.purpose,
+                ipAddr: tmr.ipAddr,
                 tsIssuance: tmr.tsIssuance,
-                tsRevoked: tmr.tsRevoked,
-                revokeReason: tmr.revokeReason,
-                tsExpire:tmr.tsExpire,
-                tsExpireCache:tmr.tsExpireCache
+                tsRevoked: null,
+                revokeReason: null,
+                tsExpire: tmr.tsExpire,
+                tsExpireCache: tmr.tsExpireCache
             };
+
+            //get old reset keys and revoke them in the store aswell
+            let collected = this.tokenMaps.get({ fkUserId: u.userId, purpose }).collected;
+            let nrRevoked = 0;
+            if (collected) {
+                for (let token of collected) {
+                    if (token.revokeReason !== null) {
+                        continue;
+                    }
+                    token.revokeReason = 'RE';
+                    token.tsRevoked = Date.now();
+                    this.tokenMaps.set(token);
+                    nrRevoked++;
+                }
+            }
+            this.tokenMaps.set(rc);
             return rc;
         });
     }
@@ -740,6 +757,46 @@ export class HermesStore extends Store {
         return this.getCookieOptions(this.defaultTemplate || <Constants>'default_cookie');
     }
 
+
+    public updateUserProperties(user: UserProperties): Promise<UserProperties> {
+        let self = this;
+
+        return this.userPropertiesUpdateInsert(user) //update user in database first
+            .then(function afterUserPropertiesInsert(reply) {
+                logger.debug('user %s had %d property-mutations', user.userName, reply.length);
+                let userProps = user.userProps;
+                for (let msg of reply) {
+                    if (msg.invisible === true) {
+                        delete userProps[msg.propName];
+                        continue;
+                    }
+                    userProps[msg.propName] = msg.propValue;
+                }
+                self.userMaps.set(user); // sync mem-cache as well
+                return user;
+            });
+    }
+
+    public updateToken(token: TokenProperties): Promise<TokenProperties> {
+
+        let self = this;
+        return self.tokenUpdateInsert(token)
+            .then(function afterTokenUpdateInsert(reply) {
+                logger.debug('%s: token updated, type %s', token.tokenId, token.purpose);
+                //
+                //convert from template_id to template_name
+                let template = self.getTemplateById(reply.templateId || -1);
+                delete reply.templateId;
+                Object.assign(token, reply); //update token with returned values
+                let updatedToken = Object.assign({}, reply, {
+                    templateName: template && template.templateName,
+                    sessionProps: token.sessionProps
+                }) as TokenProperties;
+                //partially update the token in cache to reflect database change
+                self.tokenMaps.set(updatedToken);
+                return updatedToken;
+            });
+    }
 
 
 

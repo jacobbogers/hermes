@@ -184,6 +184,22 @@ const requestPasswordReset = (...rest: any[]) => {
     return connector.requestPasswordReset(email);
 };
 
+const resetPassword  = ( ... rest: any[]) => {
+    let context = rest[2];
+
+    if (context.errors) {
+        return Promise.resolve<AuthenticationResult>({ errors: context.errors });
+    }
+
+    let connector = context.connector as HermesGraphQLConnector;
+
+    let { token, password }: { token: string, password: string } = rest[1];
+
+    return connector.resetPassword(token, password);
+
+};
+
+
 export const resolvers = {
     Query: {
         currentUser,
@@ -197,6 +213,7 @@ export const resolvers = {
         logout,
         createUser,
         activate,
-        requestPasswordReset
+        requestPasswordReset,
+        resetPassword
     }
 };

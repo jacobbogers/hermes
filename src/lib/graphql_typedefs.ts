@@ -45,7 +45,7 @@ export const typeDefs: string[] = [
             activate(email:String!, token:String!): AuthResult
             requestPasswordReset(email:String!): AuthResult
             reSendActivation(token:String!): AuthResult
-            resetPassword(token:String, password:String):AuthResult
+            resetPassword(token:String!, password:String!):AuthResult
             tokenStatus(token:String!):AuthResult
 
         }

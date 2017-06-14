@@ -47,6 +47,77 @@ export class HermesGraphQLConnector {
         this.token = hermes;
     }
 
+    public resetPassword(token: string, password: string): Promise<AuthenticationResult> {
+
+        let errors: AuthenticationError[] = [];
+        let rstToken = this.store.getTokenById(token);
+        let anonUser = this.store.getAnonymousUser();
+        let userId = rstToken && rstToken.fkUserId || undefined;
+        let user = userId ? this.store.getUserById(userId) : undefined;
+        let revokeReason = (rstToken && rstToken.revokeReason || '').trim();
+        let rc: AuthenticationResult = {};
+
+        if (rstToken === undefined) {
+            errors.push(new AuthenticationError('token-not-found', 'this token wasnt found'));
+        }
+
+        if (revokeReason) {
+            errors.push(new AuthenticationError('token-invalid', 'this token has been processed'));
+        }
+
+        if (userId === undefined) {
+            //get the user
+            errors.push(new AuthenticationError('token-has-no-user', 'this token has user association'));
+        }
+
+        if (userId === anonUser.userId) {
+            errors.push(new AuthenticationError('user-anonymous', 'token is associated with an anonymous user'));
+        }
+
+        const pw: Constants = 'password';
+
+        if (rstToken && revokeReason === '' && user && userId && userId !== anonUser.userId) {
+            user.userProps[pw] = password;
+            rstToken.revokeReason = 'US';
+            rstToken.tsRevoked = Date.now();
+            //can set password and revoke the token at the same time
+            let up = this.store.updateUserProperties(user);
+            let tp = this.store.updateToken(rstToken);
+            return Promise.all([up, tp])
+                .then(([u]) => {
+                    let state: Constants = 'ok-password-reset';
+                    rc = {
+                        errors,
+                        data: {
+                            email: u.userEmail,
+                            state
+                        }
+                    };
+                    return rc;
+                })
+                .catch((err) => {
+                    errors.push(new AuthenticationError('err-auxiliary', err.toString()));
+                    let state: Constants = 'err-password-reset';
+                    rc = {
+                        errors,
+                        data: {
+                            email: user && user.userEmail,
+                            state
+                        }
+                    };
+                    return rc;
+                });
+
+        }
+        let state: Constants = 'err-password-reset';
+        rc = {
+            errors,
+            data: {
+                state
+            }
+        };
+        return Promise.resolve(rc);
+    }
 
     public createUser(name: string, email: string, password: string): AuthenticationError[] | undefined {
 

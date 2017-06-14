@@ -2,6 +2,7 @@
 
 export interface GlobalPropsEnum {
     'ok': string;
+    'ok-password-reset': string;
     'await-activation': string;
     'blacklisted': string;
     'no-acl': string;
@@ -23,9 +24,15 @@ export interface GlobalPropsEnum {
     'unmatched-activation-token': string;
     'pw-reset-requested': string;
 
+
     //token issue purpose
     'rstp': string;
     'RE': string;
+    'token-not-found': string;
+    'token-invalid': string;
+    'US': string;
+    'token-has-no-user': string;
+    'user-anonymous': string;
 
 
     //field-entry
@@ -39,7 +46,7 @@ export interface GlobalPropsEnum {
     'auth-failed': string;
 
     //sytem  infrastructure errors
-    'err-password-reset':string;
+    'err-password-reset': string;
     'err-auxiliary': string;
     'err-session-save': string;
     'err-session-object': string;
