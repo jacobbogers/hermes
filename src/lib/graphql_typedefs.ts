@@ -13,7 +13,16 @@ export const typeDefs: string[] = [
 
         type AuthResult {
             errors: [AuthError!]
-            data: UserInfo
+            user: UserInfo
+            token: TokenInfo
+        }
+
+        type TokenInfo {
+            tokenId:String!
+            purpose:String!
+            revoked: String! # UTC Date
+            issued: String! #UTC Date
+            expired: String! #UTC Date
         }
 
         # Your User Information
@@ -24,18 +33,13 @@ export const typeDefs: string[] = [
             state: String
         }
 
-        type TokenExpire {
-            expire:String
-            errors: [AuthError!]
-        }
-
         type Query {
              # Get the current status of a visitor
              currentUser: AuthResult
              isEmailRegistered (email: String!): AuthResult
              isUserNameRegistered(name: String!): AuthResult
              serverInfo: ServerInfo
-             tokenExpire: TokenExpire
+             tokenStatus(token:String):AuthResult
         }
 
         type Mutation {
@@ -44,10 +48,9 @@ export const typeDefs: string[] = [
             createUser(name:String!, email:String!, password:String!): AuthResult
             activate(email:String!, token:String!): AuthResult
             requestPasswordReset(email:String!): AuthResult
-            reSendActivation(token:String!): AuthResult
-            resetPassword(token:String!, password:String!):AuthResult
-            tokenStatus(token:String!):AuthResult
-
+            resetPassword(token:String!, password:String!): AuthResult
+            reSendActivation(email: String): AuthResult
+            
         }
         
         # schema {

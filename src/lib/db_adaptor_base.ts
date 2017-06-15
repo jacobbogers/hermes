@@ -79,7 +79,7 @@ export interface UsersAndPropsMessage {
 export interface TokenMessageBase {
     tokenId: string;
     fkUserId: number | null;
-    purpose: string | null;
+    purpose: string;
     ipAddr: string | null;
     tsIssuance: number;
     tsRevoked: number | null;

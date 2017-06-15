@@ -23,6 +23,10 @@ export interface GlobalPropsEnum {
     'could-not-activate-user': string;
     'unmatched-activation-token': string;
     'pw-reset-requested': string;
+    'unsufficient-priviledges': string;
+    //user roles
+    'roles': string;
+    'view_session_tokens': string;
 
 
     //token issue purpose
@@ -33,7 +37,7 @@ export interface GlobalPropsEnum {
     'US': string;
     'token-has-no-user': string;
     'user-anonymous': string;
-
+    
 
     //field-entry
     'no-username': string;

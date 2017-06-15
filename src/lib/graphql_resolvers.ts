@@ -15,14 +15,18 @@ export interface UserInfo {
     state: Constants;
 }
 
-export interface TokenExpire {
-    expire: string;
-    errors?: AuthenticationError[];
+export interface TokenInfo {
+    tokenId: string;
+    purpose: string;
+    revoked: string; // # UTC Date
+    issued: string; // #UTC Date
+    expired: string;  //#UTC Date
 }
 
 export interface AuthenticationResult {
     errors?: AuthenticationError[];
-    data?: Partial<UserInfo>;
+    user?: Partial<UserInfo>;
+    token?: Partial<TokenInfo>;
 }
 
 
@@ -38,7 +42,7 @@ const isEmailRegistered = (...rest: any[]) => {
     let result: AuthenticationResult = {};
 
     let emailTest = connector.emailExist(email);
-    result.data = { email: emailTest || email, state: emailTest ? 'email-unavailable' : 'email-available' };
+    result.user = { email: emailTest || email, state: emailTest ? 'email-unavailable' : 'email-available' };
 
     return Promise.resolve<AuthenticationResult>(result);
 };
@@ -56,7 +60,7 @@ const isUserNameRegistered = (...rest: any[]) => {
     let result: AuthenticationResult = {};
 
     let nameTest = connector.userNameExist(name);
-    result.data = { name: nameTest || name, state: nameTest ? 'name-unavailable' : 'name-available' };
+    result.user = { name: nameTest || name, state: nameTest ? 'name-unavailable' : 'name-available' };
 
     return Promise.resolve<AuthenticationResult>(result);
 };
@@ -81,7 +85,7 @@ const currentUser = (...rest: any[]) => {
     let state: Constants = (mustNotHave.length /*|| mustHave.length*/) ? mustNotHave[0] /*|| 'no-' + mustHave[0]*/ : 'ok';
 
     return Promise.resolve<AuthenticationResult>({
-        data: {
+        user: {
             name: userName,
             email: userEmail,
             state
@@ -104,17 +108,6 @@ const login = (obj: any, { password, email }: { password: string, email: string 
     return connector.save();
 };
 
-const tokenExpire = (...rest: any[]) => {
-    let context = rest[2]; // 'obj' and 'args' are cannot be made optional
-
-    if (context.errors) {
-        return Promise.resolve<AuthenticationResult>({ errors: context.errors });
-    }
-    let connector = context.connector as HermesGraphQLConnector;
-    let expire = connector.getExpiredAsDate().toString();
-
-    return Promise.resolve({ expire });
-};
 
 const serverInfo = () => {
 
@@ -163,7 +156,7 @@ const activate = (...rest: any[]) => {
     let { token, email }: { email: string, token: string } = rest[1];
     let errors = connector.activate(email, token);
     if (errors) {
-        return Promise.resolve<AuthenticationResult>({ errors: errors, data: { email } });
+        return Promise.resolve<AuthenticationResult>({ errors: errors, user: { email } });
     }
     return connector.save();
 
@@ -180,11 +173,12 @@ const requestPasswordReset = (...rest: any[]) => {
     let connector = context.connector as HermesGraphQLConnector;
 
     let { email }: { email: string } = rest[1];
-   
+
     return connector.requestPasswordReset(email);
 };
 
-const resetPassword  = ( ... rest: any[]) => {
+const resetPassword = (...rest: any[]) => {
+
     let context = rest[2];
 
     if (context.errors) {
@@ -192,28 +186,59 @@ const resetPassword  = ( ... rest: any[]) => {
     }
 
     let connector = context.connector as HermesGraphQLConnector;
-
     let { token, password }: { token: string, password: string } = rest[1];
 
     return connector.resetPassword(token, password);
+};
 
+const tokenStatus = (...rest: any[]) => {
+
+    let context = rest[2];
+
+    if (context.errors) {
+        return Promise.resolve<AuthenticationResult>({ errors: context.errors });
+    }
+
+    let { token }: { token?: string } = rest[1];
+
+    let connector = context.connector as HermesGraphQLConnector;
+
+    return connector.getTokenInfo(token);
+};
+
+const resendActivation = (...rest: any[]) => {
+
+    let context = rest[2];
+
+    if (context.errors) {
+        return Promise.resolve<AuthenticationResult>({ errors: context.errors });
+    }
+
+    let { email }: { email?: string } = rest[1]; //if email is undefined then it is current user (we check if it is not user "anonymous")
+
+    let connector = context.connector as HermesGraphQLConnector;
+    return connector.resendActivationEmail(email);
 };
 
 
 export const resolvers = {
+    
     Query: {
         currentUser,
         isEmailRegistered,
         isUserNameRegistered,
         serverInfo,
-        tokenExpire
+        tokenStatus
     },
+
     Mutation: {
         login,
         logout,
         createUser,
         activate,
         requestPasswordReset,
-        resetPassword
+        resetPassword,
+        resendActivation
     }
+
 };

@@ -47,6 +47,83 @@ export class HermesGraphQLConnector {
         this.token = hermes;
     }
 
+    public resendActivationEmail(email?: string): Promise<AuthenticationResult> {
+
+        let sessUser = this.getUser();
+        let eUser = email ? this.store.getUserByEmail(email) : undefined;
+        let anon = this.store.getAnonymousUser();
+        let errors: AuthenticationError[] = [];
+        let rc: AuthenticationResult = {};
+        //evaluate
+
+        const evaluateUser = (user: UserProperties) => {
+            if (user.userId === anon.userId) {
+                errors.push(new AuthenticationError('user-anonymous', 'user anonymous cannot be activated'));
+            }
+            else {
+                //trigger resend email here, just acknowledge for now
+                rc.user = {
+                    email: user.userEmail,
+                    state: 'await-activation'
+                };
+            }
+            return errors.length === 0;
+        };
+
+        switch (true) {
+            case (eUser !== undefined):
+                if (evaluateUser(<UserProperties>eUser)) {
+                    //trigger resend, aka just create promise, return promise().then
+                    //on resend fail, add to list of errors!
+                }
+                break;
+            default:
+                if (evaluateUser(sessUser)) {
+                    //trigger resend, if mailgun fails add to list of errors!
+                }
+        }
+        //TODO prepend resend-activation email to the chain
+        return Promise.resolve(rc);
+    }
+
+    public getTokenInfo(tokenId?: string): Promise<AuthenticationResult> {
+        //if token is undefined then currentuser must have 'ADMIN' user property set
+        let user = this.getUser();
+        let errors: AuthenticationError[] = [];
+        let roles: Constants = 'roles';
+        let rc: AuthenticationResult = {};
+        if (user.userProps[roles] && tokenId === undefined) {
+            let viewTokens: Constants = 'view_session_tokens';
+            let hasRoleTokenView = user.userProps[roles].split(/\s*,\s*/).map((role) => role.toLocaleLowerCase()).indexOf(viewTokens) >= 0;
+            if (!hasRoleTokenView) {
+                errors.push(new AuthenticationError('unsufficient-priviledges', 'User Not authorized'));
+                rc.errors = errors;
+                return Promise.resolve(rc);
+            }
+        }
+        let id = tokenId || this.session.id;
+        let token = this.store.getTokenById(id);
+        if (token) {
+            let revoked: string | undefined = token.tsRevoked ? new Date(token.tsRevoked).toISOString() : undefined;
+            let issued: string = new Date(token.tsIssuance).toISOString();
+            let expired: string = new Date(token.tsExpire).toISOString();
+            rc.token = {
+                tokenId: id,
+                purpose: token.purpose as any,
+                revoked,
+                issued,
+                expired
+            };
+        }
+        else {
+            errors.push(new AuthenticationError('token-invalid', 'Token is unknown'));
+        }
+        if (errors.length) {
+            rc.errors = errors;
+        }
+        return Promise.resolve(rc);
+    }
+
     public resetPassword(token: string, password: string): Promise<AuthenticationResult> {
 
         let errors: AuthenticationError[] = [];
@@ -88,7 +165,7 @@ export class HermesGraphQLConnector {
                     let state: Constants = 'ok-password-reset';
                     rc = {
                         errors,
-                        data: {
+                        user: {
                             email: u.userEmail,
                             state
                         }
@@ -100,7 +177,7 @@ export class HermesGraphQLConnector {
                     let state: Constants = 'err-password-reset';
                     rc = {
                         errors,
-                        data: {
+                        user: {
                             email: user && user.userEmail,
                             state
                         }
@@ -112,7 +189,7 @@ export class HermesGraphQLConnector {
         let state: Constants = 'err-password-reset';
         rc = {
             errors,
-            data: {
+            user: {
                 state
             }
         };
@@ -309,7 +386,7 @@ export class HermesGraphQLConnector {
             .then(() => {
                 let pw_reset_state: Constants = 'pw-reset-requested';
                 let rc: AuthenticationResult = {
-                    data: {
+                    user: {
                         email,
                         state: pw_reset_state
                     }
@@ -319,7 +396,7 @@ export class HermesGraphQLConnector {
             .catch((err) => {
                 let rc: AuthenticationResult = {
                     errors: [new AuthenticationError('err-password-reset', err.toString())],
-                    data: {
+                    user: {
                         email,
                     }
                 };
@@ -343,7 +420,7 @@ export class HermesGraphQLConnector {
                             new AuthenticationError('err-session-save', 'call to session.save failed'),
                             new AuthenticationError('err-auxiliary', String(err))
                         ],
-                        data: {
+                        user: {
                             name: usrName,
                             email: usrEmail,
                             state: 'err-session-save'
@@ -374,7 +451,7 @@ export class HermesGraphQLConnector {
                         state = 'ok';
                 }
                 return resolve({
-                    data: {
+                    user: {
                         name: userName,
                         email: userEmail,
                         state
