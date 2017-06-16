@@ -206,7 +206,7 @@ const tokenStatus = (...rest: any[]) => {
     return connector.getTokenInfo(token);
 };
 
-const resendActivation = (...rest: any[]) => {
+const reSendActivation = (...rest: any[]) => {
 
     let context = rest[2];
 
@@ -238,7 +238,7 @@ export const resolvers = {
         activate,
         requestPasswordReset,
         resetPassword,
-        resendActivation
+        reSendActivation
     }
 
 };
