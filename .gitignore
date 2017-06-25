@@ -1,12 +1,14 @@
+#this section added by J. Bogers
+
+dist/
+TODO
+
 # Logs
 logs
-dist/
 *.log
 TODO
 npm-debug.log*
 
-docs/*.jpg
-docs/*.gif
 
 .*
 !/.gitignore

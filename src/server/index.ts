@@ -82,15 +82,12 @@ app.use(bodyParser.raw({
 }));
 
 let adaptor = /*new AdaptorMock();*/ new AdaptorPostgreSQL({
-    url: 'postgresql://bookbarter:bookbarter@jacob-bogers.com:80/bookbarter?sslmode=require'
+    url: 'postgresql://bookbarter:bookbarter@jacob-bogers.com:443/bookbarter?sslmode=allow'
 });
 
 let props: HermesStoreProperties = {
     defaultCookieOptionsName: 'default_cookie',
     adaptor
-    /*adaptor: new AdapgitorPostgreSQL({
-        url: 'postgresql://bookbarter:bookbarter@jacob-bogers.com:5432/bookbarter?sslmode=require'
-    })*/
 };
 
 
