@@ -1,5 +1,5 @@
-const { raw, styles, ts, tslint } = require('./loaders');
-
+const { flatten } = require('./tools');
+const { raw, styles, ts, tslint, fonts } = require('./loaders');
 module.exports = {
-  rules: [ raw, styles, tslint, ts ]
+  rules: flatten([raw, styles, tslint, ts, fonts])
 };

@@ -3,6 +3,8 @@
 import * as React from 'react';
 
 const _styles = require('./auth');
+const _fonts = require('../fonts/junction');
+console.log(_fonts);
 
 //work with imported styles in _style above
 const styles = (...rest: string[]) => rest.map((itm) => _styles[itm]).join(' ');

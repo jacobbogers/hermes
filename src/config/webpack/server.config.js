@@ -4,6 +4,8 @@
 
 const { resolve } = require('path');
 
+const { flatten } = require('./tools');
+
 module.exports = {
     target: 'node',
     entry: {
@@ -19,7 +21,7 @@ module.exports = {
     },
     devtool: require('./devtool'),
     externals: require('./externals'),
-    module: require('./module'),
+    module: flatten(require('./module')),
     plugins: require('./plugins').server,
     resolve: require('./resolve'),
 };

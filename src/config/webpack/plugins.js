@@ -2,6 +2,8 @@ const { resolve } = require('path');
 const webpack = require('webpack');
 const CleanWebpackPlugin = require('clean-webpack-plugin');
 
+const { flatten } = require('./tools');
+
 const p = process.env.NODE_ENV === 'production';
 
 /* this is more for documentation
@@ -96,18 +98,7 @@ clientProd = !p ? [] : flatten(
     })
 );
 
-function flatten() {
-    let rc = [];
-    for (let itm of Array.from(arguments)) {
-        if (itm instanceof Array) {
-            let rc2 = flatten(...itm);
-            rc.push(...rc2);
-            continue;
-        }
-        rc.push(itm);
-    }
-    return rc;
-}
+
 
 const client = flatten(cleanClient, sharedProd, html, clientProd);
 const server = flatten(cleanServer, sharedProd);

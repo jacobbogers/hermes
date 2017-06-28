@@ -6,6 +6,10 @@ const exclude = /node_modules/;
 // Loaders respond differently depending on the NODE_ENV environment variable
 const p = process.env.NODE_ENV === 'production';
 
+const fonts = { test: /(\.svg|\.woff|\.woff2|\.[ot]tf|\.eot)$/, loader: 'file-loader?name=[name].[ext]' };
+
+
+
 const css = {
     loader: 'css-loader',
     options: {
@@ -53,7 +57,7 @@ const style = {
 };
 
 const styles = {
-    test: /\.(s[ca]|c)ss$/,
+    test: /\.s([ca]+)ss$/,
     exclude,
     include: [],
     use: p ? // If we're in production, extract css, if not, inline css
@@ -102,4 +106,4 @@ const tslint = {
     ]
 };
 
-module.exports = { raw, styles, ts, tslint };
+module.exports = { raw, styles, ts, tslint, fonts };
