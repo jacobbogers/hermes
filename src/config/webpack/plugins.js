@@ -27,14 +27,14 @@ const cleanServer = new (require('clean-webpack-plugin'))(['server'], {
     /* exclude: ['client']*/
 });
 
-const sharedProd = !p ? [] : flatten(
+const sharedProd = !p ? [] : [
     new webpack.DefinePlugin({
         'process.env.NODE_ENV': JSON.stringify('production')
     }),
     new webpack.optimize.UglifyJsPlugin({
         sourceMap: true
     })
-);
+];
 
 const html = new (require('html-webpack-plugin'))({
     title: 'BookBarter',
@@ -73,7 +73,7 @@ const html = new (require('html-webpack-plugin'))({
     ]
 });
 
-clientProd = !p ? [] : flatten(
+clientProd = !p ? [] : [
     // Extract CSS from bundled JS
     new (require('extract-text-webpack-plugin'))('styles.css'),
     // Extract external code into a separate "vendor" bundle
@@ -96,7 +96,7 @@ clientProd = !p ? [] : flatten(
     new (require('inline-manifest-webpack-plugin'))({
         name: 'webpackManifest'
     })
-);
+];
 
 
 
