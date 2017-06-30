@@ -1,0 +1,39 @@
+@font-face {
+    font-family: 'myFontLight';
+    src: url('lightMyFont.eot');
+    src: url('lightMyFont.eot') format('embedded-opentype'),
+    url('lightMyFont.woff2') format('woff2'),
+    url('lightMyFont.woff') format('woff'),
+    url('lightMyFont.ttf') format('truetype'),
+    url('lightMyFont.svg#myFont') format('svg');
+}
+
+@font-face {
+    font-family: 'myFontRegular';
+    src: url('regularMyFont.eot');
+    src: url('regularMyFont.eot') format('embedded-opentype'),
+    url('regularMyFont.woff2') format('woff2'),
+    url('regularmyFont.woff') format('woff'),
+    url('regularMyFont.ttf') format('truetype'),
+    url('regularMyFont.svg#myFont') format('svg');
+}
+
+@font-face {
+    font-family: 'myFontSemibold';
+    src: url('semiboldMyFont.eot');
+    src: url('semiboldMyFont.eot') format('embedded-opentype'),
+    url('semiboldMyFont.woff2') format('woff2'),
+    url('semiboldMyFont.woff') format('woff'),
+    url('semiboldMyFont.ttf') format('truetype'),
+    url('semiboldMyFont.svg#myFont') format('svg');
+}
+
+@font-face {
+    font-family: 'myFontBold';
+    src: url('boldMyFont.eot');
+    src: url('boldMyFont.eot') format('embedded-opentype'),
+         url('boldMyFont.woff2') format('woff2'),
+         url('boldMyFont.woff') format('woff'),
+         url('boldMyFont.ttf') format('truetype'),
+         url('boldMyFont.svg#myFont') format('svg');
+}

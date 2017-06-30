@@ -21,7 +21,7 @@ module.exports = {
     },
     devtool: require('./devtool'),
     externals: require('./externals'),
-    module: flatten(require('./module')),
+    module: require('./module'),
     plugins: require('./plugins').server,
     resolve: require('./resolve'),
 };
