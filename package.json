@@ -70,7 +70,6 @@
     "@types/express-session": "0.0.32",
     "@types/graphql": "^0.9.1",
     "@types/mocha": "^2.2.41",
-    "@types/moment": "^2.13.0",
     "@types/node": "^6.0.69",
     "@types/pg": "^6.1.39",
     "@types/pg-pool": "0.0.2",
