@@ -464,7 +464,10 @@ export class HermesGraphQLConnector {
     public static createHermesGraphQLConnector(request?: Express.Request): HermesGraphQLConnector | AuthenticationError[] {
 
         let session = request && request.session;
-        let hermesStore = request && request.sessionStore as (HermesStore | undefined);
+        let hermesStore = request && (() => {
+            let r = request as any;
+            return r.sessionStore as (HermesStore | undefined);
+        })();
         let user = session && session['_user'] as (UserProperties | undefined);
         let token = session && session['_hermes'] as (TokenProperties | undefined);
 

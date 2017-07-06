@@ -1,29 +1,105 @@
 'use strict';
 
+//vender
 import * as React from 'react';
+import { RouteComponentProps, withRouter } from 'react-router';
 
+
+//app
 const _styles = require('./auth');
-require('../fonts/junction');
+//require('../fonts/junction');
 require('../fonts/myfont');
-
 
 //work with imported styles in _style above
 const styles = (...rest: string[]) => rest.map((itm) => _styles[itm]).join(' ');
 
 export enum AuthenticationState {
-    HIDDEN = 0,
-    LOGIN = 1,
-    FORGOT = 2,
-    REGISTER = 3,
-    INVITE = 4
+    hidden = 10,
+    login ,
+    forgot ,
+    register ,
+    invite 
 }
 
-export class Authentication extends React.Component<{}, { authState: AuthenticationState, email: string, password: string; password2: string; userName: string }>{
+const isHidden = (state?: AuthenticationState): boolean => { return  state === AuthenticationState.hidden; };
 
+export interface AuthStateProperties {
+    email: string;
+    password: string;
+    password2: string;
+    userName: string;
+}
+
+export interface AuthenticationProperties {
+    path?: string;
+}
+
+type AllProps = RouteComponentProps<any> & AuthenticationProperties;
+
+
+
+
+class Authentication extends React.Component<AllProps, AuthStateProperties>{
+
+    private goBack: string;
+    private authState: AuthenticationState;
+    private prevAuthState: AuthenticationState | undefined;
+
+    private revert(): boolean {
+        //console.log({ hint: 'revert', back: this.goBack });
+        if (isHidden(this.authState) && !isHidden(this.prevAuthState)) {
+            this.props.history.push(this.goBack);
+            return true;
+        }
+        return false;
+    }
+
+    private cleanPath() {
+        let cleanPrefix = (this.props.path || '').replace(/(^\/+|\/+$)/g, '');
+        cleanPrefix = cleanPrefix && `/${cleanPrefix}`;
+        return cleanPrefix;
+    }
+
+    private deriveStateFromLocation(p: AllProps) {
+        //console.log('%c deriveStateFromLocation', 'color:green', p.location.pathname);
+        let cp = this.cleanPath();
+        let path = p.location.pathname.replace(/\$/, '').toLocaleLowerCase();
+        let rc = AuthenticationState.hidden;
+        if (path.indexOf(cp) >= 0) {
+            let last = path.match(/[^\/]+$/);
+
+            if (last && last[0]) {
+                let key = last[0].toLocaleLowerCase();
+                let probe: AuthenticationState | undefined = (AuthenticationState[ key as any ] ) as any;
+                /* looks weird but TS is being stupid putting enum and a "typegaurd" in the same IF statement*/
+                if (probe !== AuthenticationState.hidden) {
+                    if (probe) {
+                        rc = probe;
+                    }
+                }
+
+            }
+        }
+        this.prevAuthState = this.authState;
+        this.authState = rc;
+        //console.log('deriveStateFromLocation: states:', { prevState: this.prevAuthState, state: this.authState });
+        return rc;
+    }
+
+    private setHistory(s: AuthenticationState) {
+        let cleanPrefix = (this.props.path || '').replace(/(^\/+|\/+$)/g, '');
+        cleanPrefix = cleanPrefix && `/${cleanPrefix}`;
+        let ru = `/${AuthenticationState[s]}`;
+        if (isHidden(s)){
+            ru = '';
+        }
+        //consoleconsole.log({ ru });
+        return `${cleanPrefix}${ru}`;
+    }
 
     private onClose(e: React.MouseEvent<HTMLDivElement>) {
         e;
-        this.changeFormState(AuthenticationState.HIDDEN);
+        this.changeFormState(AuthenticationState.hidden);
     }
 
     private onSubmitLogin(e: React.FormEvent<HTMLFormElement>) {
@@ -47,7 +123,15 @@ export class Authentication extends React.Component<{}, { authState: Authenticat
     }
 
     private changeFormState(newFormState: AuthenticationState) {
-        this.setState({ authState: newFormState, email: '', password: '', password2: '', userName: '' });
+        //console.log('%c changeFormState', 'color:orange', newFormState);
+        this.setState({ email: '', password: '', password2: '', userName: '' });
+        if (this.revert()) {
+            return;
+        }
+        let url = this.setHistory(newFormState);
+        //console.log('new form url', url);
+        this.props.history.push(url);
+
     }
 
     private updateEmail(e: React.ChangeEvent<HTMLInputElement>) {
@@ -70,30 +154,39 @@ export class Authentication extends React.Component<{}, { authState: Authenticat
         this.setState({ userName: e.target.value });
     }
 
-    constructor() {
-        super();
+    constructor(props: AllProps) {
+        super(props);
+        console.log('%c constructor', 'color:red');
         let email = ''; //todo /fetch email from web-localStore when applicable
         let password = ''; //idem, fetch password or hash?? from localstore 
         let password2 = '';
         let userName = '';
-        this.state = { authState: AuthenticationState.HIDDEN, email, password, password2, userName };
+        this.state = { email, password, password2, userName };
+        let state = this.deriveStateFromLocation(this.props);
+        this.goBack = '/';
+        if (isHidden(state)) {
+            this.goBack = this.props.location.pathname;
+        }
+        this.prevAuthState = undefined;
+        this.authState = state;
     }
 
     render() {
+        console.log('%c render', 'color:green');
         let classN = '';
         let tiF = -10;
         let tiR = -10;
         let tiL = -10;
-        switch (this.state.authState) {
-            case AuthenticationState.REGISTER:
+        switch (this.authState) {
+            case AuthenticationState.register:
                 classN = styles('auth', 'active', 'register');
                 tiR = 1;
                 break;
-            case AuthenticationState.FORGOT:
+            case AuthenticationState.forgot:
                 classN = styles('auth', 'active', 'forgot');
                 tiF = 1;
                 break;
-            case AuthenticationState.LOGIN:
+            case AuthenticationState.login:
                 classN = styles('auth', 'active');
                 tiL = 1;
                 break;
@@ -107,7 +200,7 @@ export class Authentication extends React.Component<{}, { authState: Authenticat
         let passw2 = this.state.password2;
         let userName = this.state.userName;
 
-        return (<div className={classN}>
+        return (<div onClick={(e) => e.stopPropagation()} className={classN}>
             <div className={styles('backdrop', 'login-bd')}></div>
             <div className={styles('backdrop', 'forgot-bd')}></div>
             <div className={styles('backdrop', 'register-bd')}></div>
@@ -137,7 +230,6 @@ export class Authentication extends React.Component<{}, { authState: Authenticat
                     />
                     <input
                         tabIndex={tiR + 2}
-
                         onChange={(e) => this.updatePassword(e)}
                         value={passw}
                         type="password"
@@ -147,7 +239,6 @@ export class Authentication extends React.Component<{}, { authState: Authenticat
                         placeholder="Password" />
                     <input
                         tabIndex={tiR + 3}
-
                         onChange={(e) => this.updatePassword2(e)}
                         value={passw2}
                         type="password"
@@ -159,7 +250,7 @@ export class Authentication extends React.Component<{}, { authState: Authenticat
                         <div className={styles('login-links')}>
                             <span tabIndex={tiR + 4}
                                 className={styles('slink')}
-                                onClick={() => this.changeFormState(AuthenticationState.LOGIN)} >Have an account ? Login</span>
+                                onClick={() => this.changeFormState(AuthenticationState.login)} >Have an account ? Login</span>
                         </div>
                         <button tabIndex={tiR + 5}
                             className={styles('lpc-bt')}>Register <i className="fa fa-angle-right"></i></button>
@@ -171,7 +262,6 @@ export class Authentication extends React.Component<{}, { authState: Authenticat
                 <form id="password-recovery" onSubmit={(e) => this.onSubmitReset(e)}>
                     <div className={styles('content-title', 'forgot-type')}>Password Recovery</div>
                     <input tabIndex={tiF + 1}
-
                         onChange={(e) => this.updateEmail(e)}
                         name="email"
                         type="email"
@@ -182,11 +272,11 @@ export class Authentication extends React.Component<{}, { authState: Authenticat
                     <div className={styles('form-section-button')}>
                         <div>
                             <span tabIndex={tiF + 2}
-                                onClick={() => this.changeFormState(AuthenticationState.LOGIN)}
+                                onClick={() => this.changeFormState(AuthenticationState.login)}
                                 className={styles('slink')}>Back to Sign In</span><br />
                             <span tabIndex={tiF + 3}
                                 className={styles('slink')}
-                                onClick={() => this.changeFormState(AuthenticationState.REGISTER)} >Register</span>
+                                onClick={() => this.changeFormState(AuthenticationState.register)} >Register</span>
                         </div>
                         <button tabIndex={tiF + 4} type="submit" className={styles('lpc-bt')} >Send e-Mail <i className="fa fa-angle-right"></i></button>
                     </div>
@@ -217,9 +307,9 @@ export class Authentication extends React.Component<{}, { authState: Authenticat
                         <div>
                             <span
                                 tabIndex={tiL + 3}
-                                onClick={() => this.changeFormState(AuthenticationState.FORGOT)}
+                                onClick={() => this.changeFormState(AuthenticationState.forgot)}
                                 className={styles('slink')}>Forgot Password</span><br />
-                            <span tabIndex={tiL + 4} className={styles('slink')} onClick={() => this.changeFormState(AuthenticationState.REGISTER)} >Register</span>
+                            <span tabIndex={tiL + 4} className={styles('slink')} onClick={() => this.changeFormState(AuthenticationState.register)} >Register</span>
                         </div>
                         <button tabIndex={tiL + 5} type="submit" className={styles('lpc-bt')} >Sign In <i className="fa fa-angle-right"></i></button>
                     </div>
@@ -228,11 +318,31 @@ export class Authentication extends React.Component<{}, { authState: Authenticat
         </div >);
     }
 
-    componentDidMount() {
-        //force state change after 1 sec 
-        setTimeout(() => {
-            this.setState({ authState: AuthenticationState.LOGIN });
-        }, 1000);
+    componentDidUpdate() {
+        console.log('%c componentDidUpdate', 'color:green');
+        console.log('reverted:', this.revert());
+    }
+
+    componentWillUpdate(nextProps: AllProps) {
+        console.log('%c componentWillUpdate', 'color:green');
+        //console.log('componentWillUpdate:', { nextProps, state: [this.prevAuthState, this.authState] });
+        this.deriveStateFromLocation(nextProps);
+        if (isHidden(this.prevAuthState)  && isHidden(this.authState)) {
+            this.goBack = nextProps.location.pathname;
+            console.log('componentWillUpdate goback set to:', this.goBack);
+        }
 
     }
+
+    shouldComponentUpdate(nextProps: AllProps, nextState: AuthStateProperties) {
+        let op = this.props;
+        let np = nextProps;
+        let os = this.state;
+        let ns = nextState;
+        let pc = op.path === np.path && op.location.pathname === np.location.pathname;
+        let sc = os.email === ns.email && os.password === ns.password && os.password2 === ns.password2 && os.userName === ns.userName;
+        return !pc || !sc;
+    }
 }
+
+export default withRouter<AuthenticationProperties>(Authentication);

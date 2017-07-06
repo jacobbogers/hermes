@@ -57,7 +57,7 @@ const html = new (require('html-webpack-plugin'))({
     cache: p,
     showErrors: true,
     xhtml: true,
-    baseHref: p ? 'https://www.jacob-bogers.com/' : false,
+    baseHref: p ? 'https://www.jacob-bogers.com/' : '/',
     mobile: true,
     inlineManifestWebpackName: p ? 'webpackManifest' : false,
     links: [

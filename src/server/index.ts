@@ -119,9 +119,15 @@ function init() {
 
     /* fake middleware */
     registerAuth({ graphQL_url: '/graphql' }, app);
-
     app.use('/', express.static(path.resolve('dist/client')));
 
+
+    app.get(/.*/, ( req, res ) => {
+       req;
+       res.set({'Content-Type':'text/html'});
+       res.sendfile(path.resolve('dist/client/index.html'));      
+    });
+    
 }
 
 process.on('exit', () => {
