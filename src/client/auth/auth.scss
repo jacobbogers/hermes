@@ -1,5 +1,5 @@
     /* authentication general pane */
-
+    .auth.active.leave, 
     .auth {
         width: 100%;
         height: 100%;
@@ -12,7 +12,8 @@
     }
     /* authentication close button , baseline */
 
-    .auth .auth-close {
+    .auth-close ,
+    .auth.active.leave .auth-close {
         width: 30px;
         height: 30px;
         position: absolute;
@@ -28,8 +29,8 @@
         transition: right 400ms cubic-bezier(0.66, -0.255, 0.57, 1.325);
     }
 
-    .auth .auth-close:hover,
-    .auth .auth-close:focus {
+    .auth-close:hover,
+    .auth-close:focus {
         background: rgba(255, 255, 255, 0.1);
     }
     /* blue (default) login backdrop*/
@@ -44,12 +45,12 @@
     }
 
     .backdrop.login-bd {
-        background: linear-gradient(to right, rgba(0, 0, 224, 0) 0%, rgba(2, 171, 234, 0.83) 62%, #02abea 75%, #02abea 100%);
+        background: linear-gradient(to right, rgba(21, 21, 28, 0.4) 0%, rgba(2, 171, 234, 0.83) 62%, #02abea 75%, #02abea 100%);
     }
     /* red (default) forgot password backdrop */
 
     .backdrop.forgot-bd {
-        background: linear-gradient(to right, rgba(255, 79, 79, 0) 0%, #ff4f4f 83%, #ff4f4f 100%);
+        background: linear-gradient(to right, rgba(21, 21, 28, 0.4) 0%, #ff4f4f 83%, #ff4f4f 100%);
     }
 
     .backdrop.register-bd {
@@ -79,10 +80,8 @@
         line-height: 48px;
         height: 48px;
     }
-    /* login form */
 
-    .login-content {
-        width: 300px;
+    .form {
         height: auto;
         position: absolute;
         color: #fff;
@@ -90,26 +89,16 @@
         z-index: 9;
         display: block;
     }
+    /* login form */
     /* forgot email form */
 
+    .login-content,
     .forgot-content {
         width: 300px;
-        height: auto;
-        position: absolute;
-        color: #fff;
-        font-family: "myFontLight";
-        z-index: 9;
-        display: block;
     }
 
     .register-content {
         width: 350px;
-        height: auto;
-        font-family: "myFontLight";
-        position: absolute;
-        color: #fff;
-        z-index: 9;
-        display: block;
     }
     /* form button-section for the forms forgot-password and login */
 
@@ -117,7 +106,7 @@
         display: flex;
         flex-direction: row;
         justify-content: space-between;
-        align-items: flex-start;
+        align-items: center;
     }
     /* register-form links */
 
@@ -135,10 +124,9 @@
         font-size: 11px;
     }
     /* register new user form links */
-
-    .register-content .login-links {
+    /*  .register-content .login-links {
         margin-top: 10px;
-    }
+    }*/
     /* hover over login form links  */
 
     .login-content span.slink:hover,
@@ -153,7 +141,7 @@
     }
     /* input controls */
 
-    .auth .lpc-input {
+    .lpc-input {
         width: 100%;
         height: 40px;
         color: #fff;
@@ -167,19 +155,19 @@
         border-bottom: 1px solid rgba(255, 255, 255, 0.5);
     }
 
-    .auth .lpc-input::-webkit-input-placeholder {
+    .lpc-input::-webkit-input-placeholder {
         color: #fff;
     }
 
-    .auth .lpc-input::-moz-placeholder {
+    .lpc-input::-moz-placeholder {
         color: #fff;
     }
 
-    .auth .lpc-input:-ms-input-placeholder {
+    .lpc-input:-ms-input-placeholder {
         color: #fff;
     }
 
-    .auth .rc-input {
+    .rc-input {
         width: 100%;
         height: 40px;
         color: #fff;
@@ -192,20 +180,20 @@
         border-bottom: 1px solid rgba(255, 255, 255, 0.2);
     }
 
-    .auth .rc-input::-webkit-input-placeholder {
+    .rc-input::-webkit-input-placeholder {
         color: rgba(255, 255, 255, 0.5);
     }
 
-    .auth .rc-input::-moz-placeholder {
+    .rc-input::-moz-placeholder {
         color: rgba(255, 255, 255, 0.5);
     }
 
-    .autht .rc-input:-ms-input-placeholder {
+    .rc-input:-ms-input-placeholder {
         color: rgba(255, 255, 255, 0.5);
     }
     /* button */
 
-    .auth .lpc-bt {
+    .lpc-bt {
         width: auto;
         height: 35px;
         color: #fff;
@@ -218,9 +206,33 @@
         outline: none;
     }
 
-    .auth .lpc-bt:hover,
-    .auth .lpc-bt:focus {
+    .lpc-bt:hover,
+    .lpc-bt:focus {
         background: rgba(255, 255, 255, 0.2);
+    }
+
+    .auth.active.leave {
+        .register-content,
+        .login-content,
+        .forgot-content {
+            right: 0px;
+            transform: translateX(100%);
+        }
+    }
+
+    .auth.active.leave {
+        .backdrop.forgot-bd,
+        .backdrop.login-bd,
+        .backdrop.register-bd {
+            transform: translateX(100%);
+        }
+    }
+
+    .auth.active .register-content,
+    .auth.active .login-content,
+    .auth.active .forgot-content {
+        right: 30px;
+        transform: translateX(100%);
     }
     /* activate authentication */
 
@@ -250,27 +262,27 @@
     /* login mode */
     /* hide forgot password content */
 
-    .auth:not(.forgot):not(.register) .login-content {
-        top: 30%;
-    }
-
-    .auth:not(.forgot):not(.register) .forgot-content {
-        top: 120%;
-    }
-
-    .auth:not(.forgot):not(.register) .register-content {
+    .auth.active:not(.forgot):not(.register) .register-content {
         top: -500px;
     }
 
-    .auth:not(.forgot):not(.register) .backdrop.login-bd {
-        transform: translateX(0);
+    .auth.active:not(.forgot):not(.register) .login-content {
+        top: 30%;
     }
 
-    .auth:not(.forgot):not(.register) .backdrop.forgot-bd {
+    .auth.active:not(.forgot):not(.register) .forgot-content {
+        top: 120%;
+    }
+
+    .auth.active:not(.forgot):not(.register) .backdrop.register-bd {
         transform: translateX(100%);
     }
 
-    .auth:not(.forgot):not(.register) .backdrop.register-bd {
+    .auth.active:not(.forgot):not(.register) .backdrop.login-bd {
+        transform: translateX(0);
+    }
+
+    .auth.active:not(.forgot):not(.register) .backdrop.forgot-bd {
         transform: translateX(100%);
     }
     /* forgot password mode */
