@@ -24,8 +24,8 @@ const css = {
 
 
 const inliner = {
-    test: /(fetch.min.js|graphiql.css|graphiql.min.js|react-dom.min.js|react.min.js)$/,
-    include: [],
+    test: /\.(js|css)$/,
+    include: [resolve('src/lib/vendor/cdn')],
     use: [
         {
             loader: 'url-loader',
