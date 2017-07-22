@@ -5,10 +5,7 @@ const { resolve } = require('path');
 const exclude = /node_modules/;
 // Loaders respond differently depending on the NODE_ENV environment variable
 const p = process.env.NODE_ENV === 'production';
-
 const fonts = { test: /(\.svg|\.woff|\.woff2|\.[ot]tf|\.eot)$/, loader: 'file-loader?name=[name].[ext]' };
-
-
 
 const css = {
     loader: 'css-loader',

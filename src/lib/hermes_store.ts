@@ -811,7 +811,7 @@ export class HermesStore extends Store {
      * @public
      */
 
-    public all = (callback: CallBack<SessionHash>) => {
+    all(callback: CallBack<SessionHash>): void  {
 
         let allSessions = this.tokenMaps.values().filter((token) => {
             return token.purpose === <Constants>'stkn';
@@ -835,7 +835,7 @@ export class HermesStore extends Store {
     * @public
     */
 
-    public clear = (callback: CallBack<void>) => {
+    public clear(callback: CallBack<void>) {
         this.tokenMaps.clear();
         this.userMaps.clear();
         this.templateMaps.clear();
@@ -850,7 +850,7 @@ export class HermesStore extends Store {
      * @public
      */
 
-    public destroy = (sessionId: string, callback: CallBack<void>) => {
+    public destroy(sessionId: string, callback: CallBack<void>) {
         logger.debug('destroy session:%s', sessionId);
         // ge the token
         let token = this.getTokenById(sessionId);
@@ -882,7 +882,7 @@ export class HermesStore extends Store {
      * @public
      */
 
-    public get = (sessionId: string, callback: CallBack<Express.Session>) => {
+    public get(sessionId: string, callback: CallBack<Express.Session>){
         logger.debug('get session by sessionId: %s', sessionId);
         defer(callback, null, this.getSession(sessionId));
     }
@@ -897,7 +897,7 @@ export class HermesStore extends Store {
      * @public
      * 
      */
-    public set = (sessionId: string, session: Express.Session, callback: CallBack<Express.Session>) => {
+    public set(sessionId: string, session: Express.Session, callback: CallBack<Express.Session>): void {
 
         logger.debug('sessionId: %s', sessionId);
 
@@ -1035,7 +1035,7 @@ export class HermesStore extends Store {
      * @public
      */
 
-    public length = (callback: CallBack<number>) => {
+    public length(callback: CallBack<number>): void  {
         let length = this.tokenMaps.length();
         logger.debug('"length" function called', length);
         callback(null, length);
