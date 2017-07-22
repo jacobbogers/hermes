@@ -26,14 +26,7 @@ const css = {
 const inliner = {
     test: /\.(js|css)$/,
     include: [resolve('src/lib/vendor/cdn')],
-    use: [
-        {
-            loader: 'url-loader',
-            options: {
-                limit: 0
-            }
-        }
-    ]
+    loader: 'file-loader?name=[name].[ext]'
 };
 
 const postcss = {
