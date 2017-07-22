@@ -68,7 +68,7 @@ const style = {
 };
 
 const styles = {
-    test: /\.s([ca]+)ss$/,
+    test: /\.s([ca]|c)ss$/,
     exclude,
     include: [],
     use: p ? // If we're in production, extract css, if not, inline css
