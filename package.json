@@ -26,7 +26,7 @@
     "poststop": "echo poststop",
     "prestart": "echo prestart",
     "start": "cross-env DEBUGx=express-session,cookie node dist/server/server.js",
-    "start-server": "cross-env DEBUGx=express-session,cookie node dist/server/server.js",
+    "start:server": "cross-env DEBUGx=express-session,cookie node dist/server/server.js",
     "poststart": "echo poststart",
     "prerestart": "echo prerestart",
     "restart": "echo restart",
