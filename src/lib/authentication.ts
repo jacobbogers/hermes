@@ -23,7 +23,7 @@ export interface AuthenticationOptions {
 }
 
 export function registerAuth(options: AuthenticationOptions, app: Application | Router) {
-    options;
+    //options;
 
     app.use((request: Request, response: Response, next: NextFunction) => {
 
