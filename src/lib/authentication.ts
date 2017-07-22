@@ -61,7 +61,7 @@ export function registerAuth(options: AuthenticationOptions, app: Application | 
         debug: true
     };
 
-    app.use(options.graphQL_url, graphqlExpress((req?: Express.Request) => {
+    app.use(options.graphQL_url, graphqlExpress( (req?: Express.Request) => {
         let asset = HermesGraphQLConnector.createHermesGraphQLConnector(req);
         
         let errors: AuthenticationError[] = null as any;

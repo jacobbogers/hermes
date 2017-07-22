@@ -22,6 +22,20 @@ const css = {
     }
 };
 
+
+const inliner = {
+    test: /(fetch.min.js|graphiql.css|graphiql.min.js|react-dom.min.js|react.min.js)$/,
+    include: [],
+    use: [
+        {
+            loader: 'url-loader',
+            options: {
+                limit: 0 
+            }
+        }
+    ]
+};
+
 const postcss = {
     loader: 'postcss-loader',
     options: {
@@ -103,4 +117,4 @@ const tslint = {
     ]
 };
 
-module.exports = { raw, styles, ts, tslint, fonts };
+module.exports = { inliner, raw, styles, ts, tslint, fonts };

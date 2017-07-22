@@ -14,6 +14,8 @@ import Authentication from './auth/Authentication';
 //styles for app
 const styles = require('./styles');
 require('./fonts/junction');
+const q = require('../lib/vendor/cdn/fetch.min.js');
+console.log(q);
 
 export class App extends React.Component<{}, {}> {
 
