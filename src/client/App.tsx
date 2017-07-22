@@ -18,8 +18,8 @@ require('../lib/vendor/cdn/fetch.min.js');
 require('../lib/vendor/cdn/graphiql.min.js');
 require('../lib/vendor/cdn/react-dom.min.js');
 require('../lib/vendor/cdn/react.min.js');
-require('../lib/vendor/cdn/graphiql.css');
-
+const a = require('../lib/vendor/cdn/graphiql.css');
+console.log(a);
 export class App extends React.Component<{}, {}> {
 
   constructor(props: any) {
