@@ -30,7 +30,7 @@ const inliner = {
         {
             loader: 'url-loader',
             options: {
-                limit: 0 
+                limit: 0
             }
         }
     ]
@@ -111,7 +111,7 @@ const tslint = {
             loader: 'tslint-loader',
             options: {
                 extends: resolve('tslint.json'),
-                emitErrors: true
+                emitErrors: false
             }
         }
     ]
