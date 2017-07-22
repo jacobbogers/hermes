@@ -11,7 +11,7 @@ const _styles = require('./auth');
 require('../fonts/myfont');
 
 //work with imported styles in _style above
-const styles = (...rest: string[]) => rest.map((itm) => _styles[ itm ]).join(' ');
+const styles = (...rest: string[]) => rest.map((itm) => _styles[itm]).join(' ');
 
 export enum AuthenticationState {
     hidden = 10,
@@ -42,7 +42,7 @@ class Authentication extends React.Component<AllProps, AuthStateProperties>{
     private authState: AuthenticationState;
     private prevAuthState: AuthenticationState | undefined;
 
-    private revert (): boolean {
+    private revert(): boolean {
         //console.log({ hint: 'revert', back: this.goBack });
         if (isHidden(this.authState) && !isHidden(this.prevAuthState)) {
             this.props.history.push(this.goBack);
@@ -51,13 +51,13 @@ class Authentication extends React.Component<AllProps, AuthStateProperties>{
         return false;
     }
 
-    private cleanPath () {
+    private cleanPath() {
         let cleanPrefix = (this.props.path || '').replace(/(^\/+|\/+$)/g, '');
-        cleanPrefix = cleanPrefix && `/${ cleanPrefix }`;
+        cleanPrefix = cleanPrefix && `/${cleanPrefix}`;
         return cleanPrefix;
     }
 
-    private deriveStateFromLocation (p: AllProps, peekOnly: boolean = false) {
+    private deriveStateFromLocation(p: AllProps, peekOnly: boolean = false) {
         //console.log('%c deriveStateFromLocation', 'color:green', p.location.pathname);
         let cp = this.cleanPath();
         let path = p.location.pathname.replace(/\$/, '').toLocaleLowerCase();
@@ -65,9 +65,9 @@ class Authentication extends React.Component<AllProps, AuthStateProperties>{
         if (path.indexOf(cp) >= 0) {
             let last = path.match(/[^\/]+$/);
 
-            if (last && last[ 0 ]) {
-                let key = last[ 0 ].toLocaleLowerCase();
-                let probe: AuthenticationState | undefined = (AuthenticationState[ key as any ]) as any;
+            if (last && last[0]) {
+                let key = last[0].toLocaleLowerCase();
+                let probe: AuthenticationState | undefined = (AuthenticationState[key as any]) as any;
                 /* looks weird but TS is being stupid putting enum and a "typegaurd" in the same IF statement*/
                 if (probe !== AuthenticationState.hidden) {
                     if (probe) {
@@ -85,54 +85,54 @@ class Authentication extends React.Component<AllProps, AuthStateProperties>{
         return rc;
     }
 
-    private setHistory (s: AuthenticationState) {
+    private setHistory(s: AuthenticationState) {
         let cleanPrefix = (this.props.path || '').replace(/(^\/+|\/+$)/g, '');
-        cleanPrefix = cleanPrefix && `/${ cleanPrefix }`;
-        let ru = `/${ AuthenticationState[ s ] }`;
+        cleanPrefix = cleanPrefix && `/${cleanPrefix}`;
+        let ru = `/${AuthenticationState[s]}`;
         if (isHidden(s)) {
             ru = '';
         }
         //consoleconsole.log({ ru });
-        return `${ cleanPrefix }${ ru }`;
+        return `${cleanPrefix}${ru}`;
     }
 
-    private resetCSS (e: React.TransitionEvent<HTMLDivElement>) {
+    private resetCSS(e: React.TransitionEvent<HTMLDivElement>) {
         e;
         if (isHidden(this.authState)) {
 
-            [ 'active', 'leave', 'register', 'forgot' ].forEach((_class) => {
+            ['active', 'leave', 'register', 'forgot'].forEach((_class) => {
                 e.currentTarget.classList.remove(styles(_class));
             });
             e.stopPropagation();
         }
     }
 
-    private onClose (e: React.MouseEvent<HTMLDivElement>) {
+    private onClose(e: React.MouseEvent<HTMLDivElement>) {
         e;
         this.changeFormState(AuthenticationState.hidden);
     }
 
-    private onSubmitLogin (e: React.FormEvent<HTMLFormElement>) {
+    private onSubmitLogin(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
         e.stopPropagation();
         console.log('onsubmit login');
         //TODO: do some ajax /graphQL stuff here
     }
 
-    private onSubmitReset (e: React.FormEvent<HTMLFormElement>) {
+    private onSubmitReset(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
         e.stopPropagation();
         console.log('onsubmit reset');
         //TODO: do some stuff here
     }
 
-    private onSubmitRegister (e: React.FormEvent<HTMLFormElement>) {
+    private onSubmitRegister(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
         e.stopPropagation();
         console.log('onsubmit register');
     }
 
-    private changeFormState (newFormState: AuthenticationState) {
+    private changeFormState(newFormState: AuthenticationState) {
         //console.log('%c changeFormState', 'color:orange', newFormState);
         this.setState({ email: '', password: '', password2: '', userName: '' });
         if (this.revert()) {
@@ -144,22 +144,22 @@ class Authentication extends React.Component<AllProps, AuthStateProperties>{
 
     }
 
-    private updateEmail (e: React.ChangeEvent<HTMLInputElement>) {
+    private updateEmail(e: React.ChangeEvent<HTMLInputElement>) {
         console.log('email field changed');
         this.setState({ email: e.target.value });
     }
 
-    private updatePassword (e: React.ChangeEvent<HTMLInputElement>) {
+    private updatePassword(e: React.ChangeEvent<HTMLInputElement>) {
         console.log('password field changed');
         this.setState({ password: e.target.value });
     }
 
-    private updatePassword2 (e: React.ChangeEvent<HTMLInputElement>) {
+    private updatePassword2(e: React.ChangeEvent<HTMLInputElement>) {
         console.log('password2 field changed');
         this.setState({ password2: e.target.value });
     }
 
-    private updateUserName (e: React.ChangeEvent<HTMLInputElement>) {
+    private updateUserName(e: React.ChangeEvent<HTMLInputElement>) {
         console.log('userName field changed');
         this.setState({ userName: e.target.value });
     }
@@ -181,12 +181,12 @@ class Authentication extends React.Component<AllProps, AuthStateProperties>{
         this.authState = state;
     }
 
-    render () {
+    render() {
 
         let map = [];
 
-        map[ AuthenticationState.register ] = 'register';
-        map[ AuthenticationState.forgot ] = 'forgot';
+        map[AuthenticationState.register] = 'register';
+        map[AuthenticationState.forgot] = 'forgot';
 
 
         console.log('%c render', 'color:green');
@@ -194,7 +194,7 @@ class Authentication extends React.Component<AllProps, AuthStateProperties>{
         let tiF = -10;
         let tiR = -10;
         let tiL = -10;
-        let base = [ 'auth', 'active' ];
+        let base = ['auth', 'active'];
         switch (this.authState) {
             case AuthenticationState.register:
                 classN = styles(...base, 'register');
@@ -214,7 +214,7 @@ class Authentication extends React.Component<AllProps, AuthStateProperties>{
                     classN = styles('auth');
                 }
                 else {
-                    base = [ 'auth', 'active', 'leave' ];
+                    base = ['auth', 'active', 'leave'];
                     switch (this.prevAuthState) {
                         case AuthenticationState.login:
                             classN = styles(...base);
@@ -239,118 +239,118 @@ class Authentication extends React.Component<AllProps, AuthStateProperties>{
         let userName = this.state.userName;
 
         return (
-            <div onClick={ (e) => e.stopPropagation() } className={ classN } onTransitionEnd={ (e) => { this.resetCSS(e); } }>
-                <div className={ styles('backdrop', 'login-bd') }></div>
-                <div className={ styles('backdrop', 'forgot-bd') }></div>
-                <div className={ styles('backdrop', 'register-bd') }></div>
-                <div onClick={ (e) => this.onClose(e) } className={ styles('auth-close') }><i className="fa fa-close"></i></div>
-                {/* registration */ }
-                <div className={ styles('form', 'register-content') }>
-                    <div className={ styles('content-title', 'register-type') }>Register</div>
-                    <form id="register-user" onSubmit={ (e) => this.onSubmitRegister(e) }>
+            <div onClick={(e) => e.stopPropagation()} className={classN} onTransitionEnd={(e) => { this.resetCSS(e); }}>
+                <div className={styles('backdrop', 'login-bd')}></div>
+                <div className={styles('backdrop', 'forgot-bd')}></div>
+                <div className={styles('backdrop', 'register-bd')}></div>
+                <div onClick={(e) => this.onClose(e)} className={styles('auth-close')}><i className="fa fa-close"></i></div>
+                {/* registration */}
+                <div className={styles('form', 'register-content')}>
+                    <div className={styles('content-title', 'register-type')}>Register</div>
+                    <form id="register-user" onSubmit={(e) => this.onSubmitRegister(e)}>
                         <input
-                            tabIndex={ tiR + 0 }
-                            onChange={ (e) => this.updateUserName(e) }
-                            value={ userName }
+                            tabIndex={tiR + 0}
+                            onChange={(e) => this.updateUserName(e)}
+                            value={userName}
                             type="text"
                             name="username"
                             required
-                            className={ styles('rc-input') }
+                            className={styles('rc-input')}
                             placeholder="Username" />
                         <input
-                            tabIndex={ tiR + 1 }
-                            onChange={ (e) => this.updateEmail(e) }
-                            value={ email }
+                            tabIndex={tiR + 1}
+                            onChange={(e) => this.updateEmail(e)}
+                            value={email}
                             type="email"
                             required
                             name="email"
-                            className={ styles('rc-input') }
+                            className={styles('rc-input')}
                             placeholder="Email"
                         />
                         <input
-                            tabIndex={ tiR + 2 }
-                            onChange={ (e) => this.updatePassword(e) }
-                            value={ passw }
+                            tabIndex={tiR + 2}
+                            onChange={(e) => this.updatePassword(e)}
+                            value={passw}
                             type="password"
                             required
                             name="password"
-                            className={ styles('rc-input') }
+                            className={styles('rc-input')}
                             placeholder="Password" />
                         <input
-                            tabIndex={ tiR + 3 }
-                            onChange={ (e) => this.updatePassword2(e) }
-                            value={ passw2 }
+                            tabIndex={tiR + 3}
+                            onChange={(e) => this.updatePassword2(e)}
+                            value={passw2}
                             type="password"
                             required
                             name="password2"
-                            className={ styles('rc-input') }
+                            className={styles('rc-input')}
                             placeholder="Confirm Password" />
-                        <div className={ styles('form-section-button') }>
+                        <div className={styles('form-section-button')}>
                             <div>
-                                <span tabIndex={ tiR + 4 }
-                                    className={ styles('slink') }
-                                    onClick={ () => this.changeFormState(AuthenticationState.login) } >Have an account ? Login</span>
+                                <span tabIndex={tiR + 4}
+                                    className={styles('slink')}
+                                    onClick={() => this.changeFormState(AuthenticationState.login)} >Have an account ? Login</span>
                             </div>
-                            <button tabIndex={ tiR + 5 }
-                                className={ styles('lpc-bt') }>Register <i className="fa fa-angle-right"></i></button>
+                            <button tabIndex={tiR + 5}
+                                className={styles('lpc-bt')}>Register <i className="fa fa-angle-right"></i></button>
                         </div>
                     </form>
                 </div>
-                {/* forgot password */ }
-                <div className={ styles('form', 'forgot-content') }>
-                    <form id="password-recovery" onSubmit={ (e) => this.onSubmitReset(e) }>
-                        <div className={ styles('content-title', 'forgot-type') }>Password Recovery</div>
-                        <input tabIndex={ tiF + 1 }
-                            onChange={ (e) => this.updateEmail(e) }
+                {/* forgot password */}
+                <div className={styles('form', 'forgot-content')}>
+                    <form id="password-recovery" onSubmit={(e) => this.onSubmitReset(e)}>
+                        <div className={styles('content-title', 'forgot-type')}>Password Recovery</div>
+                        <input tabIndex={tiF + 1}
+                            onChange={(e) => this.updateEmail(e)}
                             name="email"
                             type="email"
                             required
-                            className={ styles('lpc-input') }
+                            className={styles('lpc-input')}
                             placeholder="Your Registered Mail Address"
-                            value={ email }></input>
-                        <div className={ styles('form-section-button') }>
+                            value={email}></input>
+                        <div className={styles('form-section-button')}>
                             <div>
-                                <span tabIndex={ tiF + 2 }
-                                    onClick={ () => this.changeFormState(AuthenticationState.login) }
-                                    className={ styles('slink') }>Back to Sign In</span><br />
-                                <span tabIndex={ tiF + 3 }
-                                    className={ styles('slink') }
-                                    onClick={ () => this.changeFormState(AuthenticationState.register) } >Register</span>
+                                <span tabIndex={tiF + 2}
+                                    onClick={() => this.changeFormState(AuthenticationState.login)}
+                                    className={styles('slink')}>Back to Sign In</span><br />
+                                <span tabIndex={tiF + 3}
+                                    className={styles('slink')}
+                                    onClick={() => this.changeFormState(AuthenticationState.register)} >Register</span>
                             </div>
-                            <button tabIndex={ tiF + 4 } type="submit" className={ styles('lpc-bt') } >Send e-Mail <i className="fa fa-angle-right"></i></button>
+                            <button tabIndex={tiF + 4} type="submit" className={styles('lpc-bt')} >Send e-Mail <i className="fa fa-angle-right"></i></button>
                         </div>
                     </form>
                 </div>
-                {/* login content */ }
-                <div className={ styles('form', 'login-content') }>
-                    <div className={ styles('content-title', 'login-type') }>Sign In</div>
-                    <form id="try-login" onSubmit={ (e) => this.onSubmitLogin(e) }>
-                        <input tabIndex={ tiL + 1 } onChange={ (e) => this.updateEmail(e) }
+                {/* login content */}
+                <div className={styles('form', 'login-content')}>
+                    <div className={styles('content-title', 'login-type')}>Sign In</div>
+                    <form id="try-login" onSubmit={(e) => this.onSubmitLogin(e)}>
+                        <input tabIndex={tiL + 1} onChange={(e) => this.updateEmail(e)}
                             name="email"
                             type="text"
                             required
                             pattern=".{3,20}" title="3 to 20 characters"
-                            className={ styles('lpc-input') }
-                            placeholder="Your Registered Mail Address" value={ email }></input>
+                            className={styles('lpc-input')}
+                            placeholder="Your Registered Mail Address" value={email}></input>
                         <input
-                            tabIndex={ tiL + 2 }
-                            onChange={ (e) => this.updatePassword(e) }
+                            tabIndex={tiL + 2}
+                            onChange={(e) => this.updatePassword(e)}
                             name="password"
                             type="password"
                             required pattern=".{6,16}"
                             title="6 to 16 characters"
-                            className={ styles('lpc-input') }
+                            className={styles('lpc-input')}
                             placeholder="Password"
-                            value={ passw }></input>
-                        <div className={ styles('form-section-button') }>
+                            value={passw}></input>
+                        <div className={styles('form-section-button')}>
                             <div>
                                 <span
-                                    tabIndex={ tiL + 3 }
-                                    onClick={ () => this.changeFormState(AuthenticationState.forgot) }
-                                    className={ styles('slink') }>Forgot Password</span><br />
-                                <span tabIndex={ tiL + 4 } className={ styles('slink') } onClick={ () => this.changeFormState(AuthenticationState.register) } >Register</span>
+                                    tabIndex={tiL + 3}
+                                    onClick={() => this.changeFormState(AuthenticationState.forgot)}
+                                    className={styles('slink')}>Forgot Password</span><br />
+                                <span tabIndex={tiL + 4} className={styles('slink')} onClick={() => this.changeFormState(AuthenticationState.register)} >Register</span>
                             </div>
-                            <button tabIndex={ tiL + 5 } type="submit" className={ styles('lpc-bt') } >Sign In <i className="fa fa-angle-right"></i></button>
+                            <button tabIndex={tiL + 5} type="submit" className={styles('lpc-bt')} >Sign In <i className="fa fa-angle-right"></i></button>
                         </div>
                     </form>
                 </div>
@@ -358,12 +358,12 @@ class Authentication extends React.Component<AllProps, AuthStateProperties>{
         );
     }
 
-    componentDidUpdate () {
+    componentDidUpdate() {
         console.log('%c componentDidUpdate', 'color:green');
         console.log('reverted:', this.revert());
     }
 
-    componentWillUpdate (nextProps: AllProps) {
+    componentWillUpdate(nextProps: AllProps) {
         console.log('%c componentWillUpdate', 'color:green');
         //console.log('componentWillUpdate:', { nextProps, state: [this.prevAuthState, this.authState] });
         this.deriveStateFromLocation(nextProps);
@@ -373,7 +373,7 @@ class Authentication extends React.Component<AllProps, AuthStateProperties>{
         }
     }
 
-    shouldComponentUpdate (nextProps: AllProps, nextState: AuthStateProperties) {
+    shouldComponentUpdate(nextProps: AllProps, nextState: AuthStateProperties) {
 
         let op = this.props;
         let np = nextProps;
