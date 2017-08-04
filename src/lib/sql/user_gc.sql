@@ -1,2 +1,2 @@
-delete from auth.user_props
-  where invisible = true;
+DELETE FROM auth.user_props
+    WHERE invisible = TRUE;

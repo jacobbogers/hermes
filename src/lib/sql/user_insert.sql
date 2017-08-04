@@ -1,9 +1,9 @@
-insert into auth.user (
+INSERT INTO auth.user (
     name,
     email
 )
-select  
-    $1::text,
-    $2::text
+SELECT
+    $1::TEXT,
+    $2::TEXT
 )
-RETURNING id, name , email 
+RETURNING id, name, email;
