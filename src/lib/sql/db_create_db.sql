@@ -1,14 +1,14 @@
 CREATE USER bookbarter WITH
-  ENCRYPTED PASSWORD 'bookbarter' -- choose better password))
-  LOGIN
-  NOSUPERUSER
-  INHERIT
-  NOCREATEDB
-  NOCREATEROLE
-  NOREPLICATION;
+    ENCRYPTED PASSWORD 'bookbarter' -- choose better password))
+    LOGIN
+    NOSUPERUSER
+    INHERIT
+    NOCREATEDB
+    NOCREATEROLE
+    NOREPLICATION;
 
 CREATE DATABASE bookbarter -- yes has same name as user
-    WITH 
+    WITH
     OWNER = postgres -- pick a user with create db rights
     ENCODING = 'UTF8'
     LC_COLLATE = 'C'
@@ -19,5 +19,5 @@ CREATE DATABASE bookbarter -- yes has same name as user
 
 COMMENT ON DATABASE bookbarter
     IS 'The book barter app';
-    
-GRANT ALL ON DATABASE bookbarter TO bookbarter; 
+
+GRANT ALL ON DATABASE bookbarter TO bookbarter;
