@@ -1,31 +1,36 @@
 {
-  "include": [
-    "src/**/*.ts",
-    "src/**/*.tsx",
-    "tests/**/*.ts",
-    "tests/**/*.tsx"
-  ],
-  "exclude": [
-    "node_modules"
-  ],
-  "compilerOptions": {
-    "strict": true,
-    "declaration": true,
-    "target": "es2017",
-    "jsx": "react",
-    "lib": [
-      "es6",
-      "dom"
+    "include": [
+        "src/**/*.ts",
+        "src/**/*.tsx",
+        "test/**/*.ts",
+        "test/**/*.tsx"
     ],
-    "module": "commonjs",
-    "sourceMap": true,
-    "rootDir": "./",
-    "moduleResolution": "node",
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "experimentalDecorators": true,
-    "allowUnreachableCode":true,
-    /*outDir is overriden in the gulp file*/
-    "outDir": "dist"
-  }
+    "exclude": [
+        "node_modules"
+    ],
+    "compilerOptions": {
+        "allowUnreachableCode": true,
+        "baseUrl": ".",
+        "declaration": true,
+        "experimentalDecorators": true,
+        "jsx": "react",
+        "lib": [
+            "es6",
+            "dom"
+        ],
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "outDir": "dist", /*outDir is overriden in the gulp file*/
+        "paths": {
+            "~*": [
+                "src/*"
+            ]
+        },
+        "rootDir": "./",
+        "sourceMap": true,
+        "strict": true,
+        "target": "es2017"
+    }
 }
