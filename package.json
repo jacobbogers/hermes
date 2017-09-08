@@ -55,7 +55,7 @@
     "stop": "echo stop",
     "poststop": "echo poststop",
     "pretest": "echo prestest",
-    "test": "./node_modules/.bin/mocha ./dist/tests/all-tests.js",
+    "test": "mocha ./dist/tests/all-tests.js",
     "posttest": "echo posttest",
     "preuninstall": "echo preuninstall",
     "uninstall": "echo uninstall",
