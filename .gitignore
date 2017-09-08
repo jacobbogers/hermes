@@ -12,6 +12,7 @@ npm-debug.log*
 
 .*
 !/.gitignore
+!/.editorconfig
 
 # Runtime data
 pids
