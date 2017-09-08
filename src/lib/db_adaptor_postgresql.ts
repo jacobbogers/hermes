@@ -15,7 +15,7 @@ const logger = Logger.getLogger();
 
 import {
     makeObjectNull,
-    //    loadFiles 
+    //    loadFiles
 } from './utils';
 
 import {
@@ -42,7 +42,7 @@ import {
 import {
     ifNull,
     ifInvalidPortString,
-    AnyObjProps
+    IAnyObjProps
     // ifUndefined,
     // ifEmptyString
 } from './utils';
@@ -77,7 +77,7 @@ const sqlFiles: SQLFiles = {
     //
     sqlTokenSelectAllByFilter: require('./sql/token_select_all_by_filter.sql'),
     sqlTokenSelectByUserIdOrName: require('./sql/token_select_by_userid_or_name.sql'),
-    // 
+    //
     sqlUserGc: require('./sql/user_gc.sql'),
     sqlUserInsert: require('./sql/user_insert.sql'),
     sqlUserInsertModifyProperty: require('./sql/user_insert_modify_property.sql'),
@@ -142,7 +142,7 @@ export class AdaptorPostgreSQL extends AdaptorBase {
         }
 
         let params = ci.query && ci.query.split('&');
-        let qry: AnyObjProps = params.reduce((ac: AnyObjProps, val: string) => {
+        let qry: IAnyObjProps = params.reduce((ac: IAnyObjProps, val: string) => {
             let [key, value] = val.split('=');
             ac[key] = value;
             return ac;
@@ -159,8 +159,8 @@ export class AdaptorPostgreSQL extends AdaptorBase {
             port,
             host,
             ssl: qry['sslmode'] !== 'disable',
-            max: 30, //set pool max size  
-            min: 20, //set min pool size  
+            max: 30, //set pool max size
+            min: 20, //set min pool size
             idleTimeoutMillis: 1000 * 3600 * 24, //ms
 
             refreshIdle: true
@@ -420,7 +420,7 @@ export class AdaptorPostgreSQL extends AdaptorBase {
         return this.executeSQL<TokenPropertiesModifyMessageReturned[]>([sqlObject], (res, resolve) => {
             logger.trace('%d of rows modified/inserted for token %s', res.rowCount, tokenId);
             let rc = res.rows.filter((raw) => {
-                //fk_token_id, session_prop_name, session_prop_value, invisible   
+                //fk_token_id, session_prop_name, session_prop_value, invisible
                 return raw['invisible'] === false;
             }).map((raw) => {
                 return {
@@ -674,7 +674,7 @@ export class AdaptorPostgreSQL extends AdaptorBase {
             logger.trace('success: query result [%j]', { command: res.command, rowCount: res.rowCount });
             let row = res.rows[0];
             /*
-             id, name , email 
+             id, name , email
              */
             let rc: UserMessageReturned = {
                 userId: row['id'] as number,
@@ -714,7 +714,7 @@ export class AdaptorPostgreSQL extends AdaptorBase {
         return this.executeSQL<UserPropertiesModifyMessageReturned[]>([sqlObject], (res, resolve) => {
             logger.trace('%d of rows modified/inserted for token %s', res.rowCount, userId);
             let rc = res.rows.filter((raw) => {
-                //fk_token_id, prop_name, prop_value, invisible   
+                //fk_token_id, prop_name, prop_value, invisible
                 return raw['invisible'] === false;
             }).map((raw) => {
                 return {

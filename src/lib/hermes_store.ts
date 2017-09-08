@@ -36,7 +36,7 @@ const logger = Logger.getLogger();
 
 import {
     MapWithIndexes,
-    AnyObjProps,
+    IAnyObjProps,
     deepClone,
     makeValueslowerCase,
 } from './utils';
@@ -107,12 +107,12 @@ export class HermesStoreError extends Error {
  * how to use this store;
  * create first and connect to express-session object
  * the express-session object default sets the internal  "storeReady" to true, on creation, make sure this is turned off
- *  
+ *
  */
 
 export interface HermesStoreProperties {
 
-    adaptor: AdaptorBase; // assign to with subclass of new AdaptorBase(...)  
+    adaptor: AdaptorBase; // assign to with subclass of new AdaptorBase(...)
     defaultCookieOptionsName?: string;
 }
 
@@ -323,7 +323,7 @@ export class HermesStore extends Store {
 
         actions.push.apply(actions, deletes);
         logger.debug('%s will process %d nr of properties on data-base', token.tokenId, actions.length);
-        if (actions.length > 0) {//nothing to do 
+        if (actions.length > 0) {//nothing to do
             return this.adaptor.tokenInsertModifyProperty(token.tokenId, actions);
         }
         return Promise.resolve([] as TokenPropertiesModifyMessageReturned[]);
@@ -429,8 +429,8 @@ export class HermesStore extends Store {
         return sess;
     }
 
-    private stripSessionProps(sess: Express.Session | Express.SessionData): AnyObjProps {
-        let collector: AnyObjProps = {};
+    private stripSessionProps(sess: Express.Session | Express.SessionData): IAnyObjProps {
+        let collector: IAnyObjProps = {};
 
         for (let propName in sess) {
             if (['id', 'req', '_hermes', '_user', 'cookie'].indexOf(propName) >= 0) {
@@ -474,7 +474,7 @@ export class HermesStore extends Store {
         //
         let rc: UserProperties = Object.assign({}, user, { userProps: deepClone(user.userProps || {}) });
 
-        //collect props 
+        //collect props
         for (let propName in user.userProps) {
             let value = user.userProps[propName];
             switch (typeof value) { // need to check can be modified by module consumer.
@@ -501,7 +501,7 @@ export class HermesStore extends Store {
 
     private mapSessionToToken(sess: Express.Session | Express.SessionData): TokenProperties {
 
-        // what we need is set the expire datum 
+        // what we need is set the expire datum
         // TODO: re populate the session_properties and user properties map
         let _hermes = sess['_hermes'] || {};
 
@@ -611,7 +611,7 @@ export class HermesStore extends Store {
         if (user.userId === undefined && user.userName === undefined) {
             return Promise.resolve(<UserMessageReturned>userAnon);
         }
-        // at this point its not an anonymous user, we could have partial information to identify user      
+        // at this point its not an anonymous user, we could have partial information to identify user
         let findUser = this.getUserById(user.userId);
         if (!findUser) {
             findUser = this.getUserByName(user.userName);
@@ -895,7 +895,7 @@ export class HermesStore extends Store {
      * @param {object} session
      * @param {function} callback
      * @public
-     * 
+     *
      */
     public set(sessionId: string, session: Express.Session, callback: CallBack<Express.Session>): void {
 
@@ -913,7 +913,7 @@ export class HermesStore extends Store {
         let self = this;
         this.userFetchOrInsertNew(user).then(function afterUserInsert(reply) {
             logger.trace('session: %s, user [%s] association.', sessionId, reply.userName);
-            //different id's? 
+            //different id's?
             user = {
                 ...reply,
                 userProps: { ...user.userProps }

@@ -1,4 +1,4 @@
-export const flatten = (...rest: any[]): any[] => {
+export function flatten(...rest: any[]): any[] {
     const rc = [];
     for (const itm of rest) {
         if (itm instanceof Array) {
@@ -9,4 +9,4 @@ export const flatten = (...rest: any[]): any[] => {
         rc.push(itm);
     }
     return rc;
-};
+}
