@@ -44,6 +44,7 @@
         ],
         "new-parens": true,
         "no-construct": true,
+        "no-string-literal": false,
         "no-unused-expression": false,
         "no-use-before-declare": true,
         "no-var-keyword": true,
