@@ -36,18 +36,6 @@ export function makeObjectNull(obj: any) {
 }
 
 //entries<T extends { [key: string]: any }, K extends keyof T>(o: T): [keyof T, T[K]][];
-export const flatten = (...rest: any[]): any[] => {
-    let rc = [];
-    for (let itm of rest) {
-        if (itm instanceof Array) {
-            let rc2 = flatten(...itm);
-            rc.push(...rc2);
-            continue;
-        }
-        rc.push(itm);
-    }
-    return rc;
-};
 
 export class OperationResult<I> {
     private _inserted: number | undefined;
@@ -77,7 +65,7 @@ export class OperationResult<I> {
 
 export function flatMap<T, F extends { obj: T }, Mc extends Map<T[keyof T], Mc | F>>(map: Mc): F[] {
     let rc: F[] = [];
-    for (let itm of map.values()) {
+    for (const itm of map.values()) {
         if (itm instanceof Map) {
             let rc2 = flatMap(itm);
             rc.push(...(rc2 as F[]));
@@ -92,7 +80,7 @@ export class MapWithIndexes<T, K extends keyof T, F extends { readOnly: boolean,
 
     private access: { [index: string]: Map<T[K], F | Mc | Me> } = {};
 
-    private flatMap(map: Mc): Array<{ readOnly: boolean, obj: T }> {
+    private flatMap(map: Mc): { readOnly: boolean, obj: T }[] {
         let rc = [];
         for (let itm of map.values()) {
             if (itm instanceof Map) {
@@ -127,7 +115,7 @@ export class MapWithIndexes<T, K extends keyof T, F extends { readOnly: boolean,
         }
     }
 
-    //store a copy
+    // store a copy
 
     public set(data: T, readOnly: boolean = false): OperationResult<T> {
         let inserted = 0;
@@ -154,31 +142,31 @@ export class MapWithIndexes<T, K extends keyof T, F extends { readOnly: boolean,
                 let keyValue = dataCopy[keyName];
                 let peek = currentMap.get(keyValue);
 
-                //premature termination of structure , composite key larger then structure
+                // premature termination of structure , composite key larger then structure
                 if (path.length === 0 && (peek instanceof Map)) {
                     errors++;
                     break;
                 }
 
-                //premature termination of key, structure extends beyond key
+                // premature termination of key, structure extends beyond key
                 if (peek !== undefined && !(peek instanceof Map) && path.length > 0) {
                     errors++;
                     break;
                 }
-                //walk up the tree
+                // walk up the tree
                 if (peek instanceof Map && path.length > 0) {
                     currentMap = peek;
                     continue;
                 }
                 // "peek" variable is either undefined or NOT a Map object
                 switch (true) {
-                    //set new
-                    case (peek === undefined && path.length === 0): //dont even try (!peek && !path.length) seriously!!
+                    // set new
+                    case (peek === undefined && path.length === 0): // dont even try (!peek && !path.length) seriously!!
                         let newRecord = <F>{ readOnly, obj: dataCopy }; // = { readOnly: true, obj: data };
                         currentMap.set(keyValue, newRecord);
                         inserted++;
                         break;
-                    //set replace    
+                    // set replace
                     case (peek !== undefined && path.length === 0): // previous inserted object found, optionally override
                         let finalObj = <F>(peek);
                         if (!finalObj.readOnly) {
@@ -188,7 +176,7 @@ export class MapWithIndexes<T, K extends keyof T, F extends { readOnly: boolean,
                             inserted++;
                         }
                         break;
-                    //set add path    
+                    // set add path
                     case (peek === undefined && path.length > 0): // create extra path (inserting new objects)
                         let map = <Mc>(new Map());
                         currentMap.set(keyValue, map);
@@ -230,12 +218,12 @@ export class MapWithIndexes<T, K extends keyof T, F extends { readOnly: boolean,
                 }
                 let keyValue = dataCopy[keyName];
                 let peek = currentMap.get(keyValue);
-                //premature termination of structure , composite key larger then structure
+                // premature termination of structure , composite key larger then structure
                 if (path.length && peek && !(peek instanceof Map)) {
                     errors++;
                     break;
                 }
-                //premature termination of path, composite key shorter then structure
+                // premature termination of path, composite key shorter then structure
                 if (peek instanceof Map && !path.length) {
                     errors++;
                     break;
@@ -244,7 +232,7 @@ export class MapWithIndexes<T, K extends keyof T, F extends { readOnly: boolean,
                     currentMap = peek;
                     continue;
                 }//
-                //found something to delete
+                // found something to delete
                 if (peek) {
                     currentMap.delete(keyValue);
                     deleted++;
@@ -274,7 +262,7 @@ export class MapWithIndexes<T, K extends keyof T, F extends { readOnly: boolean,
             if (paths.length < qNames.length) {
                 continue;
             }
-            //contains at least all MY names
+            // contains at least all MY names
             if (qNames.slice(0).filter((name) => paths.indexOf(name, paths.length - qNames.length) >= 0).length === qNames.length) {
                 // the shortest one
                 selected = selected || composites;
@@ -283,7 +271,7 @@ export class MapWithIndexes<T, K extends keyof T, F extends { readOnly: boolean,
                 }
             }
         }
-        //so after all this we have the composite path that is the best fit or no fit at all
+        // so after all this we have the composite path that is the best fit or no fit at all
         if (!selected) {
             throw new Error(util.format('the  query %j object doesnt match any of the composite paths', query));
         }
@@ -291,40 +279,40 @@ export class MapWithIndexes<T, K extends keyof T, F extends { readOnly: boolean,
         let currentMap = this.access[selected];
 
         let spath: (keyof T)[] = selected.split('#') as any;
-        //let parentMap = currentMap; // init dummy value
+        // let parentMap = currentMap; // init dummy value
         do {
-            let keyName = spath.shift(); //pop
-            if (!keyName) { //very bad
+            let keyName = spath.shift(); // pop
+            if (!keyName) { // very bad
                 errors++;
                 break;
             }
             if (!(keyName in query)) {// the rest is *wildcard*
                 spath.unshift(keyName); // put it back to be processed later;
-                //currentMap = parentMap;
+                // currentMap = parentMap;
                 break;
             }
             let keyValue = query[keyName] as T[K];
             let peek = currentMap.get(keyValue);
-            if (!peek) { //not found regardless
+            if (!peek) { // not found regardless
                 errors++;
                 break;
             }
-            //premature termination of structure , composite key larger then structure
+            // premature termination of structure , composite key larger then structure
             if (spath.length && peek && !(peek instanceof Map)) {
                 errors++;
                 break;
             }
-            //premature termination of path, composite key shorter then structure
+            // premature termination of path, composite key shorter then structure
             if (peek instanceof Map && !spath.length) {
                 errors++;
                 break;
             }
             if (peek instanceof Map) {
-                //parentMap = currentMap;
+                // parentMap = currentMap;
                 currentMap = peek;
                 continue;
             }//
-            //at the end
+            // at the end
             if (peek && !spath.length) {
                 collected.push(deepClone(peek.obj));
             }
@@ -332,15 +320,13 @@ export class MapWithIndexes<T, K extends keyof T, F extends { readOnly: boolean,
         if (spath.length === 0) {
             return new OperationResult<T>({ errors, collected });
         }
-        //wildcard search from here collect everything in this map
+        // wildcard search from here collect everything in this map
 
         let rc = flatMap(currentMap).map((itm) => deepClone(itm.obj)) as T[];
         collected.push(...rc);
         return new OperationResult({ errors, collected });
 
     }
-
-
 
     public length() {
         for (let firstPick in this.access) {
@@ -353,7 +339,6 @@ export class MapWithIndexes<T, K extends keyof T, F extends { readOnly: boolean,
 export function deepClone<T>(obj: T): T {
     return JSON.parse(JSON.stringify(obj));
 }
-
 
 export function loadFiles<T>(files: T): Promise<T> {
 
@@ -387,11 +372,10 @@ export function loadFiles<T>(files: T): Promise<T> {
     });
 }
 
-
 export function makeValueslowerCase<I>(obj: I, ...props: (keyof I)[]) {
     for (let prop of props) {
         if (typeof (obj[prop]) === 'string') {
-            let value: string = obj[prop] as any;
+            const value: string = obj[prop] as any;
             obj[prop] = value.toLocaleLowerCase() as any;
         }
     }
