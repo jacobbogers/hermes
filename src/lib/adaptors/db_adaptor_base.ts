@@ -1,43 +1,15 @@
 'use strict';
 
+// tslint:disable:typedef
+
 import * as EventEmitter from 'events';
 import * as util from 'util';
 
-import Logger from './logger';
+import Logger from '../logger';
 const logger = Logger.getLogger();
 
-import { SystemInfo } from './system';
+import { SystemInfo } from '../system';
 
-
-export class AdaptorError extends Error {
-    private _adaptorState: ADAPTOR_STATE;
-
-    public constructor(message: string, code: ADAPTOR_STATE) {
-        super(message);
-        this.name = 'AdaptorError';
-        this._adaptorState = code;
-    }
-
-    public getStateStr() {
-        return ADAPTOR_STATE[this._adaptorState];
-    }
-
-    public toString() {
-        return `${this.name}: (state: ${this.getStateStr()}) ${this.message}`;
-    }
-
-}
-
-/* make it a warning */
-export class AdaptorWarning extends AdaptorError {
-    public constructor(message: string, code: ADAPTOR_STATE) {
-        super(message, code);
-        this.name = 'AdaptorWarning';
-    }
-    public toString(): string {
-        return `${this.name}: (state: ${this.getStateStr()}) ${this.message}`;
-    }
-}
 
 /* general */
 

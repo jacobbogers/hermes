@@ -1,21 +1,22 @@
 'use strict';
 
-//import * as path from 'path';
+// Import * as path from 'path';
+
 import * as pg from 'pg';
 import * as UID from 'uid-safe';
 import * as URL from 'url';
 import * as util from 'util';
-import { SystemInfo } from './system';
+import { SystemInfo } from '../system';
 
 
-import Logger from './logger';
+import Logger from '../logger';
 
 const logger = Logger.getLogger();
 
 import {
     makeObjectNull
     //    loadFiles
-} from './utils';
+} from '../utils';
 
 import {
     //general
