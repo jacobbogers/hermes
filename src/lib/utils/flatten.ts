@@ -19,7 +19,7 @@ export function flatten(arr: any[]): any[] {
         // If b is an array, flatten b and concatenate it to a.
         // Otherwise, concatenate the non-array b to a.
         return arr.reduce((a, b) => a.concat(isArray(b) ? flatten(b) : b), []);
-    } catch (e) {
+    } catch {
         // If not provided arguments, or if not given an array, throw an error.
         // This needs to be caught and handled in production.
         throw new TypeError('Invalid Type');
