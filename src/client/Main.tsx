@@ -7,16 +7,11 @@ import * as ReactDOM from 'react-dom';
 import { App } from './App';
 
 
-
 window.onload = () => {
-    let node = document.querySelector('#app');
+    const node = document.querySelector('#app');
     ReactDOM.render(
         <App />
         , node
     );
 };
-
-
-
-
 

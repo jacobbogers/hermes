@@ -36,6 +36,8 @@
     "graphiQLLocal": "cpr extra/renderGraphiQL.js node_modules/graphql-server-module-graphiql/dist/renderGraphiQL.js -o",
     "preinstall": "echo preinstall",
     "install": "echo install",
+    "lint": "tslint -c tslint.json -p . --type-check",
+    "lint:fix": "npm run lint -- --fix",
     "postinstall": "echo postinstall && npm run graphiQLLocal",
     "prepare": "echo 'prepare'",
     "prepublish": "echo 'prepublish'",

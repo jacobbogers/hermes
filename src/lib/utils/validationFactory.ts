@@ -7,6 +7,7 @@ export function validationFactory(v: validation) {
         if (v(obj)) {
             const fun = util.format;
             const m = util.format.apply(fun, rest);
+
             return exec(m);
         }
     };

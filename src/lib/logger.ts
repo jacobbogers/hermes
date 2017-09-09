@@ -19,7 +19,7 @@ export class Logger implements Tracer {
     private static tracer: Tracer = null as any;
 
     private constructor(tracer?: any) {
-        let tr = Logger.tracer = tracer || _tracer.colorConsole() as Tracer;
+        const tr = Logger.tracer = tracer || _tracer.colorConsole() as Tracer;
         this.log = tr.log.bind(tr);
         this.trace = tr.trace.bind(tr);
         this.debug = tr.debug.bind(tr);

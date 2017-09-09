@@ -1,6 +1,6 @@
 /**
  * RE-WRITTEN TO TYPESCRIPT by Jacob Bogers 18 May 2017
- * 
+ *
  * A Javascript object to encode and/or decode html characters using HTML or Numeric entities that handles double or partial encoding
  * Author: R Reid
  * source: http://www.strictly-software.com/htmlencode
@@ -10,26 +10,25 @@
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * 
+ *
  * Revision:
- *  2011-07-14, Jacques-Yves Bleau: 
+ *  2011-07-14, Jacques-Yves Bleau:
  *       - fixed conversion error with capitalized accentuated characters
  *       + converted arr1 and arr2 to object property to remove redundancy
  *
  * Revision:
- *  2011-11-10, Ce-Yi Hio: 
+ *  2011-11-10, Ce-Yi Hio:
  *       - fixed conversion error with a number of capitalized entity characters
  *
  * Revision:
- *  2011-11-10, Rob Reid: 
+ *  2011-11-10, Rob Reid:
  *		 - changed array format
  *
  * Revision:
- *  2012-09-23, Alex Oss: 
+ *  2012-09-23, Alex Oss:
  *		 - replaced string concatonation in numEncode with string builder, push and join for peformance with ammendments by Rob Reid
  *
  */
-
 
 
 export class Encoder {
@@ -61,17 +60,17 @@ export class Encoder {
 
 
     // Numerically encodes all unicode characters
-    numEncode(s: string) {
+    public numEncode(s: string) {
         if (this.isEmpty(s)) return '';
 
-        let a = [];
-        let l = s.length;
+        const a = [];
+        const l = s.length;
 
         for (let i = 0; i < l; i++) {
-            let c = s.charAt(i);
+            const c = s.charAt(i);
             if (c < ' ' || c > '~') {
                 a.push('&#');
-                a.push(c.charCodeAt(0)); //numeric value of code point 
+                a.push(c.charCodeAt(0)); //numeric value of code point
                 a.push(';');
             } else {
                 a.push(c);
@@ -82,7 +81,7 @@ export class Encoder {
     }
 
     // HTML Decode numerical and HTML entities back to original values
-    htmlDecode(s: string) {
+    public htmlDecode(s: string) {
 
         let c: string;
         let m;
@@ -94,7 +93,7 @@ export class Encoder {
         d = this.HTML2Numerical(d);
 
         // look for numerical entities &#34;
-        let arr = d.match(/&#[0-9]{1,5};/g);
+        const arr = d.match(/&#[0-9]{1,5};/g);
 
         // if no matches found in string then skip
         if (arr != null) {
@@ -115,7 +114,7 @@ export class Encoder {
     }
 
     // encode an input string into either numerical or HTML entities
-    htmlEncode(s: string, dbl: boolean) {
+    public htmlEncode(s: string, dbl: boolean) {
 
         if (this.isEmpty(s)) return '';
 
@@ -177,7 +176,7 @@ export class Encoder {
     }
 
     // Encodes the basic 4 characters used to malform HTML in XSS hacks
-    XSSEncode(s: string, en: boolean) {
+    public XSSEncode(s: string, en: boolean) {
         if (!this.isEmpty(s)) {
             en = en || true;
             // do we convert to numerical or html entity?
@@ -199,7 +198,7 @@ export class Encoder {
     }
 
     // returns true if a string contains html or numerical encoded entities
-    hasEncoded(s: string): boolean {
+    public hasEncoded(s: string): boolean {
         if (/&#[0-9]{1,5};/g.test(s)) {
             return true;
         } else if (/&[A-Z]{2,6};/gi.test(s)) {
@@ -211,17 +210,17 @@ export class Encoder {
     }
 
     // will remove any unicode characters
-    stripUnicode(s: string) {
+    public stripUnicode(s: string) {
         return s.replace(/[^\x20-\x7E]/g, '');
     }
     // corrects any double encoded &amp; entities e.g &amp;amp;
-    correctEncoding(s: string) {
+    public correctEncoding(s: string) {
         return s.replace(/(&amp;)(amp;)+/, '$1');
     }
 
 
     // Function to loop through an array swaping each item with the value from another array e.g swap HTML entities with Numericals
-    swapArrayVals(s: string, arr1: string[], arr2: string[]): string {
+    public swapArrayVals(s: string, arr1: string[], arr2: string[]): string {
         if (this.isEmpty(s)) return '';
         let re;
         if (arr1 && arr2) {
@@ -230,14 +229,14 @@ export class Encoder {
             if (arr1.length === arr2.length) {
                 for (let x = 0, i = arr1.length; x < i; x++) {
                     re = new RegExp(arr1[x], 'g');
-                    s = s.replace(re, arr2[x]); //swap arr1 item with matching item from arr2	
+                    s = s.replace(re, arr2[x]); //swap arr1 item with matching item from arr2
                 }
             }
         }
         return s;
     }
 
-    inArray<T>(item: T, arr: T[]) {
+    public inArray<T>(item: T, arr: T[]) {
         return arr.indexOf(item);
         /*for (let i = 0, x = arr.length; i < x; i++) {
             if (arr[i] === item) {

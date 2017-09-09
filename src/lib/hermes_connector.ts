@@ -6,10 +6,10 @@ import * as util from 'util';
 import * as UID from 'uid-safe';
 
 //app
-import { HermesStore, UserProperties, TokenProperties } from './hermes_store';
-import { deepClone } from './utils';
 import { AuthenticationResult } from './graphql_resolvers';
+import { HermesStore, TokenProperties, UserProperties } from './hermes_store';
 import { Constants } from './property_names';
+import { deepClone } from './utils';
 
 
 const PASSWORD: Constants = 'password';
@@ -20,15 +20,15 @@ export class AuthenticationError {
     private context: Constants;
     private message: string;
 
-    constructor(context: Constants, message: string) {
+    public constructor(context: Constants, message: string) {
         this.context = context;
         this.message = message;
     }
 
-    toString() {
+    public toString() {
         return util.format('%s, %s', this.context || '', this.message);
     }
-    value() {
+    public value() {
         return [this.context, this.message];
     }
 }
@@ -49,11 +49,11 @@ export class HermesGraphQLConnector {
 
     public resendActivationEmail(email?: string): Promise<AuthenticationResult> {
 
-        let sessUser = this.getUser();
-        let eUser = email ? this.store.getUserByEmail(email) : undefined;
-        let anon = this.store.getAnonymousUser();
-        let errors: AuthenticationError[] = [];
-        let rc: AuthenticationResult = {};
+        const sessUser = this.getUser();
+        const eUser = email ? this.store.getUserByEmail(email) : undefined;
+        const anon = this.store.getAnonymousUser();
+        const errors: AuthenticationError[] = [];
+        const rc: AuthenticationResult = {};
         //evaluate
 
         const evaluateUser = (user: UserProperties) => {
@@ -72,7 +72,7 @@ export class HermesGraphQLConnector {
 
         switch (true) {
             case (eUser !== undefined):
-                if (evaluateUser(<UserProperties>eUser)) {
+                if (evaluateUser(<UserProperties> eUser)) {
                     //trigger resend, aka just create promise, return promise().then
                     //on resend fail, add to list of errors!
                 }
@@ -88,25 +88,25 @@ export class HermesGraphQLConnector {
 
     public getTokenInfo(tokenId?: string): Promise<AuthenticationResult> {
         //if token is undefined then currentuser must have 'ADMIN' user property set
-        let user = this.getUser();
-        let errors: AuthenticationError[] = [];
-        let roles: Constants = 'roles';
-        let rc: AuthenticationResult = {};
+        const user = this.getUser();
+        const errors: AuthenticationError[] = [];
+        const roles: Constants = 'roles';
+        const rc: AuthenticationResult = {};
         if (user.userProps[roles] && tokenId === undefined) {
-            let viewTokens: Constants = 'view_session_tokens';
-            let hasRoleTokenView = user.userProps[roles].split(/\s*,\s*/).map((role) => role.toLocaleLowerCase()).indexOf(viewTokens) >= 0;
+            const viewTokens: Constants = 'view_session_tokens';
+            const hasRoleTokenView = user.userProps[roles].split(/\s*,\s*/).map(role => role.toLocaleLowerCase()).indexOf(viewTokens) >= 0;
             if (!hasRoleTokenView) {
                 errors.push(new AuthenticationError('unsufficient-priviledges', 'User Not authorized'));
                 rc.errors = errors;
                 return Promise.resolve(rc);
             }
         }
-        let id = tokenId || this.session.id;
-        let token = this.store.getTokenById(id);
+        const id = tokenId || this.session.id;
+        const token = this.store.getTokenById(id);
         if (token) {
-            let revoked: string | undefined = token.tsRevoked ? new Date(token.tsRevoked).toISOString() : undefined;
-            let issued: string = new Date(token.tsIssuance).toISOString();
-            let expired: string = new Date(token.tsExpire).toISOString();
+            const revoked: string | undefined = token.tsRevoked ? new Date(token.tsRevoked).toISOString() : undefined;
+            const issued: string = new Date(token.tsIssuance).toISOString();
+            const expired: string = new Date(token.tsExpire).toISOString();
             rc.token = {
                 tokenId: id,
                 purpose: token.purpose as any,
@@ -126,12 +126,12 @@ export class HermesGraphQLConnector {
 
     public resetPassword(token: string, password: string): Promise<AuthenticationResult> {
 
-        let errors: AuthenticationError[] = [];
-        let rstToken = this.store.getTokenById(token);
-        let anonUser = this.store.getAnonymousUser();
-        let userId = rstToken && rstToken.fkUserId || undefined;
-        let user = userId ? this.store.getUserById(userId) : undefined;
-        let revokeReason = (rstToken && rstToken.revokeReason || '').trim();
+        const errors: AuthenticationError[] = [];
+        const rstToken = this.store.getTokenById(token);
+        const anonUser = this.store.getAnonymousUser();
+        const userId = rstToken && rstToken.fkUserId || undefined;
+        const user = userId ? this.store.getUserById(userId) : undefined;
+        const revokeReason = (rstToken && rstToken.revokeReason || '').trim();
         let rc: AuthenticationResult = {};
 
         if (rstToken === undefined) {
@@ -158,11 +158,11 @@ export class HermesGraphQLConnector {
             rstToken.revokeReason = 'US';
             rstToken.tsRevoked = Date.now();
             //can set password and revoke the token at the same time
-            let up = this.store.updateUserProperties(user);
-            let tp = this.store.updateToken(rstToken);
+            const up = this.store.updateUserProperties(user);
+            const tp = this.store.updateToken(rstToken);
             return Promise.all([up, tp])
                 .then(([u]) => {
-                    let state: Constants = 'ok-password-reset';
+                    const state: Constants = 'ok-password-reset';
                     rc = {
                         errors,
                         user: {
@@ -172,9 +172,9 @@ export class HermesGraphQLConnector {
                     };
                     return rc;
                 })
-                .catch((err) => {
+                .catch(err => {
                     errors.push(new AuthenticationError('err-auxiliary', err.toString()));
-                    let state: Constants = 'err-password-reset';
+                    const state: Constants = 'err-password-reset';
                     rc = {
                         errors,
                         user: {
@@ -186,7 +186,7 @@ export class HermesGraphQLConnector {
                 });
 
         }
-        let state: Constants = 'err-password-reset';
+        const state: Constants = 'err-password-reset';
         rc = {
             errors,
             user: {
@@ -198,16 +198,15 @@ export class HermesGraphQLConnector {
 
     public createUser(name: string, email: string, password: string): AuthenticationError[] | undefined {
 
-        let errors: AuthenticationError[] = [];
+        const errors: AuthenticationError[] = [];
 
-        if (this.mustAuthenticate() === false) { // cant continue 
+        if (!this.mustAuthenticate()) { // cant continue
             errors.push(new AuthenticationError('user-logged-in', 'User must log out first'));
             return errors;
         }
 
         name = (name || '').trim().toLocaleLowerCase();
         email = (email || '').trim().toLocaleLowerCase();
-
 
 
         if (name === '') {
@@ -222,12 +221,12 @@ export class HermesGraphQLConnector {
             errors.push(new AuthenticationError('no-password', 'user should provide a password'));
         }
 
-        let findName = this.userNameExist(name); // normalize
+        const findName = this.userNameExist(name); // normalize
         if (findName) {
             errors.push(new AuthenticationError('username-exist', 'username already in use'));
         }
 
-        let findEmail = this.emailExist(email);
+        const findEmail = this.emailExist(email);
         if (findEmail) {
             errors.push(new AuthenticationError('email-exist', 'email already in use'));
         }
@@ -236,14 +235,14 @@ export class HermesGraphQLConnector {
             return errors;
         }
 
-        let authKey = UID.sync(18);
+        const authKey = UID.sync(18);
         console.log('authKey:', authKey);
 
-        let newUser: UserProperties = {
+        const newUser: UserProperties = {
             userName: name,
             userEmail: email,
             userId: -1, //-1 doesnt exist as valid userId, because all in range [0,+inf)
-            userProps: { password: password, 'await-activation': authKey + ':' + Date.now() }
+            userProps: { 'password': password, 'await-activation': authKey + ':' + Date.now() }
         };
         this.user = newUser;
         return;
@@ -251,7 +250,7 @@ export class HermesGraphQLConnector {
 
     public hasSessionExpired(): boolean {
 
-        let expires = this.getExpiredAsNumber();
+        const expires = this.getExpiredAsNumber();
 
         if (!expires || expires < Date.now()) {
             return true;
@@ -260,7 +259,7 @@ export class HermesGraphQLConnector {
     }
 
     public ipAddr(): string {
-        let req = this.session.req as any;
+        const req = this.session.req;
         return req && req.ip;
     }
 
@@ -269,7 +268,7 @@ export class HermesGraphQLConnector {
     }
 
     public isUserBlackListed(): boolean {
-        let blacklisted: Constants = 'blacklisted';
+        const blacklisted: Constants = 'blacklisted';
         return !!(this.user.userProps[blacklisted]);
     }
 
@@ -289,7 +288,7 @@ export class HermesGraphQLConnector {
     }
 
     public getExpiredAsDate(): Date {
-        let num = this.getExpiredAsNumber();
+        const num = this.getExpiredAsNumber();
         if (num) {
             return new Date(num);
         }
@@ -304,11 +303,11 @@ export class HermesGraphQLConnector {
 
         //check if already authenticated
 
-        if (this.mustAuthenticate() === false) { // cant continue 
+        if (!this.mustAuthenticate()) { // cant continue
             return [new AuthenticationError('user-logged-in', 'User must log out first')];
         }
 
-        let errors: AuthenticationError[] = [];
+        const errors: AuthenticationError[] = [];
 
         if (email === '') {
             errors.push(new AuthenticationError('auth-failed', 'user should provide an email'));
@@ -322,13 +321,13 @@ export class HermesGraphQLConnector {
             return errors;
         }
         //potential User
-        let pUser = this.store.getUserByEmail(email);
+        const pUser = this.store.getUserByEmail(email);
 
         if (!pUser) {
             return [new AuthenticationError('auth-failed', 'The Email and password combination are Unknown')];
         }
 
-        let passw = pUser.userProps[PASSWORD] || '';
+        const passw = pUser.userProps[PASSWORD] || '';
         if (passw.trim() !== password.trim()) {
             return [new AuthenticationError('auth-failed', 'The Email and password combination are Unknown')];
         }
@@ -339,12 +338,12 @@ export class HermesGraphQLConnector {
     }
 
     public emailExist(userEmail: string): string | undefined {
-        let u = this.store.getUserByEmail(userEmail) || { userEmail: undefined };
+        const u = this.store.getUserByEmail(userEmail) || { userEmail: undefined };
         return u.userEmail;
     }
 
     public userNameExist(userName: string): string | undefined {
-        let u = this.store.getUserByName(userName) || { userName: undefined };
+        const u = this.store.getUserByName(userName) || { userName: undefined };
         return u.userName;
     }
 
@@ -359,18 +358,18 @@ export class HermesGraphQLConnector {
 
     public activate(email: string, token: string): AuthenticationError[] | undefined {
         //is this user in activation state?
-        let findUser = this.store.getUserByEmail(email);
+        const findUser = this.store.getUserByEmail(email);
 
         if (!findUser) {
             return [new AuthenticationError('no-user-found', 'User with this email doesnt exist')];
         }
-        let fu = findUser;
+        const fu = findUser;
         const awaitActivation: Constants = 'await-activation';
         if (!(awaitActivation in findUser.userProps)) {
             return [new AuthenticationError('user-already-activated', 'User has already been activated')];
         }
         // check token
-        let tokenParts = fu.userProps[awaitActivation].split(':');
+        const tokenParts = fu.userProps[awaitActivation].split(':');
         if (tokenParts[0] === token) {
             delete fu.userProps[awaitActivation];
         }
@@ -384,8 +383,8 @@ export class HermesGraphQLConnector {
         email = email.toLocaleLowerCase().trim();
         return this.store.requestResetPw(email, this.ipAddr())
             .then(() => {
-                let pw_reset_state: Constants = 'pw-reset-requested';
-                let rc: AuthenticationResult = {
+                const pw_reset_state: Constants = 'pw-reset-requested';
+                const rc: AuthenticationResult = {
                     user: {
                         email,
                         state: pw_reset_state
@@ -393,11 +392,11 @@ export class HermesGraphQLConnector {
                 };
                 return rc;
             })
-            .catch((err) => {
-                let rc: AuthenticationResult = {
+            .catch(err => {
+                const rc: AuthenticationResult = {
                     errors: [new AuthenticationError('err-password-reset', err.toString())],
                     user: {
-                        email,
+                        email
                     }
                 };
                 return rc;
@@ -406,14 +405,14 @@ export class HermesGraphQLConnector {
 
     public save(): Promise<AuthenticationResult> {
 
-        return new Promise<AuthenticationResult>((resolve) => {
+        return new Promise<AuthenticationResult>(resolve => {
             this.session['_user'] = this.user;
             this.session['_hermes'] = this.token;
 
-            let usrName = this.user.userName;
-            let usrEmail = this.user.userEmail;
+            const usrName = this.user.userName;
+            const usrEmail = this.user.userEmail;
 
-            this.session.save((err) => {
+            this.session.save(err => {
                 if (err) {
                     return resolve({
                         errors: [
@@ -429,7 +428,7 @@ export class HermesGraphQLConnector {
                 }
                 this.user = this.session['_user'];
                 this.token = this.session['_hermes'];
-                let { userName, userEmail, userProps } = this.getUser();
+                const { userName, userEmail, userProps } = this.getUser();
 
                 //post login checks
                 const ACTIVATION: Constants = 'await-activation';
@@ -463,13 +462,13 @@ export class HermesGraphQLConnector {
 
     public static createHermesGraphQLConnector(request?: Express.Request): HermesGraphQLConnector | AuthenticationError[] {
 
-        let session = request && request.session;
-        let hermesStore = request && (() => {
-            let r = request as any;
+        const session = request && request.session;
+        const hermesStore = request && (() => {
+            const r = request as any;
             return r.sessionStore as (HermesStore | undefined);
         })();
-        let user = session && session['_user'] as (UserProperties | undefined);
-        let token = session && session['_hermes'] as (TokenProperties | undefined);
+        const user = session && session['_user'] as (UserProperties | undefined);
+        const token = session && session['_hermes'] as (TokenProperties | undefined);
 
         let errors: AuthenticationError[] = [];
 
@@ -491,7 +490,7 @@ export class HermesGraphQLConnector {
         if (errors.length) {
             return errors;
         }
-        return new HermesGraphQLConnector(<HermesStore>hermesStore, <Express.Session>session, <UserProperties>user, <TokenProperties>token);
+        return new HermesGraphQLConnector(<HermesStore> hermesStore, <Express.Session> session, <UserProperties> user, <TokenProperties> token);
     }
 
 

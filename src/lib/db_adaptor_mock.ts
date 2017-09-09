@@ -6,35 +6,35 @@
 import Logger from './logger';
 const logger = Logger.getLogger();
 
-import { MapWithIndexes, makeObjectNull } from './utils';
-import { Constants } from './property_names';
 import * as UID from 'uid-safe';
+import { Constants } from './property_names';
+import { makeObjectNull, MapWithIndexes } from './utils';
 
 import {
     //general
-    AdaptorBase,
     ADAPTOR_STATE,
+    AdaptorBase,
     AdaptorError,
     PropertiesModifyMessage,
     //user
-    UsersAndPropsMessage,
+    TemplatePropsMessage,
+    TokenMessage,
+    TokenMessageReturned,
+    TokenPropertiesModifyMessageReturned,
+    //tokens
+    TokensAndPropsMessage,
     UserMessageBase,
     UserMessageReturned,
     UserPropertiesModifyMessageReturned,
-    //tokens
-    TokenMessage,
-    TokensAndPropsMessage,
-    TokenMessageReturned,
-    TokenPropertiesModifyMessageReturned,
     //templates
-    TemplatePropsMessage
+    UsersAndPropsMessage
 
 } from './db_adaptor_base';
 
 import {
-    UserProperties,
+    TemplateProperties,
     TokenProperties,
-    TemplateProperties
+    UserProperties
 } from './hermes_store';
 
 import * as util from 'util';
@@ -58,7 +58,7 @@ export class AdaptorMock extends AdaptorBase {
 
     private populateMaps() {
         //users
-        let users: UserProperties[] = [
+        const users: UserProperties[] = [
             { userId: 1, userName: 'Lucifer696', userEmail: 'vdingbats@gmail.com', userProps: {} },
             { userId: 7, userName: 'lucifer69c6', userEmail: 'vdwingbats@gmail.com', userProps: {} },
             { userId: 15, userName: 'anonymous', userEmail: '', userProps: {} },
@@ -66,14 +66,14 @@ export class AdaptorMock extends AdaptorBase {
             { userId: 23, userName: 'jacobot', userEmail: 'email', userProps: {} }
         ];
 
-        users.forEach((u) => {
+        users.forEach(u => {
             u.userName = u.userName.toLocaleLowerCase();
             u.userEmail = u.userEmail.toLocaleLowerCase();
             this.user.set(u);
         });
 
         // userProps
-        let userProps = [
+        const userProps = [
             { fk_user_id: 23, prop_name: 'LAST_NAME', prop_value: 'Bovors', invisible: false },
             { fk_user_id: 23, prop_name: 'AUTH', prop_value: 'admin', invisible: false },
             { fk_user_id: 23, prop_name: 'zipcode', prop_value: 'L1311', invisible: false },
@@ -83,13 +83,13 @@ export class AdaptorMock extends AdaptorBase {
             { fk_user_id: 1, prop_name: 'blacklisted', prop_value: '', invisible: false },
             { fk_user_id: 1, prop_name: 'password', prop_value: 'itsme', invisible: false },
             { fk_user_id: 18, prop_name: 'password', prop_value: 'dingbats', invisible: false },
-            { fk_user_id: 23, prop_name: 'password', prop_value: 'jacobot', invisible: false },
+            { fk_user_id: 23, prop_name: 'password', prop_value: 'jacobot', invisible: false }
             //{ fk_user_id: 23, prop_name: 'no-acl', prop_value: 'tokenbladibla:0', invisible: false }
             //{ fk_user_id: 15, prop_name: 'await-activation', prop_value: 'tokenbladibla:0', invisible: false }
         ];
 
-        userProps.forEach((up) => {
-            let u = this.user.get({ userId: up.fk_user_id }).first;
+        userProps.forEach(up => {
+            const u = this.user.get({ userId: up.fk_user_id }).first;
             if (u) {
                 up.prop_name = up.prop_name.toLocaleLowerCase();
                 u.userProps[up.prop_name] = up.prop_value;
@@ -98,13 +98,13 @@ export class AdaptorMock extends AdaptorBase {
         });
 
 
-        let templates = [
+        const templates = [
             { id: 0, cookie_name: '', path: null, max_age: 86400000, http_only: null, secure: null, domain: null, same_site: null, rolling: null, template_name: 'default_token' },
             { id: 1, cookie_name: 'hermes.session', path: '/', max_age: 10800000, http_only: true, secure: false, domain: null, same_site: true, rolling: true, template_name: 'default_cookie' },
-            { id: 3, cookie_name: 'hermes.session', path: '/', max_age: 10800000, http_only: true, secure: false, domain: null, same_site: true, rolling: true, template_name: 'secure_cookie' },
+            { id: 3, cookie_name: 'hermes.session', path: '/', max_age: 10800000, http_only: true, secure: false, domain: null, same_site: true, rolling: true, template_name: 'secure_cookie' }
         ];
 
-        templates.forEach((t) => {
+        templates.forEach(t => {
             this.template.set({
                 id: t.id,
                 cookieName: t.cookie_name.toLocaleLowerCase(),
@@ -181,7 +181,7 @@ export class AdaptorMock extends AdaptorBase {
         }
 
 
-        let u = Object.assign({}, user);
+        const u = {...user};
         makeObjectNull(u);
 
         logger.trace('Inserting user %j', u);
@@ -204,12 +204,12 @@ export class AdaptorMock extends AdaptorBase {
                 );
             }
             console.info('creating new user...');
-            let msg: UserMessageReturned = {
+            const msg: UserMessageReturned = {
                 userEmail: user.userEmail,
                 userName: user.userName,
-                userId: this.newUserPk(),
+                userId: this.newUserPk()
             };
-            let newUser: UserProperties = {
+            const newUser: UserProperties = {
                 ...msg,
                 userProps: {}
             };
@@ -230,16 +230,16 @@ export class AdaptorMock extends AdaptorBase {
 
         //check 1 user must exist
         return new Promise<UserPropertiesModifyMessageReturned[]>((resolve, reject) => {
-            let uc = this.user.get({ userId: userId }).first;
+            const uc = this.user.get({ userId }).first;
             if (!uc) {
                 return reject(new AdaptorError(
                     util.format('foreign key violation, [userId] does not exist: %d', userId),
                     this.state)
                 );
             }
-            let rc: UserPropertiesModifyMessageReturned[] = [];
+            const rc: UserPropertiesModifyMessageReturned[] = [];
 
-            for (let mod of modifications) {
+            for (const mod of modifications) {
                 //switch is just for logging/tracing
                 switch (true) {
                     case mod.invisible:
@@ -250,7 +250,7 @@ export class AdaptorMock extends AdaptorBase {
                         break;
                     case (uc.userProps[mod.propName] !== mod.propValue):
                         logger.trace('user:%d, MODIFY property %s, NEW value: %s, OLD value: %s',
-                            uc.userId, mod.propName, mod.propValue, uc.userProps[mod.propName]);
+                                     uc.userId, mod.propName, mod.propValue, uc.userProps[mod.propName]);
                         break;
                     default:
                 }
@@ -276,14 +276,14 @@ export class AdaptorMock extends AdaptorBase {
         if (!this.connected) {
             return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
         }
-        return new Promise<UsersAndPropsMessage[]>((resolve) => {
+        return new Promise<UsersAndPropsMessage[]>(resolve => {
 
             //flatten users and props
-            let rc = this.user.values().reduce((prev, user) => {
-                let propKeys = Object.getOwnPropertyNames(user.userProps);
+            const rc = this.user.values().reduce((prev, user) => {
+                const propKeys = Object.getOwnPropertyNames(user.userProps);
                 do {
-                    let pKey = propKeys.pop();
-                    let pValue = pKey && user.userProps[pKey];
+                    const pKey = propKeys.pop();
+                    const pValue = pKey && user.userProps[pKey];
                     prev.push({
                         userId: user.userId,
                         userName: user.userName,
@@ -293,7 +293,7 @@ export class AdaptorMock extends AdaptorBase {
                     } as UsersAndPropsMessage);
                 } while (propKeys.length);
                 return prev;
-            }, [] as UsersAndPropsMessage[]);
+            },                                   [] as UsersAndPropsMessage[]);
             logger.trace('[selectUserProps]success: rows fetched %d', rc.length);
             resolve(rc);
         });
@@ -311,15 +311,15 @@ export class AdaptorMock extends AdaptorBase {
             return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
         }
         //--  1 token id, 2 fk_user_id, 3 ip, 4 issuance/rovoke timestamp, 5 purpose
-        let u = this.user.get({ userId: fkUserId }).first;
+        const u = this.user.get({ userId: fkUserId }).first;
         if (!u) {
             return Promise.reject(new AdaptorError(`User with id ${fkUserId} doesn't exist`, this.state));
         }
         //get all tokens from this user
-        let collected = this.token.get({ fkUserId, purpose }).collected;
+        const collected = this.token.get({ fkUserId, purpose }).collected;
         let nrRevoked = 0;
         if (collected) {
-            for (let token of collected) {
+            for (const token of collected) {
                 if (token.revokeReason !== null) {
                     continue;
                 }
@@ -330,9 +330,9 @@ export class AdaptorMock extends AdaptorBase {
             }
         }
 
-        let tsExpire = new Date().setFullYear(9999);
-        let tokenId = UID.sync(18);
-        let nt: TokenProperties = {
+        const tsExpire = new Date().setFullYear(9999);
+        const tokenId = UID.sync(18);
+        const nt: TokenProperties = {
             tokenId,
             fkUserId,
             purpose,
@@ -347,7 +347,7 @@ export class AdaptorMock extends AdaptorBase {
         };
         this.token.set(nt);
         logger.trace('success: new token %s inserted, %d expired', tokenId, nrRevoked);
-        let rc: TokenMessageReturned = {
+        const rc: TokenMessageReturned = {
             templateId: 0,
             tokenId: nt.tokenId,
             fkUserId: nt.fkUserId,
@@ -357,7 +357,7 @@ export class AdaptorMock extends AdaptorBase {
             tsRevoked: null,
             revokeReason: null,
             tsExpire: nt.tsExpire,
-            tsExpireCache: nt.tsExpire,
+            tsExpireCache: nt.tsExpire
         };
         return Promise.resolve(rc);
     }
@@ -368,17 +368,17 @@ export class AdaptorMock extends AdaptorBase {
             return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
         }
         //update all except the sessionProps this will be done in another call 'tokenInsertModifyProperty'
-        let findToken = this.token.get({ tokenId: token.tokenId }).first;
-        let oldSessionProps = Object.assign({ sessionProps: {} }, findToken).sessionProps;
-        let t = Object.assign({}, token, { sessionProps: oldSessionProps });
+        const findToken = this.token.get({ tokenId: token.tokenId }).first;
+        const oldSessionProps = { sessionProps: {}, ...findToken}.sessionProps;
+        const t = {...token,  sessionProps: oldSessionProps};
         makeObjectNull(t);
 
-        let self = this;
+        const self = this;
         return new Promise<TokenMessageReturned>(function asyncTokenInsertModify(resolve, reject) {
             //determine template
             t.templateName = token.templateName || 'default_token'; //is it is defaulted in the sql query
 
-            let template = self.template.get({
+            const template = self.template.get({
                 templateName: t.templateName
             }).first;
 
@@ -416,17 +416,17 @@ export class AdaptorMock extends AdaptorBase {
 
         return new Promise<TokenPropertiesModifyMessageReturned[]>((resolve, reject) => {
             //check 1 user must exist
-            let t = this.token.get({ tokenId: tokenId }).first;
+            const t = this.token.get({ tokenId }).first;
             if (!t) {
                 return reject(new AdaptorError(
                     util.format('foreign key violation, [tokenId] does not exist: %d', tokenId),
                     this.state)
                 );
             }
-            let rc: TokenPropertiesModifyMessageReturned[] = [];
-            let tc = <TokenProperties>t;
+            const rc: TokenPropertiesModifyMessageReturned[] = [];
+            const tc = t;
 
-            for (let mod of modifications) {
+            for (const mod of modifications) {
                 //switch is just for logging/tracing
                 switch (true) {
                     case mod.invisible:
@@ -437,7 +437,7 @@ export class AdaptorMock extends AdaptorBase {
                         break;
                     case (tc.sessionProps[mod.propName] !== mod.propValue):
                         logger.trace('token:%d, MODIFY property %s, NEW value: %s, OLD value: %s',
-                            tc.tokenId, mod.propName, mod.propValue, tc.sessionProps[mod.propName]);
+                                     tc.tokenId, mod.propName, mod.propValue, tc.sessionProps[mod.propName]);
                         break;
                     default:
                 }
@@ -465,9 +465,9 @@ export class AdaptorMock extends AdaptorBase {
             return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
         }
 
-        let t = this.token.get({ tokenId }).first;
+        const t = this.token.get({ tokenId }).first;
         if (t) {
-            let u = this.user.get({ userId }).first;
+            const u = this.user.get({ userId }).first;
             if (!u) {
                 return Promise.reject(new AdaptorError(
                     util.format('User with Id: %d doesnt exist!', userId),
@@ -495,7 +495,7 @@ export class AdaptorMock extends AdaptorBase {
         //
         //token exist?
         //
-        let t = this.token.get({ tokenId }).first;
+        const t = this.token.get({ tokenId }).first;
         if (t) {
             t.revokeReason = revokeReason;
             t.tsRevoked = revokeTime;
@@ -510,32 +510,32 @@ export class AdaptorMock extends AdaptorBase {
             return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
         }
 
-        let allTokens = this.token.values();
-        let rc = allTokens.filter((token) => token.tsRevoked && token.tsRevoked < deleteOlderThen);
-        rc.forEach((token) => this.token.delete(token));
+        const allTokens = this.token.values();
+        const rc = allTokens.filter(token => token.tsRevoked && token.tsRevoked < deleteOlderThen);
+        rc.forEach(token => this.token.delete(token));
         return Promise.resolve(rc.length);
     }
 
     private getTokensByFilter(filter: (xyz: TokenProperties) => boolean): TokensAndPropsMessage[] {
-        let result: TokensAndPropsMessage[] = [];
+        const result: TokensAndPropsMessage[] = [];
 
         this.token.values().filter(filter).reduce((prev, _token) => {
-            let u = <UserProperties>(this.user.get({ userId: <number>_token.fkUserId }).first);
-            let uPropKeys = Object.getOwnPropertyNames(u.userProps);
-            let tPropKeys = Object.getOwnPropertyNames(_token.sessionProps);
+            const u = <UserProperties> (this.user.get({ userId: <number> _token.fkUserId }).first);
+            const uPropKeys = Object.getOwnPropertyNames(u.userProps);
+            const tPropKeys = Object.getOwnPropertyNames(_token.sessionProps);
 
-            let blacklisted: Constants = 'blacklisted';
+            const blacklisted: Constants = 'blacklisted';
 
-            let blackListed = uPropKeys.indexOf(blacklisted) >= 0;
+            const blackListed = uPropKeys.indexOf(blacklisted) >= 0;
             while (uPropKeys.length || tPropKeys.length) {
-                let uPropName = uPropKeys.pop();
-                let tPropName = tPropKeys.pop();
+                const uPropName = uPropKeys.pop();
+                const tPropName = tPropKeys.pop();
                 prev.push({
                     tokenId: _token.tokenId,
                     fkUserId: u.userId,
                     usrName: u.userName,
                     usrEmail: u.userEmail,
-                    blackListed: blackListed,
+                    blackListed,
                     purpose: _token.purpose,
                     ipAddr: _token.ipAddr,
                     tsIssuance: _token.tsIssuance,
@@ -552,7 +552,7 @@ export class AdaptorMock extends AdaptorBase {
 
             }
             return prev;
-        }, result);
+        },                                        result);
         return result;
 
     }
@@ -566,9 +566,9 @@ export class AdaptorMock extends AdaptorBase {
             return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
         }
 
-        let result = this.getTokensByFilter((token) => {
+        const result = this.getTokensByFilter(token => {
             let rc = !timestampExpire || token.tsExpire > timestampExpire;
-            let tsrevoked = token.tsRevoked || 0;
+            const tsrevoked = token.tsRevoked || 0;
             rc = rc && (tsrevoked >= startTimestampRevoked && tsrevoked <= endTimestampRevoked);
             return rc;
         });
@@ -585,13 +585,13 @@ export class AdaptorMock extends AdaptorBase {
             return Promise.reject(new AdaptorError('wrong input, userId and userName cannot be both non null or both null.', this.state));
         }
 
-        let result = this.getTokensByFilter((token) => {
+        const result = this.getTokensByFilter(token => {
             let rc = false;
             if (userId) {
                 rc = token.fkUserId === userId;
             }
             if (userName) {
-                let u = this.user.get({ userName }).first;
+                const u = this.user.get({ userName }).first;
                 if (u) {
                     rc = token.fkUserId === u.userId;
                 }
@@ -608,8 +608,8 @@ export class AdaptorMock extends AdaptorBase {
             return Promise.reject(this.lastErr());
         }
 
-        let result = this.template.values().map((temp) => {
-            let rc: TemplatePropsMessage = {
+        const result = this.template.values().map(temp => {
+            const rc: TemplatePropsMessage = {
                 id: temp.id,
                 cookieName: temp.cookieName,
                 path: temp.path,

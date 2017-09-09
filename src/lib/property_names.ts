@@ -37,7 +37,7 @@ export interface GlobalPropsEnum {
     'US': string;
     'token-has-no-user': string;
     'user-anonymous': string;
-    
+
 
     //field-entry
     'no-username': string;

@@ -11,7 +11,7 @@ export function loadFiles<T>(files: T): Promise<T> {
 
     const results: T = {} as T;
 
-    return new Promise<T>((resolve) => {
+    return new Promise<T>(resolve => {
         fileNameAliases.forEach((fileNameAlias: keyof T) => {
             const fileName = files[fileNameAlias];
             fs.readFile(

@@ -3,19 +3,19 @@ export class OperationResult<I> {
     private _errors = 0;
     private _collected: I[] | undefined;
     private _deleted: number | undefined;
-    get inserted() {
+    public get inserted() {
         return this._inserted;
     }
-    get errors() {
+    public get errors() {
         return this._errors;
     }
-    get collected(): I[] | undefined {
+    public get collected(): I[] | undefined {
         return this._collected;
     }
-    get first(): I | undefined {
+    public get first(): I | undefined {
         return this._collected && this._collected[0];
     }
-    constructor(props: {
+    public constructor(props: {
         inserted?: number;
         errors: number;
         collected?: I[];

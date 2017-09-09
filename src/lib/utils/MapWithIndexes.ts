@@ -11,7 +11,7 @@ export class MapWithIndexes<
 > {
     private access: { [index: string]: Map<T[K], F | Mc | Me> } = {};
 
-    constructor(...composites: ((keyof T)[])[]) {
+    public constructor(...composites: ((keyof T)[])[]) {
         for (const composite of composites) {
             const masterKey = composite.join('#');
             this.access[masterKey] = new Map<T[K], F | Mc | Me>();
@@ -22,7 +22,7 @@ export class MapWithIndexes<
         for (const firstKey in this.access) {
             if (this.access.hasOwnProperty(firstKey)) {
                 const objs = this.flatMap(this.access[firstKey] as Mc);
-                return objs.map((obj) => obj.obj);
+                return objs.map(obj => obj.obj);
             }
         }
         return [];
@@ -197,7 +197,7 @@ export class MapWithIndexes<
                     qNames
                         .slice(0)
                         .filter(
-                            (name) =>
+                            name =>
                                 paths.indexOf(
                                     name,
                                     paths.length - qNames.length
@@ -271,7 +271,7 @@ export class MapWithIndexes<
         }
         // wildcard search from here collect everything in this map
 
-        const rc = flatMap(currentMap).map((itm) => deepClone(itm.obj)) as T[];
+        const rc = flatMap(currentMap).map(itm => deepClone(itm.obj)) as T[];
         collected.push(...rc);
         return new OperationResult({ errors, collected });
     }

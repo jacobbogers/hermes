@@ -9,12 +9,10 @@ const logger = Logger.getLogger();
 import { SystemInfo } from './system';
 
 
-
-
 export class AdaptorError extends Error {
     private _adaptorState: ADAPTOR_STATE;
 
-    constructor(message: string, code: ADAPTOR_STATE) {
+    public constructor(message: string, code: ADAPTOR_STATE) {
         super(message);
         this.name = 'AdaptorError';
         this._adaptorState = code;
@@ -32,7 +30,7 @@ export class AdaptorError extends Error {
 
 /* make it a warning */
 export class AdaptorWarning extends AdaptorError {
-    constructor(message: string, code: ADAPTOR_STATE) {
+    public constructor(message: string, code: ADAPTOR_STATE) {
         super(message, code);
         this.name = 'AdaptorWarning';
     }
@@ -73,7 +71,6 @@ export interface UsersAndPropsMessage {
 }
 
 
-
 /* tokens */
 
 export interface TokenMessageBase {
@@ -100,8 +97,6 @@ export interface TokenMessageReturned extends TokenMessageBase {
 export interface TokenPropertiesModifyMessageReturned extends PropertiesModifyMessage {
     fkTokenId: string;
 }
-
-
 
 
 /* users and tokens */
@@ -152,7 +147,7 @@ export enum ADAPTOR_STATE {
     Disconnecting,
     Disconnected,
     ERR_Initializing,
-    ERR_Connecting,
+    ERR_Connecting
 }
 
 interface StateTransition {
@@ -204,7 +199,7 @@ function moveToState(src: ADAPTOR_STATE, target: ADAPTOR_STATE): boolean {
     if (src === target) {
         return true;
     }
-    let allowed = transitions.filter((t) => {
+    const allowed = transitions.filter(t => {
         if (t.to.length === 1 && t.to.indexOf(target) >= 0) {
             if (t.from.indexOf(src) >= 0) {
                 return true;
@@ -232,11 +227,11 @@ export abstract class AdaptorBase extends EventEmitter {
     }
 
     public get errs(): string[] {
-        return SystemInfo.createSystemInfo().systemErrors<AdaptorError>(null, AdaptorError).map((err) => String(err));
+        return SystemInfo.createSystemInfo().systemErrors<AdaptorError>(null, AdaptorError).map(String);
     }
 
     public get warns(): string[] {
-        return SystemInfo.createSystemInfo().systemWarnings<AdaptorWarning>(null, AdaptorError).map((warn) => String(warn));
+        return SystemInfo.createSystemInfo().systemWarnings<AdaptorWarning>(null, AdaptorError).map(String);
     }
 
     private _state: ADAPTOR_STATE = ADAPTOR_STATE.UnInitialized;
@@ -253,12 +248,12 @@ export abstract class AdaptorBase extends EventEmitter {
         return String(SystemInfo.createSystemInfo().lastErr(AdaptorError));
     }
 
-    constructor() {
+    public constructor() {
         super();
-        let thisClassName = this.constructor.name;
+        const thisClassName = this.constructor.name;
         logger.info('Attempt to initialize %s', thisClassName);
         if (_adaptor !== undefined) {
-            let adaptorClassName = _adaptor.constructor.name;
+            const adaptorClassName = _adaptor.constructor.name;
             _adaptor.addErr('[adaptor] property on [%s] class is not null or undefined', thisClassName);
             _adaptor.transition(ADAPTOR_STATE.ERR_Initializing, true);
             logger.error(_adaptor.lastErr());
@@ -284,7 +279,6 @@ export abstract class AdaptorBase extends EventEmitter {
         return alwaysReject ? Promise.reject(false) : Promise.resolve(true);
     }
 
-    
 
     public get state(): ADAPTOR_STATE {
         return this._state;

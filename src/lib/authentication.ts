@@ -4,18 +4,17 @@
 //const cjson = require('circular-json');
 
 //web
-import { NextFunction, Response, Request, Application, Router } from 'express';
+import { Application, NextFunction, Request, Response, Router } from 'express';
 
 //graphql
 import { GraphQLOptions } from 'graphql-server-core';
-import { graphqlExpress, graphiqlExpress } from 'graphql-server-express';
+import { graphiqlExpress, graphqlExpress } from 'graphql-server-express';
 import { makeExecutableSchema } from 'graphql-tools';
 
 //app
-import { typeDefs } from './graphql_typedefs';
 import { resolvers } from './graphql_resolvers';
-import { HermesGraphQLConnector, AuthenticationError } from './hermes_connector';
-
+import { typeDefs } from './graphql_typedefs';
+import { AuthenticationError, HermesGraphQLConnector } from './hermes_connector';
 
 
 export interface AuthenticationOptions {
@@ -29,9 +28,9 @@ export function registerAuth(options: AuthenticationOptions, app: Application | 
 
         response;
 
-        let sessObj = request.session;
+        const sessObj = request.session;
         if (sessObj && (!sessObj._user || !sessObj._hermes)) {
-            sessObj.save((err) => {
+            sessObj.save(err => {
                 if (err) {
                     return next(err);
                 }
@@ -43,9 +42,9 @@ export function registerAuth(options: AuthenticationOptions, app: Application | 
     });
 
     // register graphQL stuff
-    let schema = makeExecutableSchema({ typeDefs, resolvers });
+    const schema = makeExecutableSchema({ typeDefs, resolvers });
     const graphQLOptions: GraphQLOptions = {
-        schema: schema,
+        schema,
         // values to be used as context and rootValue in resolvers
         // context?: any,
         // rootValue?: any,
@@ -61,9 +60,9 @@ export function registerAuth(options: AuthenticationOptions, app: Application | 
         debug: true
     };
 
-    app.use(options.graphQL_url, graphqlExpress( (req?: Express.Request) => {
-        let asset = HermesGraphQLConnector.createHermesGraphQLConnector(req);
-        
+    app.use(options.graphQL_url, graphqlExpress((req?: Express.Request) => {
+        const asset = HermesGraphQLConnector.createHermesGraphQLConnector(req);
+
         let errors: AuthenticationError[] = null as any;
         let connector: HermesGraphQLConnector = null as any;
         if (asset instanceof Array) {
@@ -72,18 +71,9 @@ export function registerAuth(options: AuthenticationOptions, app: Application | 
         else {
             connector = asset;
         }
-        return Object.assign({}, graphQLOptions, { context: { connector, errors } }) as GraphQLOptions;
+        return {...graphQLOptions,  context: { connector, errors }} as GraphQLOptions;
     }));
 
     app.use('/graphiql', graphiqlExpress({ endpointURL: options.graphQL_url }));
 }
-
-
-
-
-
-
-
-
-
 

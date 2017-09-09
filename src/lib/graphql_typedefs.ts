@@ -50,9 +50,9 @@ export const typeDefs: string[] = [
             requestPasswordReset(email:String!): AuthResult
             resetPassword(token:String!, password:String!): AuthResult
             reSendActivation(email: String): AuthResult
-            
+
         }
-        
+
         # schema {
         #    query: Query
         #    mutation: Mutation

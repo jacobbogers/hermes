@@ -11,7 +11,7 @@ const _styles = require('./auth');
 require('../fonts/myfont');
 
 //work with imported styles in _style above
-const styles = (...rest: string[]) => rest.map((itm) => _styles[itm]).join(' ');
+const styles = (...rest: string[]) => rest.map(itm => _styles[itm]).join(' ');
 
 export enum AuthenticationState {
     hidden = 10,
@@ -21,7 +21,7 @@ export enum AuthenticationState {
     invite
 }
 
-const isHidden = (state?: AuthenticationState): boolean => { return state === AuthenticationState.hidden; };
+const isHidden = (state?: AuthenticationState): boolean => state === AuthenticationState.hidden;
 
 export interface AuthStateProperties {
     email: string;
@@ -59,15 +59,15 @@ class Authentication extends React.Component<AllProps, AuthStateProperties>{
 
     private deriveStateFromLocation(p: AllProps, peekOnly: boolean = false) {
         //console.log('%c deriveStateFromLocation', 'color:green', p.location.pathname);
-        let cp = this.cleanPath();
-        let path = p.location.pathname.replace(/\$/, '').toLocaleLowerCase();
+        const cp = this.cleanPath();
+        const path = p.location.pathname.replace(/\$/, '').toLocaleLowerCase();
         let rc = AuthenticationState.hidden;
         if (path.indexOf(cp) >= 0) {
-            let last = path.match(/[^\/]+$/);
+            const last = path.match(/[^\/]+$/);
 
             if (last && last[0]) {
-                let key = last[0].toLocaleLowerCase();
-                let probe: AuthenticationState | undefined = (AuthenticationState[key as any]) as any;
+                const key = last[0].toLocaleLowerCase();
+                const probe: AuthenticationState | undefined = (AuthenticationState[key as any]) as any;
                 /* looks weird but TS is being stupid putting enum and a "typegaurd" in the same IF statement*/
                 if (probe !== AuthenticationState.hidden) {
                     if (probe) {
@@ -100,7 +100,7 @@ class Authentication extends React.Component<AllProps, AuthStateProperties>{
         e;
         if (isHidden(this.authState)) {
 
-            ['active', 'leave', 'register', 'forgot'].forEach((_class) => {
+            ['active', 'leave', 'register', 'forgot'].forEach(_class => {
                 e.currentTarget.classList.remove(styles(_class));
             });
             e.stopPropagation();
@@ -138,7 +138,7 @@ class Authentication extends React.Component<AllProps, AuthStateProperties>{
         if (this.revert()) {
             return;
         }
-        let url = this.setHistory(newFormState);
+        const url = this.setHistory(newFormState);
         //console.log('new form url', url);
         this.props.history.push(url);
 
@@ -164,15 +164,15 @@ class Authentication extends React.Component<AllProps, AuthStateProperties>{
         this.setState({ userName: e.target.value });
     }
 
-    constructor(props: AllProps) {
+    public constructor(props: AllProps) {
         super(props);
         console.log('%c constructor', 'color:red');
-        let email = ''; //todo /fetch email from web-localStore when applicable
-        let password = ''; //idem, fetch password or hash?? from localstore
-        let password2 = '';
-        let userName = '';
+        const email = ''; //todo /fetch email from web-localStore when applicable
+        const password = ''; //idem, fetch password or hash?? from localstore
+        const password2 = '';
+        const userName = '';
         this.state = { email, password, password2, userName };
-        let state = this.deriveStateFromLocation(this.props);
+        const state = this.deriveStateFromLocation(this.props);
         this.goBack = '/';
         if (isHidden(state)) {
             this.goBack = this.props.location.pathname;
@@ -181,9 +181,9 @@ class Authentication extends React.Component<AllProps, AuthStateProperties>{
         this.authState = state;
     }
 
-    render() {
+    public render() {
 
-        let map = [];
+        const map = [];
 
         map[AuthenticationState.register] = 'register';
         map[AuthenticationState.forgot] = 'forgot';
@@ -233,24 +233,24 @@ class Authentication extends React.Component<AllProps, AuthStateProperties>{
         }
 
 
-        let email = this.state.email;
-        let passw = this.state.password;
-        let passw2 = this.state.password2;
-        let userName = this.state.userName;
+        const email = this.state.email;
+        const passw = this.state.password;
+        const passw2 = this.state.password2;
+        const userName = this.state.userName;
 
         return (
-            <div onClick={(e) => e.stopPropagation()} className={classN} onTransitionEnd={(e) => { this.resetCSS(e); }}>
+            <div onClick={e => e.stopPropagation()} className={classN} onTransitionEnd={e => { this.resetCSS(e); }}>
                 <div className={styles('backdrop', 'login-bd')}></div>
                 <div className={styles('backdrop', 'forgot-bd')}></div>
                 <div className={styles('backdrop', 'register-bd')}></div>
-                <div onClick={(e) => this.onClose(e)} className={styles('auth-close')}><i className="fa fa-close"></i></div>
+                <div onClick={e => this.onClose(e)} className={styles('auth-close')}><i className="fa fa-close"></i></div>
                 {/* registration */}
                 <div className={styles('form', 'register-content')}>
                     <div className={styles('content-title', 'register-type')}>Register</div>
-                    <form id="register-user" onSubmit={(e) => this.onSubmitRegister(e)}>
+                    <form id="register-user" onSubmit={e => this.onSubmitRegister(e)}>
                         <input
                             tabIndex={tiR + 0}
-                            onChange={(e) => this.updateUserName(e)}
+                            onChange={e => this.updateUserName(e)}
                             value={userName}
                             type="text"
                             name="username"
@@ -259,7 +259,7 @@ class Authentication extends React.Component<AllProps, AuthStateProperties>{
                             placeholder="Username" />
                         <input
                             tabIndex={tiR + 1}
-                            onChange={(e) => this.updateEmail(e)}
+                            onChange={e => this.updateEmail(e)}
                             value={email}
                             type="email"
                             required
@@ -269,7 +269,7 @@ class Authentication extends React.Component<AllProps, AuthStateProperties>{
                         />
                         <input
                             tabIndex={tiR + 2}
-                            onChange={(e) => this.updatePassword(e)}
+                            onChange={e => this.updatePassword(e)}
                             value={passw}
                             type="password"
                             required
@@ -278,7 +278,7 @@ class Authentication extends React.Component<AllProps, AuthStateProperties>{
                             placeholder="Password" />
                         <input
                             tabIndex={tiR + 3}
-                            onChange={(e) => this.updatePassword2(e)}
+                            onChange={e => this.updatePassword2(e)}
                             value={passw2}
                             type="password"
                             required
@@ -298,10 +298,10 @@ class Authentication extends React.Component<AllProps, AuthStateProperties>{
                 </div>
                 {/* forgot password */}
                 <div className={styles('form', 'forgot-content')}>
-                    <form id="password-recovery" onSubmit={(e) => this.onSubmitReset(e)}>
+                    <form id="password-recovery" onSubmit={e => this.onSubmitReset(e)}>
                         <div className={styles('content-title', 'forgot-type')}>Password Recovery</div>
                         <input tabIndex={tiF + 1}
-                            onChange={(e) => this.updateEmail(e)}
+                            onChange={e => this.updateEmail(e)}
                             name="email"
                             type="email"
                             required
@@ -324,8 +324,8 @@ class Authentication extends React.Component<AllProps, AuthStateProperties>{
                 {/* login content */}
                 <div className={styles('form', 'login-content')}>
                     <div className={styles('content-title', 'login-type')}>Sign In</div>
-                    <form id="try-login" onSubmit={(e) => this.onSubmitLogin(e)}>
-                        <input tabIndex={tiL + 1} onChange={(e) => this.updateEmail(e)}
+                    <form id="try-login" onSubmit={e => this.onSubmitLogin(e)}>
+                        <input tabIndex={tiL + 1} onChange={e => this.updateEmail(e)}
                             name="email"
                             type="text"
                             required
@@ -334,7 +334,7 @@ class Authentication extends React.Component<AllProps, AuthStateProperties>{
                             placeholder="Your Registered Mail Address" value={email}></input>
                         <input
                             tabIndex={tiL + 2}
-                            onChange={(e) => this.updatePassword(e)}
+                            onChange={e => this.updatePassword(e)}
                             name="password"
                             type="password"
                             required pattern=".{6,16}"
@@ -358,12 +358,12 @@ class Authentication extends React.Component<AllProps, AuthStateProperties>{
         );
     }
 
-    componentDidUpdate() {
+    public componentDidUpdate() {
         console.log('%c componentDidUpdate', 'color:green');
         console.log('reverted:', this.revert());
     }
 
-    componentWillUpdate(nextProps: AllProps) {
+    public componentWillUpdate(nextProps: AllProps) {
         console.log('%c componentWillUpdate', 'color:green');
         //console.log('componentWillUpdate:', { nextProps, state: [this.prevAuthState, this.authState] });
         this.deriveStateFromLocation(nextProps);
@@ -373,21 +373,20 @@ class Authentication extends React.Component<AllProps, AuthStateProperties>{
         }
     }
 
-    shouldComponentUpdate(nextProps: AllProps, nextState: AuthStateProperties) {
+    public shouldComponentUpdate(nextProps: AllProps, nextState: AuthStateProperties) {
 
-        let op = this.props;
-        let np = nextProps;
-        let os = this.state;
-        let ns = nextState;
+        const op = this.props;
+        const np = nextProps;
+        const os = this.state;
+        const ns = nextState;
         let pc = op.path === np.path && op.location.pathname === np.location.pathname;
-        let peekState = this.deriveStateFromLocation(nextProps, true);
+        const peekState = this.deriveStateFromLocation(nextProps, true);
         if (peekState === this.authState && peekState === AuthenticationState.hidden) {
             pc = true;
         }
-        let s = { prev: this.prevAuthState, cur: this.authState, peekState };
-        let sc = os.email === ns.email && os.password === ns.password && os.password2 === ns.password2 && os.userName === ns.userName;
-        let rc = !pc || !sc;
-
+        const s = { prev: this.prevAuthState, cur: this.authState, peekState };
+        const sc = os.email === ns.email && os.password === ns.password && os.password2 === ns.password2 && os.userName === ns.userName;
+        const rc = !pc || !sc;
 
 
         console.log('%c shouldComponentUpdate pc:%s, sc:%s', 'color:red', pc, sc, { op, np }, s);

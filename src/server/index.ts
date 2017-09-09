@@ -1,12 +1,12 @@
 'use strict';
 
+import * as bodyParser from 'body-parser';
 import * as  express from 'express';
 import * as session from 'express-session';
-import * as bodyParser from 'body-parser';
 import * as path from 'path';
 
-import { SystemInfo } from '../lib/system';
 import { registerAuth } from '../lib/authentication';
+import { SystemInfo } from '../lib/system';
 
 import {
     AdaptorPostgreSQL as Adaptor
@@ -22,7 +22,7 @@ const logger = Logger.getLogger();
 
 import {
     HermesStore,
-    HermesStoreProperties,
+    HermesStoreProperties
 } from '../lib/hermes_store';
 
 /* init */
@@ -30,7 +30,7 @@ import {
 
 SystemInfo.createSystemInfo({ maxErrors: 5000, maxWarnings: 5000 });
 
-let app = express();
+const app = express();
 
 app.use(
     bodyParser.json({
@@ -78,20 +78,20 @@ app.use(
 app.use(bodyParser.raw({
     type: 'application/vnd.custom-type',
     inflate: true,
-    limit: '100kb',
+    limit: '100kb'
 }));
 
-let adaptor = new Adaptor({
+const adaptor = new Adaptor({
     url: 'postgresql://bookbarter:bookbarter@jacob-bogers.com:443/bookbarter?sslmode=allow'
 });
 
-let props: HermesStoreProperties = {
+const props: HermesStoreProperties = {
     defaultCookieOptionsName: 'default_cookie',
     adaptor
 };
 
 
-let hermesStore = new HermesStore(props);
+const hermesStore = new HermesStore(props);
 hermesStore.once('connect', () => {
 
     logger.info('store is initialized');
@@ -122,12 +122,12 @@ function init() {
     app.use('/', express.static(path.resolve('dist/client')));
 
 
-    app.get(/.*/, ( req, res ) => {
+    app.get(/.*/, (req, res) => {
        req;
-       res.set({'Content-Type':'text/html'});
-       res.sendfile(path.resolve('dist/client/index.html'));      
+       res.set({'Content-Type': 'text/html'});
+       res.sendfile(path.resolve('dist/client/index.html'));
     });
-    
+
 }
 
 process.on('exit', () => {

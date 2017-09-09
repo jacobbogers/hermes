@@ -55,7 +55,7 @@ export class SystemInfo extends EventEmitter {
             opts.maxErrors = opts.maxErrors || 100;
             opts.maxWarnings = opts.maxWarnings || 100;
 
-            let _opts = <SystemInfoOptions>(opts);
+            const _opts = <SystemInfoOptions> (opts);
 
             if (_system) {
                 _system.maxErr = opts.maxErrors;
@@ -70,12 +70,12 @@ export class SystemInfo extends EventEmitter {
     }
 
     public systemErrors<T>(limit: number | null, constructor: new (...args: any[]) => T): T[] {
-        let rc: T[] = this.errors.filter((err) => { return ((err as any) instanceof constructor); }).slice(-(limit || 0)) as any;
+        const rc: T[] = this.errors.filter(err => ((err) instanceof constructor)).slice(-(limit || 0)) as any;
         return rc;
     }
 
     public systemWarnings<T>(limit: number | null, constructor: new (...args: any[]) => T): T[] {
-        let rc: T[] = this.warnings.filter((warn) => { return ((warn as any) instanceof constructor); }).slice(-(limit || 0)) as any;
+        const rc: T[] = this.warnings.filter(warn => ((warn) instanceof constructor)).slice(-(limit || 0)) as any;
         return rc;
     }
 
@@ -112,7 +112,7 @@ export class SystemInfo extends EventEmitter {
     }
 
     public hasErrors<T>(constructor: new (...args: any[]) => T): boolean {
-        for (let err of this.errors) {
+        for (const err of this.errors) {
             if ((err.prototype || {}).name === constructor.name) {
                 return true;
             }
