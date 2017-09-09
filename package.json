@@ -38,6 +38,7 @@
     "install": "echo install",
     "lint": "tslint -c tslint.json -p . --type-check",
     "lint:fix": "npm run lint -- --fix",
+    "lint:report": "npm run lint -- -o report.txt --force",
     "postinstall": "echo postinstall && npm run graphiQLLocal",
     "prepare": "echo 'prepare'",
     "prepublish": "echo 'prepublish'",
