@@ -34,7 +34,7 @@
             true,
             { "ignore-module": "(\\.html|\\.css)$" }
         ],
-        "no-inferrable-types": false,
+        "no-inferrable-types": true,
         "no-internal-module": false,
         "no-magic-numbers": false,
         "no-namespace": false,
