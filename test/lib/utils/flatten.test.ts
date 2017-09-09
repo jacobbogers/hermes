@@ -2,7 +2,7 @@ import { expect } from 'chai';
 
 import { flatten } from '~lib/utils/flatten';
 
-describe('lib/utils/flatten', () => {
+describe('~lib/utils/flatten', () => {
     it('Should flatten an object, given it is an array', () => {
         const input = [
             [1, [2, [3]]],
