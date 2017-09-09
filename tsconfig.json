@@ -20,8 +20,6 @@
         ],
         "module": "commonjs",
         "moduleResolution": "node",
-        "noUnusedLocals": true,
-        "noUnusedParameters": true,
         "outDir": "dist", /*outDir is overriden in the gulp file*/
         "paths": {
             "~*": [
