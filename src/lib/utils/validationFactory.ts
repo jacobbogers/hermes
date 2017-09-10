@@ -8,7 +8,7 @@ export function validationFactory(v: validation) {
             const fun = util.format;
             const m = util.format.apply(fun, rest);
 
-            return exec(m);
+            exec(m);
         }
     };
 }
