@@ -86,12 +86,12 @@ function moveToState(src: ADAPTOR_STATE, target: ADAPTOR_STATE): boolean {
   return false;
 }
 
-let _adaptor: AdaptorBase;
+let _adaptor: AdaptorBase | undefined;
 // Let _errors: string[] = [];
 // Let _warnings: string[] = [];
 
 export abstract class AdaptorBase extends EventEmitter {
-  public get adaptor(): AdaptorBase {
+  public get adaptor(): AdaptorBase | undefined {
     return _adaptor;
   }
 
@@ -209,6 +209,9 @@ export abstract class AdaptorBase extends EventEmitter {
 
   protected transition(target: ADAPTOR_STATE, force?: boolean) {
     const _force = !!force;
+    if (!_adaptor) {
+      return false;
+    }
     if (_force || (!_force && moveToState(_adaptor.state, target))) {
       _adaptor._state = target;
 

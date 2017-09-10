@@ -1,3 +1,4 @@
+
 /**
  * Flattens an array.
  *
@@ -5,14 +6,11 @@
  * @param {*[]} arr The array that is to be flattened.
  * @returns {*[]} The flattened array.
  */
+
+ 
 export function flatten(arr: any[]): any[] {
     try {
-        // tslint:disable
-        // Use Array.isArray to test if a value is an array
-        // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/isArray
-        // http://web.mit.edu/jwalden/www/isArray.html
-        // tslint:enable
-        const { isArray } = Array;
+         const isArray  = Array.isArray;
 
         // Recursively tests elements in arr to see if they're arrays.
         // On first run, a is []
