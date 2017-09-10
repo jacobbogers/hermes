@@ -120,7 +120,7 @@ export class MapWithIndexes<
             }
         }
 
-        return new OperationResult<T>({ errors, inserted });
+        return new OperationResult<T>({ inserted, errors });
     }
 
     public delete(data: T): OperationResult<T> {
@@ -275,7 +275,7 @@ export class MapWithIndexes<
         }
         // Wildcard search from here collect everything in this map
 
-        const rc = flatMap(currentMap).map(itm => deepClone(itm.obj)) as T[];
+        const rc: T[] = flatMap(currentMap).map(itm => deepClone(itm.obj));
         collected.push(...rc);
 
         return new OperationResult({ errors, collected });
