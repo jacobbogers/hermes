@@ -6,7 +6,7 @@ import * as util from 'util';
 import { AdaptorError } from './AdaptorError';
 import { AdaptorWarning } from './AdaptorWarning';
 
-import Logger from '../logger';
+import { Logger } from '~lib/logger';
 const logger = Logger.getLogger();
 
 import { IPropertiesModifyMessage } from '~properties/IPropertiesModifyMessage';
@@ -16,16 +16,12 @@ import { ITokenMessage } from '~tokens/ITokenMessage';
 import { ITokenMessageReturned } from '~tokens/ITokenMessageReturned';
 import { SystemInfo } from '../system';
 
-import {
-  ITokenPropertiesModifyMessageReturned
-} from '~tokens/ITokenPropertiesModifyMessageReturned';
+import { ITokenPropertiesModifyMessageReturned } from '~tokens/ITokenPropertiesModifyMessageReturned';
 
 import { ITokensAndPropsMessage } from '~tokens/ITokensAndPropsMessage';
 import { IUserMessageBase } from '~users/IUserMessageBase';
 import { IUserMessageReturned } from '~users/IUserMessageReturned';
-import {
-  IUserPropertiesModifyMessageReturned
-} from '~users/IUserPropertiesModifyMessageReturned';
+import { IUserPropertiesModifyMessageReturned } from '~users/IUserPropertiesModifyMessageReturned';
 
 import { IUsersAndPropsMessage } from '~users/IUsersAndPropsMessage';
 
@@ -137,7 +133,7 @@ export abstract class AdaptorBase extends EventEmitter {
     _adaptor = this;
   }
 
-  public destroy(alwaysReject?: boolean): Promise<boolean> {
+  public async destroy(alwaysReject?: boolean): Promise<boolean> {
     if (!this.transition(ADAPTOR_STATE.Disconnecting)) {
       this.addErr('Could not transition to state [disconnecting]');
 
