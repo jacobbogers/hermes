@@ -72,7 +72,7 @@ export class AdaptorMock extends AdaptorBase {
     );
   }
 
-  public shutDown(): Promise<boolean> {
+  public async shutDown(): Promise<boolean> {
     return super
       .destroy()
       .then(() => {

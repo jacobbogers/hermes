@@ -1,7 +1,6 @@
 // tslint:disable:typedef
 
 import * as UID from 'uid-safe';
-import * as util from 'util';
 import { IAuthenticationResult } from '~graphql';
 import { AuthenticationError } from '~graphql/AuthenticationError';
 import { GraphQLStatusCodes } from '~graphql/GraphQLStatusCodes';

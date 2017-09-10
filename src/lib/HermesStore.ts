@@ -396,7 +396,7 @@ export class HermesStore extends Store {
         const updatedToken: ITokenProperties = {
           ...(reply as any)
         };
-        updatedToken.templateName = template.templateName,
+        updatedToken.templateName = template && template.templateName || null,
         updatedToken.sessionProps = token.sessionProps;
 
         // Partially update the token in cache to reflect database change
@@ -686,7 +686,7 @@ export class HermesStore extends Store {
       templateName: _token.templateName || ''
     }).first;
     const templateId = (template && template.id) || null;
-    const msgCopy = { ...(<ITokenMessage> msg) };
+    const msgCopy = { ...(msg) };
     delete msgCopy.templateName;
     const tokenMsgReply: ITokenMessageReturned = <ITokenMessageReturned> (msgCopy as any);
     tokenMsgReply.templateId = templateId;
@@ -1147,7 +1147,7 @@ export class HermesStore extends Store {
               Object.assign(token, reply); // Update token with returned values
 
               copyProperties<ITokenProperties, ITokenMessageReturned>(updatedToken, reply);
-              updatedToken.templateName = template && template.templateName;
+              updatedToken.templateName = template && template.templateName || null;
               updatedToken.sessionProps = oldToken.sessionProps;
 
               // = {

@@ -7,7 +7,7 @@ K extends keyof T
 
 import { deepClone } from './deepClone';
 import { flatMap } from './flatMap';
-import { flatten } from './flatten';
+import { flattenMerge } from './flatten';
 import { ifEmptyString } from './ifEmptyString';
 import { ifInvalidPortString } from './ifInvalidPortString';
 import { ifNull } from './ifNull';
@@ -22,7 +22,7 @@ import { validationFactory } from './validationFactory';
 export {
   deepClone,
   flatMap,
-  flatten,
+  flattenMerge,
   ifEmptyString,
   ifInvalidPortString,
   ifNull,
