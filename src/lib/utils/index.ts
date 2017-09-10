@@ -13,7 +13,6 @@ import { ifInvalidPortString } from './ifInvalidPortString';
 import { ifNull } from './ifNull';
 import { ifUndefined } from './ifUndefined';
 import { IAnyObjProps } from './interfaces';
-import { loadFiles } from './loadFiles';
 import { makeObjectNull } from './makeObjectNull';
 import { makeValueslowerCase } from './makeValueslowerCase';
 import { MapWithIndexes } from './MapWithIndexes';
@@ -29,7 +28,6 @@ export {
   ifNull,
   ifUndefined,
   IAnyObjProps,
-  loadFiles,
   makeObjectNull,
   makeValueslowerCase,
   MapWithIndexes,
