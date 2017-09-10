@@ -1,11 +1,12 @@
 'use strict';
+// tslint:disable:typedef
 
 const _tracer = require('tracer');
 
 
 export type LogMethod = (...rest: any[]) => void;
 
-export interface Tracer {
+export interface ITracer {
     log: LogMethod;
     trace: LogMethod;
     debug: LogMethod;
@@ -14,19 +15,7 @@ export interface Tracer {
     error: LogMethod;
 }
 
-export class Logger implements Tracer {
-
-    private static tracer: Tracer = null as any;
-
-    private constructor(tracer?: any) {
-        const tr = Logger.tracer = tracer || _tracer.colorConsole() as Tracer;
-        this.log = tr.log.bind(tr);
-        this.trace = tr.trace.bind(tr);
-        this.debug = tr.debug.bind(tr);
-        this.info = tr.info.bind(tr);
-        this.warn = tr.warn.bind(tr);
-        this.error = tr.error.bind(tr);
-    }
+export class Logger implements ITracer {
 
     public log: LogMethod;
     public trace: LogMethod;
@@ -35,12 +24,24 @@ export class Logger implements Tracer {
     public warn: LogMethod;
     public error: LogMethod;
 
-    public static getLogger(logger?: Tracer) {
+    private static tracer: ITracer = null as any;
+
+    private constructor(tracer?: any) {
+        const tr = Logger.tracer = tracer || _tracer.colorConsole() as ITracer;
+        this.log = tr.log.bind(tr);
+        this.trace = tr.trace.bind(tr);
+        this.debug = tr.debug.bind(tr);
+        this.info = tr.info.bind(tr);
+        this.warn = tr.warn.bind(tr);
+        this.error = tr.error.bind(tr);
+    }
+
+
+    public static getLogger(logger?: ITracer) {
         if (Logger.tracer) {
             return Logger.tracer;
         }
+
         return new Logger(logger);
     }
 }
-
-export default Logger ;

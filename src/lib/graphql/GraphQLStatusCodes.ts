@@ -1,6 +1,5 @@
 
-
-export interface GlobalPropsEnum {
+export interface IGraphQLStatusCodes {
     'ok': string;
     'ok-password-reset': string;
     'await-activation': string;
@@ -24,12 +23,13 @@ export interface GlobalPropsEnum {
     'unmatched-activation-token': string;
     'pw-reset-requested': string;
     'unsufficient-priviledges': string;
-    //user roles
+
+    // User roles
     'roles': string;
     'view_session_tokens': string;
 
 
-    //token issue purpose
+    // Token issue purpose
     'rstp': string;
     'RE': string;
     'token-not-found': string;
@@ -39,17 +39,18 @@ export interface GlobalPropsEnum {
     'user-anonymous': string;
 
 
-    //field-entry
+    // Field-entry
     'no-username': string;
     'no-email': string;
     'no-password': string;
 
-    //authentication and creation
+    // Authentication and creation
     'username-exist': string;
     'email-exist': string;
     'auth-failed': string;
 
-    //sytem  infrastructure errors
+    // Sytem  infrastructure errors
+
     'err-password-reset': string;
     'err-auxiliary': string;
     'err-session-save': string;
@@ -60,4 +61,4 @@ export interface GlobalPropsEnum {
 
 }
 
-export type Constants = keyof GlobalPropsEnum;
+export type GraphQLStatusCodes = keyof IGraphQLStatusCodes;

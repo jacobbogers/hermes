@@ -1,28 +1,22 @@
-
-//general
-
-//const cjson = require('circular-json');
-
-//web
 import { Application, NextFunction, Request, Response, Router } from 'express';
 
-//graphql
+
 import { GraphQLOptions } from 'graphql-server-core';
 import { graphiqlExpress, graphqlExpress } from 'graphql-server-express';
 import { makeExecutableSchema } from 'graphql-tools';
 
-//app
+
 import { resolvers } from './graphql_resolvers';
 import { typeDefs } from './graphql_typedefs';
-import { AuthenticationError, HermesGraphQLConnector } from './hermes_connector';
-
+import {  HermesGraphQLConnector } from './HermesGraphQLConnector';
+import { AuthenticationError } from './AuthenticationError';
 
 export interface AuthenticationOptions {
     graphQL_url: string;
 }
 
 export function registerAuth(options: AuthenticationOptions, app: Application | Router) {
-    //options;
+    //Options;
 
     app.use((request: Request, response: Response, next: NextFunction) => {
 
@@ -41,22 +35,22 @@ export function registerAuth(options: AuthenticationOptions, app: Application | 
         next();
     });
 
-    // register graphQL stuff
+    // Register graphQL stuff
     const schema = makeExecutableSchema({ typeDefs, resolvers });
     const graphQLOptions: GraphQLOptions = {
         schema,
-        // values to be used as context and rootValue in resolvers
-        // context?: any,
-        // rootValue?: any,
-        // function used to format errors before returning them to clients
-        //formatError?: Function,
-        // additional validation rules to be applied to client-specified queries
-        ///validationRules?: Array < ValidationRule >,
-        // function applied for each query in a batch to format parameters before passing them to `runQuery`
-        //formatParams?: Function,
-        // function applied to each response before returning data to clients
-        //formatResponse?: Function,
-        // a boolean option that will trigger additional debug logging if execution errors occur
+        // Values to be used as context and rootValue in resolvers
+        // Context?: any,
+        // RootValue?: any,
+        // Function used to format errors before returning them to clients
+        // FormatError?: Function,
+        // Additional validation rules to be applied to client-specified queries
+        /// ValidationRules?: Array < ValidationRule >,
+        // Function applied for each query in a batch to format parameters before passing them to `runQuery`
+        // FormatParams?: Function,
+        // Function applied to each response before returning data to clients
+        // FormatResponse?: Function,
+        // A boolean option that will trigger additional debug logging if execution errors occur
         debug: true
     };
 

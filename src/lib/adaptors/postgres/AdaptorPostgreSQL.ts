@@ -1,53 +1,72 @@
 'use strict';
 
-// Import * as path from 'path';
+// tslint:disable:typedef
 
+// Vendor
 import * as pg from 'pg';
 import * as UID from 'uid-safe';
 import * as URL from 'url';
 import * as util from 'util';
-import { SystemInfo } from '../system';
 
-
-import Logger from '../logger';
-
-const logger = Logger.getLogger();
-
-import {
-    makeObjectNull
-    //    loadFiles
-} from '../utils';
-
-import {
-    //general
-    ADAPTOR_STATE,
-    AdaptorBase,
-    AdaptorError,
-    PropertiesModifyMessage,
-    //user
-    TemplatePropsMessage,
-    TokenMessage,
-    TokenMessageReturned,
-    TokenPropertiesModifyMessageReturned,
-    //tokens
-    TokensAndPropsMessage,
-    UserMessageBase,
-    UserMessageReturned,
-    UserPropertiesModifyMessageReturned,
-    //templates
-    UsersAndPropsMessage
-} from './db_adaptor_base';
-
-
+// App
+import { SystemInfo } from '~system';
 import {
     IAnyObjProps,
     ifInvalidPortString,
     ifNull
-    // ifUndefined,
-    // ifEmptyString
-} from './utils';
+} from '~utils';
 
-interface SQLFiles {
+
+import Logger from '~lib/logger';
+const logger = Logger.getLogger();
+
+import { GraphQLStatusCodes } from '~graphql/GraphQLStatusCodes';
+import { makeObjectNull, MapWithIndexes } from '~lib/utils';
+
+// State
+import { ADAPTOR_STATE } from '~states/adaptor_state';
+
+// Adaptor
+import { AdaptorBase } from '~adaptors/AdaptorBase';
+import { AdaptorError } from '~adaptors/AdaptorError';
+
+// Properties
+
+import { IPropertiesModifyMessage } from '~properties/IPropertiesModifyMessage';
+
+// Tokens
+import {
+  // ,
+  ITokenMessage,
+  ITokenMessageReturned,
+  ITokenPropertiesModifyMessageReturned,
+  ITokensAndPropsMessage
+} from '~tokens';
+
+// Users
+
+import {
+  IUserMessageBase,
+  IUserMessageReturned,
+  IUserPropertiesModifyMessageReturned,
+  IUsersAndPropsMessage
+} from '~users';
+
+// Templates
+import { ITemplatePropsMessage } from '~templates';
+
+import {
+  ITemplateProperties,
+  ITokenProperties,
+  IUserProperties
+} from '~hermes-props';
+
+import {
+    IAdaptorPostgreSQLProperties
+} from './IAdaptorPostgreSQLProperties';
+
+
+interface ISQLFiles {
     sqlTokenInsertModifyProperty: string;
     sqlTokenAssociateWithUser: string;
     sqlTokenInsertModify: string;
@@ -68,7 +87,7 @@ interface SQLFiles {
 
 type ResolveResult<T> = (res: pg.QueryResult, resolve: (rc: T | undefined) => void) => void;
 
-const sqlFiles: SQLFiles = {
+const sqlFiles: ISQLFiles = {
     sqlTokenInsertModifyProperty: require('./sql/token_insert_modify_property.sql'),
     sqlTokenAssociateWithUser: require('./sql/token_associate_with_user.sql'),
     sqlTokenInsertModify: require('./sql/token_insert_modify.sql'),
@@ -87,15 +106,12 @@ const sqlFiles: SQLFiles = {
 
 };
 
-type SqlFileKeys = keyof SQLFiles;
+type SqlFileKeys = keyof ISQLFiles;
 
 /*  database adaptor */
 /*  database adaptor */
 /*  database adaptor */
 
-export interface AdaptorPostgreSQLProperties {
-    url: string;
-}
 
 export class AdaptorPostgreSQL extends AdaptorBase {
 
@@ -105,6 +121,12 @@ export class AdaptorPostgreSQL extends AdaptorBase {
     private accessCount: number;
     private sql: Map<SqlFileKeys, pg.QueryConfig>;
 
+    public constructor(app: IAdaptorPostgreSQLProperties) {
+        super();
+        this._url = app.url;
+    }
+
+
     public init(): Promise<boolean> {
 
         const pURL = this._url;
@@ -112,11 +134,12 @@ export class AdaptorPostgreSQL extends AdaptorBase {
         if (!this.transition(ADAPTOR_STATE.Initializing)) {
             this.addErr('State cannot transition to [%s] from [%s]', ADAPTOR_STATE[ADAPTOR_STATE.Initializing], ADAPTOR_STATE[this.state]);
             logger.error(this.lastErr());
+
             return Promise.reject(false);
         }
 
         const ci = URL.parse(pURL);
-        //collect all errors and warnings
+        // Collect all errors and warnings
         const _si = SystemInfo.createSystemInfo();
         const errP = _si.addError.bind(_si);
         const warnP = _si.addWarning.bind(_si);
@@ -137,6 +160,7 @@ export class AdaptorPostgreSQL extends AdaptorBase {
 
         if (_si.hasErrors(AdaptorError)) {
             this.transition(ADAPTOR_STATE.ERR_Initializing, true);
+
             return Promise.reject(false);
         }
 
@@ -144,6 +168,7 @@ export class AdaptorPostgreSQL extends AdaptorBase {
         const qry: IAnyObjProps = params.reduce((ac: IAnyObjProps, val: string) => {
             const [key, value] = val.split('=');
             ac[key] = value;
+
             return ac;
         },                                      {});
 
@@ -158,14 +183,14 @@ export class AdaptorPostgreSQL extends AdaptorBase {
             port,
             host,
             ssl: qry['sslmode'] !== 'disable',
-            max: 30, //set pool max size
-            min: 20, //set min pool size
-            idleTimeoutMillis: 1000 * 3600 * 24, //ms
+            max: 30, // Set pool max size
+            min: 20, // Set min pool size
+            idleTimeoutMillis: 1000 * 3600 * 24, // Ms
 
             refreshIdle: true
         };
-        pg.defaults.parseInt8 = true; // use bigint datatype
-        //create the pool
+        pg.defaults.parseInt8 = true; // Use bigint datatype
+        // Create the pool
 
         logger.info('Creating the Pool at time [%s]', new Date().toTimeString());
 
@@ -180,7 +205,7 @@ export class AdaptorPostgreSQL extends AdaptorBase {
         this.pool.on('acquire', (/*client: pg.Client*/) => {
             logger.debug('client acquire to db');
         });
-        // client has an error while sitting idel
+        // Client has an error while sitting idel
         this.pool.on('error', (err: Error) => {
             logger.error('idle client error [%j]', err);
             this.addErr('client error when sitting idle, error [%s] [%s]', err.message, err.stack || '');
@@ -195,21 +220,18 @@ export class AdaptorPostgreSQL extends AdaptorBase {
                     this.addErr('Could not transition to [Initialized] state');
                     this.transition(ADAPTOR_STATE.ERR_Initializing, true);
                     logger.error(this.lastErr());
+
                     return this.destroy(true);
                 }
                 logger.info('success loading all sql files');
+
                 return Promise.resolve(true);
             }).catch(() => {
                 this.transition(ADAPTOR_STATE.ERR_Initializing, true);
                 logger.error(this.lastErr());
+
                 return this.destroy(true);
             });
-    }
-
-
-    public constructor(app: AdaptorPostgreSQLProperties) {
-        super();
-        this._url = app.url;
     }
 
     /*general tooling*/
@@ -229,127 +251,22 @@ export class AdaptorPostgreSQL extends AdaptorBase {
             this.pool.end()
                 .then(() => {
                     this.transition(ADAPTOR_STATE.Disconnected, true);
+
                     return Promise.resolve(true);
                 })).catch(() =>
-            Promise.resolve(false)).then(rc => { //"finally" clause analog
+            Promise.resolve(false)).then(rc => { // "finally" clause analog
             this.emit('disconnect');
+
             return Promise.resolve(rc);
         });
     }
 
 
-    private loadSQLStatements(): Promise<boolean> {
-        this.sql.clear();
-
-        const files = {...sqlFiles};
-        /*let _file: keyof SQLFiles;
-        for (_file in files) {
-            files[_file] = path.join(__dirname, files[_file]);
-        }*/
-        const self = this;
-
-        function processLoadingResults(sql: SQLFiles): number {
-            const nrErrors = 0;
-            let _file: keyof SQLFiles;
-            for (_file in sql) {
-                /* this never happens because its all included via require */
-
-                //if ((sql[_file] as any) instanceof Error) {
-                //    nrErrors++;
-                //    self.addErr('Could not load sql file: %s', _file);
-                //    logger.error(this.lastErr());
-                //    continue;
-                //}
-
-                const qc: pg.QueryConfig = {
-                    text: sql[_file],
-                    name: _file
-                };
-                logger.trace('loaded file [%s]', _file);
-                self.sql.set(_file, qc);
-            }
-            return nrErrors;
-        }
-        const rc = processLoadingResults(files);
-        return rc > 0 ? Promise.resolve(false) : Promise.resolve(true);
-        /*
-                return loadFiles<SQLFiles>(files).then((sql) => {
-                    let rc = processLoadingResults(sql);
-                    return rc > 0 ? Promise.resolve(false) : Promise.resolve(true);
-                });
-        */
-
-    }
-
-    private executeSQL<T>(qcArr: (pg.QueryConfig)[], fn: ResolveResult<T>): Promise<T> {
-        if (!this.connected) {
-            return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
-        }
-        return new Promise<T>((resolveFinal, rejectFinal) => {
-            if (qcArr.length === 0) {
-                const qryResult: pg.QueryResult = { command: 'EMPTY COMMAND', rowCount: 0, oid: 0, rows: [] };
-                return fn(qryResult, resolveFinal);
-            }
-            this.pool.connect((err, client, done) => {
-                if (err) {
-                    this.addErr(err);
-                    logger.error('could not aquire a client from the pool because:[%j]', err);
-                    client && client.emit('drain');
-                    done();
-                    return rejectFinal(err);
-                }
-                logger.debug('..client aquired');
-                const copyArr = qcArr.slice();
-
-                //iterative function
-                const _do = (qc: pg.QueryConfig) => {
-                    client.query(qc).then((value: pg.QueryResult) => {
-                        logger.debug('query done %s', qc.name);
-                        const nextQc = copyArr.shift();
-                        if (nextQc !== undefined) {
-                            return _do(nextQc);
-                        }
-                        client.emit('drain');
-                        done();
-                        return fn(value, resolveFinal);
-                    })
-                        .catch(err => {
-                            client.emit('drain');
-                            done();
-                            rejectFinal(err);
-
-                        });
-
-                };
-                const qc = copyArr.shift();
-                qc && _do(qc);
-            });
-        });
-    }
-
-
-    private executeSQLMutation<T>(qcArr: (pg.QueryConfig)[], fn: ResolveResult<T>): Promise<T> {
-        if (!this.connected) {
-            return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
-        }
-        logger.debug('exectuting statement', qcArr[0].name);
-
-        return this.executeSQL<T>(qcArr, (res, resolve) => {
-            //no error but did we actually update something
-            if (res.rowCount === 0) {
-                logger.error('Nothing was mutated. %j', res);
-                throw new AdaptorError(util.format('Nothing was updated mutated. %j', res), this.state);
-            }
-            logger.trace('Success: number of rows mutated %d', res.rowCount);
-            return fn(res, resolve);
-        });
-    }
-
     /* token */
     /* token */
     /* token */
 
-    public tokenInsertModify(token: TokenMessage): Promise<TokenMessageReturned> {
+    public tokenInsertModify(token: ITokenMessage): Promise<ITokenMessageReturned> {
 
         if (!this.connected) {
             return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
@@ -363,20 +280,33 @@ export class AdaptorPostgreSQL extends AdaptorBase {
 
         logger.trace('inserting/updating token %j', t);
 
-        const qc = <pg.QueryConfig> (this.sql.get('sqlTokenInsertModify'));
+        const queryC = <pg.QueryConfig> (this.sql.get('sqlTokenInsertModify'));
 
         t.templateName = t.templateName && t.templateName.toLocaleLowerCase() || null;
 
-        const sqlObject = {...qc,  values: [t.tokenId, t.fkUserId, t.purpose, t.ipAddr, t.tsIssuance, t.tsRevoked, t.revokeReason, t.tsExpire, t.templateName]} as pg.QueryConfig;
+        const sqlObject: pg.QueryConfig = {
+            ...queryC,
+            values: [
+                t.tokenId,
+                t.fkUserId,
+                t.purpose,
+                t.ipAddr,
+                t.tsIssuance,
+                t.tsRevoked,
+                t.revokeReason,
+                t.tsExpire,
+                t.templateName
+            ]
+        };
 
-        return this.executeSQL<TokenMessageReturned>([sqlObject], (res, resolve) => {
+        return this.executeSQL<ITokenMessageReturned>([sqlObject], (res, resolve) => {
 
             logger.trace('success: query result [%j]', { command: res.command, rowCount: res.rowCount });
             const row = res.rows[0];
             /*
              id, fk_user_id, purpose, ip_addr, timestamp_issued, timestamp_revoked, revoke_reason, timestamp_expire, s1.template_name
              */
-            const rc: TokenMessageReturned = {
+            const rc: ITokenMessageReturned = {
                 tokenId: row['id'] as string,
                 fkUserId: row['fk_user_id'] as number,
                 purpose: row['purpose'] as string,
@@ -393,7 +323,9 @@ export class AdaptorPostgreSQL extends AdaptorBase {
         });
     }
 
-    public tokenInsertModifyProperty(tokenId: string, modifications: PropertiesModifyMessage[]): Promise<TokenPropertiesModifyMessageReturned[]> {
+    public tokenInsertModifyProperty(
+        tokenId: string,
+        modifications: IPropertiesModifyMessage[]): Promise<ITokenPropertiesModifyMessageReturned[]> {
 
         if (!this.connected) {
             return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
@@ -409,28 +341,36 @@ export class AdaptorPostgreSQL extends AdaptorBase {
         }
 
         logger.trace('token %s modification list %j', tokenId, modifications);
-        const qc = <pg.QueryConfig> (this.sql.get('sqlTokenInsertModifyProperty'));
+        const queryConfig = <pg.QueryConfig> (this.sql.get('sqlTokenInsertModifyProperty'));
 
-        const sqlObject = {...qc,  values: [tokenId, propNames, propValues, invisibles]} as pg.QueryConfig;
+        const sqlObject: pg.QueryConfig = {
+            ...queryConfig,
+            values: [
+                tokenId,
+                propNames,
+                propValues,
+                invisibles]
+            };
 
-        return this.executeSQL<TokenPropertiesModifyMessageReturned[]>([sqlObject], (res, resolve) => {
+        return this.executeSQL<ITokenPropertiesModifyMessageReturned[]>([sqlObject], (res, resolve: Function) => {
             logger.trace('%d of rows modified/inserted for token %s', res.rowCount, tokenId);
-            const rc = res.rows.filter(raw => {
-                //fk_token_id, session_prop_name, session_prop_value, invisible
-                return raw['invisible'] === false;
-            }).map(raw =>
-                {
+            const rc = res.rows.filter((raw: any) => raw['invisible'] === false)
+            .map((raw: any) => {
+                const tpmr: ITokenPropertiesModifyMessageReturned = {
                     propName: raw['session_prop_name'],
-                    propValue;: raw['session_prop_value'],
-                    invisible;: raw['invisible'],
-                    fkTokenId;: raw['fk_token_id'];
-                }  as TokenPropertiesModifyMessageReturned);
+                    propValue : raw['session_prop_value'],
+                    invisible : raw['invisible'],
+                    fkTokenId : raw['fk_token_id']
+                };
+
+                return tpmr;
+            });
             resolve(rc);
         });
 
     }
 
-    public tokenAssociateWithUser(tokenId: string, userId: number): Promise<boolean> {
+    public tokenAssociateWithUser(tokenId: string, userId: number): Promise< boolean > {
 
         logger.trace('assoiate token %s with user %d', tokenId, userId);
 
@@ -438,35 +378,47 @@ export class AdaptorPostgreSQL extends AdaptorBase {
             return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
         }
 
-        const qc = <pg.QueryConfig> (this.sql.get('sqlTokenAssociateWithUser'));
+        const queryConfig = <pg.QueryConfig> (this.sql.get('sqlTokenAssociateWithUser'));
 
-        const sqlObject = {...qc,  values: [userId, tokenId]} as pg.QueryConfig;
+        const sqlObject: pg.QueryConfig = {
+            ...queryConfig,
+            values: [userId, tokenId]
+        };
 
-        return this.executeSQLMutation<boolean>([sqlObject], (res, resolve) => {
-            res;
+        return this.executeSQLMutation<boolean>([sqlObject], (_res: any, resolve: Function) => {
             logger.trace('success: Token %s associated with user %d.', tokenId, userId);
             resolve(true);
         });
     }
 
-    public tokenInsertRevoke(fkUserId: number, purpose: string, ipAddr: string): Promise<TokenMessageReturned> {
+    public tokenInsertRevoke(fkUserId: number, purpose: string, ipAddr: string): Promise<ITokenMessageReturned> {
 
         logger.trace('insert new token type [%s] and expire older ones for user %d', purpose, fkUserId);
 
         if (!this.connected) {
             return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
         }
-        //--  1 token id, 2 fk_user_id, 3 ip, 4 issuance/rovoke timestamp, 5 purpose
+        // --  1 token id, 2 fk_user_id, 3 ip, 4 issuance/rovoke timestamp, 5 purpose
 
-        const qc = <pg.QueryConfig> (this.sql.get('sqlInsertRevoke'));
+        const queryConfig = <pg.QueryConfig> (this.sql.get('sqlInsertRevoke'));
         const revokeTime = Date.now();
         const tokenId = UID.sync(18);
-        const sqlObject = {...qc,  values: [tokenId, fkUserId, ipAddr, revokeTime, purpose]} as pg.QueryConfig;
+        const sqlObject: pg.QueryConfig = {
+            ...queryConfig,
+            values: [
+                tokenId,
+                fkUserId,
+                ipAddr,
+                revokeTime,
+                purpose
+            ]
+        };
         let nrRevoked = 0;
         let nrInserted = 0;
-        return this.executeSQLMutation<TokenMessageReturned>([sqlObject], (res, resolve) => {
-            const result: TokenMessageReturned = res.rows.map((raw: any) => {
-                const rc: TokenMessageReturned = {
+
+        return this.executeSQLMutation<ITokenMessageReturned>([sqlObject], (res, resolve: Function) => {
+            const result: ITokenMessageReturned = res.rows.map((raw: any) => {
+                const rc: ITokenMessageReturned = {
                     tokenId: raw['id'],
                     fkUserId: raw['fk_user_id'],
                     purpose: raw['purpose'],
@@ -480,12 +432,12 @@ export class AdaptorPostgreSQL extends AdaptorBase {
                 };
                 if (!rc.revokeReason) {
                     nrInserted++;
-                }
-                else {
+                } else {
                     nrRevoked++;
                 }
+
                 return rc;
-            }).filter(t => t.tokenId === tokenId)[0]; // only pick the one inserted
+            }).filter((t: ITokenMessageReturned) => t.tokenId === tokenId)[0]; // Only pick the one inserted
             logger.trace('success: new token %s inserted [%d], %d expired', tokenId, nrInserted, nrRevoked);
             if (result) {
                 return resolve(result);
@@ -498,9 +450,9 @@ export class AdaptorPostgreSQL extends AdaptorBase {
 
         logger.trace('Remove all tokens expired before %s', new Date(deleteOlderThen).toUTCString());
 
-        const qc = <pg.QueryConfig> (this.sql.get('sqlTokenGC'));
+        const queryObject = <pg.QueryConfig> (this.sql.get('sqlTokenGC'));
 
-        const sqlObject = {...qc,  values: [deleteOlderThen]} as pg.QueryConfig;
+        const sqlObject: pg.QueryConfig = {...queryObject,  values: [deleteOlderThen]};
 
         return this.executeSQL<number>([sqlObject], (res, resolve) => {
             logger.trace('success: number of tokens expired %d', res.rowCount);
@@ -508,19 +460,26 @@ export class AdaptorPostgreSQL extends AdaptorBase {
         });
     }
 
-    public tokenSelectAllByFilter(timestampExpire: number | null, startTimestampRevoked: number, endTimestampRevoked: number): Promise<TokensAndPropsMessage[]> {
+    public tokenSelectAllByFilter(
+        timestampExpire: number | null,
+        startTimestampRevoked: number,
+        endTimestampRevoked: number): Promise<ITokensAndPropsMessage [] > {
 
         if (!this.connected) {
             return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
         }
+
         const qc = <pg.QueryConfig> (this.sql.get('sqlTokenSelectAllByFilter'));
 
-        const sqlObject = {...qc,  values: [timestampExpire, startTimestampRevoked, endTimestampRevoked]} as pg.QueryConfig;
+        const sqlObject: pg.QueryConfig = {
+            ...qc,
+            values: [timestampExpire, startTimestampRevoked, endTimestampRevoked]
+        };
 
-        return this.executeSQL<TokensAndPropsMessage[]>([sqlObject], (res, resolve) => {
+        return this.executeSQL<ITokensAndPropsMessage[]>([sqlObject], (res, resolve) => {
 
             logger.trace('tokenSelectAllByFilter,success: fetching, nr of rows fetched %d', res.rowCount);
-            const result: TokensAndPropsMessage[] = res.rows.map((raw: any) =>
+            const result: ITokensAndPropsMessage[] = res.rows.map((raw: any) =>
                 ({
                     tokenId: raw['token_id'],
                     fkUserId: raw['user_id'],
@@ -540,23 +499,25 @@ export class AdaptorPostgreSQL extends AdaptorBase {
                     propName: raw['prop_name'],
                     propValue: raw['prop_value']
                 }));
-            delete res.rows; // garbage collect please
+            delete res.rows; // Garbage collect please
             resolve(result);
         });
     }
 
-    public templateSelectAll(): Promise<TemplatePropsMessage[]> {
+    public templateSelectAll(): Promise <ITemplatePropsMessage[] > {
         if (!this.connected) {
             this.addErr('Adaptor is not connected');
+
             return Promise.reject(this.lastErr());
         }
 
-        const qc = <pg.QueryConfig> (this.sql.get('sqlTemplateSelectAll'));
-        const sqlObject = {...qc};
-        return this.executeSQL<TemplatePropsMessage[]>([sqlObject], (res, resolve) => {
+        const queryConfig = <pg.QueryConfig> (this.sql.get('sqlTemplateSelectAll'));
+        const sqlObject = {...queryConfig};
+
+        return this.executeSQL<ITemplatePropsMessage[]>([sqlObject], (res, resolve) => {
 
             logger.trace('templateSelectAll, success: fetching.. nr of rows fetched', res.rowCount);
-            const result: TemplatePropsMessage[] = res.rows.map((raw: any) =>
+            const result: ITemplatePropsMessage[] = res.rows.map((raw: any) =>
                 ({
                     id: raw['id'],
                     cookieName: raw['cookie_name'],
@@ -569,12 +530,14 @@ export class AdaptorPostgreSQL extends AdaptorBase {
                     rolling: raw['rolling'],
                     templateName: raw['template_name']
                 }));
-            delete res.rows; // garbage collect please
+            delete res.rows; // Garbage collect please
             resolve(result);
         });
     }
 
-    public tokenSelectAllByUserIdOrName(userId: number | null, userName: string | null): Promise<TokensAndPropsMessage[]> {
+    public tokenSelectAllByUserIdOrName(
+        userId: number | null,
+        userName: string | null): Promise<ITokensAndPropsMessage[] > {
 
         if (!this.connected) {
             return Promise.reject(new AdaptorError('Adaptor is not connected', this.state));
@@ -584,15 +547,18 @@ export class AdaptorPostgreSQL extends AdaptorBase {
             return Promise.reject(new AdaptorError('wrong input, userId and userName cannot be both non null or both null.', this.state));
         }
 
-        const qc = <pg.QueryConfig> (this.sql.get('sqlTokenSelectByUserIdOrName'));
+        const queryConfig = <pg.QueryConfig> (this.sql.get('sqlTokenSelectByUserIdOrName'));
 
-        const sqlObject = {...qc,  values: [userId, userName]} as pg.QueryConfig;
+        const sqlObject: pg.QueryConfig = {
+            ...queryConfig,
+            values: [userId, userName]
+        };
 
-        return this.executeSQL<TokensAndPropsMessage[]>([sqlObject], (res, resolve) => {
+        return this.executeSQL<ITokensAndPropsMessage[]>([sqlObject], (res, resolve) => {
             const copy = {...res};
             delete copy.rows;
             logger.trace('success: fetching.. statistics on fetch %j', copy);
-            const result: TokensAndPropsMessage[] = res.rows.map((raw: any) =>
+            const result: ITokensAndPropsMessage[] = res.rows.map((raw: any) =>
                 ({
                     tokenId: raw['token_id'],
                     fkUserId: raw['user_id'],
@@ -612,7 +578,7 @@ export class AdaptorPostgreSQL extends AdaptorBase {
                     propName: raw['prop_name'],
                     propValue: raw['prop_value']
                 }));
-            delete res.rows; // garbage collect please
+            delete res.rows; // Garbage collect please
             resolve(result);
         });
     }
@@ -622,18 +588,18 @@ export class AdaptorPostgreSQL extends AdaptorBase {
     /* users */
     /* users */
 
-    public userSelectByFilter(notHavingProp?: string): Promise<UsersAndPropsMessage[]> {
-        notHavingProp;
+    public userSelectByFilter(_notHavingProp?: string): Promise<IUsersAndPropsMessage[]> {
         if (!this.connected) {
             return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
         }
         logger.warn('select all non-blacklisted users and props, potential expensive operation');
         const qc = <pg.QueryConfig> (this.sql.get('sqlUserSelectAll'));
         const sqlObject = {...qc};
-        return this.executeSQL<UsersAndPropsMessage[]>([sqlObject], (res, resolve) => {
+
+        return this.executeSQL<IUsersAndPropsMessage[]>([sqlObject], (res, resolve) => {
 
             logger.trace('[selectUserProps]success: fetching.. rows fetched %d', res.rowCount);
-            const result: UsersAndPropsMessage[] = res.rows.map((raw: any) =>
+            const result: IUsersAndPropsMessage[] = res.rows.map((raw: any) =>
                 ({
                     userId: raw.usr_id as number,
                     userName: raw.user_name as string,
@@ -646,7 +612,7 @@ export class AdaptorPostgreSQL extends AdaptorBase {
         });
     }
 
-    public userInsert(user: UserMessageBase): Promise<UserMessageReturned> {
+    public userInsert(user: IUserMessageBase): Promise <IUserMessageReturned > {
         if (!this.connected) {
             return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
         }
@@ -658,27 +624,29 @@ export class AdaptorPostgreSQL extends AdaptorBase {
 
         const qc = <pg.QueryConfig> (this.sql.get('sqlUserInsert'));
 
-        const sqlObject = {...qc,  values: [u.userName, u.userEmail]} as pg.QueryConfig;
+        const sqlObject: pg.QueryConfig = {...qc,  values: [u.userName, u.userEmail]};
 
-        return this.executeSQL<UserMessageReturned>([sqlObject], (res, resolve) => {
+        return this.executeSQL<IUserMessageReturned>([sqlObject], (res, resolve) => {
 
             logger.trace('success: query result [%j]', { command: res.command, rowCount: res.rowCount });
             const row = res.rows[0];
             /*
              id, name , email
              */
-            const rc: UserMessageReturned = {
+            const rc: IUserMessageReturned = {
                 userId: row['id'] as number,
                 userName: row['name'] as string,
                 userEmail: row['email'] as string
             };
             logger.debug('success: "creating user", returned values %j', rc);
+
             return resolve(rc);
         });
 
     }
 
-    public userInsertModifyProperty(userId: number, modifications: PropertiesModifyMessage[]): Promise<UserPropertiesModifyMessageReturned[]> {
+    public userInsertModifyProperty(userId: number, modifications: IPropertiesModifyMessage[]):
+     Promise<IUserPropertiesModifyMessageReturned [] > {
         if (!this.connected) {
             return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
         }
@@ -700,23 +668,139 @@ export class AdaptorPostgreSQL extends AdaptorBase {
         logger.trace('Modifying userId %d , properties modification %j', userId, modifications);
         const qc = <pg.QueryConfig> (this.sql.get('sqlUserInsertModifyProperty'));
 
-        const sqlObject = {...qc,  values: [userId, propNames, propValues, invisibles]} as pg.QueryConfig;
+        const sqlObject: pg.QueryConfig = {...qc,  values: [userId, propNames, propValues, invisibles]};
 
-        return this.executeSQL<UserPropertiesModifyMessageReturned[]>([sqlObject], (res, resolve) => {
+        return this.executeSQL<IUserPropertiesModifyMessageReturned[]>([sqlObject], (res, resolve) => {
             logger.trace('%d of rows modified/inserted for token %s', res.rowCount, userId);
-            const rc = res.rows.filter(raw => {
-                //fk_token_id, prop_name, prop_value, invisible
-                return raw['invisible'] === false;
-            }).map(raw =>
-                {
+            const rc = res.rows.filter((raw: any) => raw['invisible'] === false)
+            .map((raw: any) => {
+                    const upmmr: IUserPropertiesModifyMessageReturned = {
                     propName: raw['prop_name'],
-                    propValue;: raw['prop_value'],
-                    invisible;: raw['invisible'],
-                    fkUserId;: raw['fk_user_id'];
-                }  as UserPropertiesModifyMessageReturned);
+                    propValue : raw['prop_value'],
+                    invisible : raw['invisible'],
+                    fkUserId : raw['fk_user_id']
+                    };
+
+                    return upmmr;
+                });
             resolve(rc);
         });
     }
+
+    private executeSQLMutation<T>(qcArr: (pg.QueryConfig)[], fn: ResolveResult<T>): Promise < T > {
+        if (!this.connected) {
+            return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
+        }
+        logger.debug('exectuting statement', qcArr[0].name);
+
+        return this.executeSQL<T>(qcArr, (res, resolve) => {
+            // No error but did we actually update something
+            if (res.rowCount === 0) {
+                logger.error('Nothing was mutated. %j', res);
+                throw new AdaptorError(util.format('Nothing was updated mutated. %j', res), this.state);
+            }
+            logger.trace('Success: number of rows mutated %d', res.rowCount);
+
+            return fn(res, resolve);
+        });
+    }
+
+
+    private loadSQLStatements(): Promise <boolean> {
+        this.sql.clear();
+
+        const files = {...sqlFiles};
+        /*let _file: keyof SQLFiles;
+        for (_file in files) {
+            files[_file] = path.join(__dirname, files[_file]);
+        }*/
+        const self = this;
+
+        function processLoadingResults(sql: ISQLFiles): number {
+            const nrErrors = 0;
+            let _file: keyof ISQLFiles;
+
+            for (_file in sql) {
+                /* this never happens because its all included via require */
+
+                // If ((sql[_file] as any) instanceof Error) {
+                //    NrErrors++;
+                //    Self.addErr('Could not load sql file: %s', _file);
+                //    Logger.error(this.lastErr());
+                //    Continue;
+                // }
+
+                const query: pg.QueryConfig = {
+                    text: sql[_file],
+                    name: _file
+                };
+                logger.trace('loaded file [%s]', _file);
+                self.sql.set(_file, query);
+            }
+
+            return nrErrors;
+        }
+        const rc = processLoadingResults(files);
+
+        return rc > 0 ? Promise.resolve(false) : Promise.resolve(true);
+        /*
+                return loadFiles<SQLFiles>(files).then((sql) => {
+                    let rc = processLoadingResults(sql);
+                    return rc > 0 ? Promise.resolve(false) : Promise.resolve(true);
+                });
+        */
+
+    }
+
+    private executeSQL<T>(qcArr: (pg.QueryConfig)[], fn: ResolveResult<T>): Promise < T > {
+        if (!this.connected) {
+            return Promise.reject(new AdaptorError('Adaptor is in the wrong state:', this.state));
+        }
+
+        return new Promise<T>((resolveFinal, rejectFinal) => {
+            if (qcArr.length === 0) {
+                const qryResult: pg.QueryResult = { command: 'EMPTY COMMAND', rowCount: 0, oid: 0, rows: [] };
+
+                return fn(qryResult, resolveFinal);
+            }
+            this.pool.connect((err, client, done) => {
+                if (err) {
+                    this.addErr(err);
+                    logger.error('could not aquire a client from the pool because:[%j]', err);
+                    client && client.emit('drain');
+                    done();
+
+                    return rejectFinal(err);
+                }
+                logger.debug('..client aquired');
+                const copyArr = qcArr.slice();
+
+                // Iterative function
+                const _do = (q: pg.QueryConfig) => {
+                    client.query(q).then((value: pg.QueryResult) => {
+                        logger.debug('query done %s', q.name);
+                        const nextQc = copyArr.shift();
+                        if (nextQc !== undefined) {
+                            return _do(nextQc);
+                        }
+                        client.emit('drain');
+                        done();
+
+                        return fn(value, resolveFinal);
+                    })
+                        .catch(e => {
+                            client.emit('drain');
+                            done();
+                            rejectFinal(e);
+                        });
+
+                };
+                const query = copyArr.shift();
+                query && _do(query);
+            });
+        });
+    }
+
 
 }
 

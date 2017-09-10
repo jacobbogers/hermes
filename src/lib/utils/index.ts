@@ -1,5 +1,9 @@
 // Where does this go?
-// entries<T extends { [key: string]: any }, K extends keyof T>(o: T): [keyof T, T[K]][];
+/* REM entries<
+T extends {[key: string]: any },
+K extends keyof T
+>(o: T): [keyof T, T[K]][];
+*/
 
 import { deepClone } from './deepClone';
 import { flatMap } from './flatMap';
@@ -17,18 +21,20 @@ import { OperationResult } from './OperationResult';
 import { validationFactory } from './validationFactory';
 
 export {
-    deepClone,
-    flatMap,
-    flatten,
-    ifEmptyString,
-    ifInvalidPortString,
-    ifNull,
-    ifUndefined,
-    IAnyObjProps,
-    loadFiles,
-    makeObjectNull,
-    makeValueslowerCase,
-    MapWithIndexes,
-    OperationResult,
-    validationFactory
+  deepClone,
+  flatMap,
+  flatten,
+  ifEmptyString,
+  ifInvalidPortString,
+  ifNull,
+  ifUndefined,
+  IAnyObjProps,
+  loadFiles,
+  makeObjectNull,
+  makeValueslowerCase,
+  MapWithIndexes,
+  OperationResult,
+  validationFactory
 };
+
+export * from './copyProperties';
