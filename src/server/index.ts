@@ -5,25 +5,26 @@ import * as  express from 'express';
 import * as session from 'express-session';
 import * as path from 'path';
 
-import { registerAuth } from '../lib/authentication';
-import { SystemInfo } from '../lib/system';
+import { registerAuth } from '~lib/registerAuth';
+import { SystemInfo } from '~system';
 
 import {
     AdaptorPostgreSQL as Adaptor
-} from '../lib/db_adaptor_postgresql';
+} from '~adaptors/postgres';
 
 import {
-    //AdaptorMock as Adaptor
-} from '../lib/db_adaptor_mock';
+    // AdaptorMock as Adaptor
+} from '~adaptors/mock';
 
-import Logger from '../lib/logger';
+import { Logger } from '~lib/logger';
 
 const logger = Logger.getLogger();
 
 import {
-    HermesStore,
-    HermesStoreProperties
-} from '../lib/hermes_store';
+    IHermesStoreProperties
+} from '~hermes-props';
+
+import { HermesStore } from '~lib/HermesStore';
 
 /* init */
 /* init */
@@ -85,7 +86,7 @@ const adaptor = new Adaptor({
     url: 'postgresql://bookbarter:bookbarter@jacob-bogers.com:443/bookbarter?sslmode=allow'
 });
 
-const props: HermesStoreProperties = {
+const props: IHermesStoreProperties = {
     defaultCookieOptionsName: 'default_cookie',
     adaptor
 };
@@ -96,7 +97,7 @@ hermesStore.once('connect', () => {
 
     logger.info('store is initialized');
 
-    true && init();
+    init();
 
     app.listen(8080, () => {
         logger.warn('app is listening on 8080');

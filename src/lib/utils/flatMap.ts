@@ -1,3 +1,4 @@
+// tslint:disable:typedef
 export function flatMap<
     T,
     F extends { obj: T },
@@ -12,5 +13,6 @@ export function flatMap<
         }
         rc.push(itm);
     }
+
     return rc;
 }

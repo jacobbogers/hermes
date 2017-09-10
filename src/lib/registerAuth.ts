@@ -1,3 +1,5 @@
+'use strict';
+// tslint:disable:typedef
 import { Application, NextFunction, Request, Response, Router } from 'express';
 
 
@@ -6,17 +8,15 @@ import { graphiqlExpress, graphqlExpress } from 'graphql-server-express';
 import { makeExecutableSchema } from 'graphql-tools';
 
 
-import { resolvers } from './graphql_resolvers';
-import { typeDefs } from './graphql_typedefs';
-import {  HermesGraphQLConnector } from './HermesGraphQLConnector';
-import { AuthenticationError } from './AuthenticationError';
+import { AuthenticationError } from '~graphql/AuthenticationError';
+import {  HermesGraphQLConnector } from '~graphql/HermesGraphQLConnector';
+import { resolvers } from '~graphql/resolvers';
+import { typeDefs } from '~graphql/typedefs';
+import { IAuthenticationOptions } from './IAuthenticationOptions';
 
-export interface AuthenticationOptions {
-    graphQL_url: string;
-}
 
-export function registerAuth(options: AuthenticationOptions, app: Application | Router) {
-    //Options;
+export function registerAuth(options: IAuthenticationOptions, app: Application | Router) {
+    // Options;
 
     app.use((request: Request, response: Response, next: NextFunction) => {
 
@@ -30,6 +30,7 @@ export function registerAuth(options: AuthenticationOptions, app: Application | 
                 }
                 next();
             });
+
             return;
         }
         next();
@@ -53,19 +54,21 @@ export function registerAuth(options: AuthenticationOptions, app: Application | 
         // A boolean option that will trigger additional debug logging if execution errors occur
         debug: true
     };
-
-    app.use(options.graphQL_url, graphqlExpress((req?: Express.Request) => {
+    // Export interface ExpressGraphQLOptionsFunction {
+    //    (req?: express.Request, res?: express.Response): GraphQLOptions | Promise<GraphQLOptions>;
+    // }
+    app.use(options.graphQL_url, graphqlExpress((req: Request): GraphQLOptions => {
         const asset = HermesGraphQLConnector.createHermesGraphQLConnector(req);
 
         let errors: AuthenticationError[] = null as any;
         let connector: HermesGraphQLConnector = null as any;
         if (asset instanceof Array) {
             errors = asset;
-        }
-        else {
+        } else {
             connector = asset;
         }
-        return {...graphQLOptions,  context: { connector, errors }} as GraphQLOptions;
+
+        return {...graphQLOptions,  context: { connector, errors }};
     }));
 
     app.use('/graphiql', graphiqlExpress({ endpointURL: options.graphQL_url }));
