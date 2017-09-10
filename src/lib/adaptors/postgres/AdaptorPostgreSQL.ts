@@ -17,7 +17,7 @@ import {
 } from '~utils';
 
 
-import Logger from '~lib/logger';
+import { Logger } from '~lib/logger';
 const logger = Logger.getLogger();
 
 import { GraphQLStatusCodes } from '~graphql/GraphQLStatusCodes';

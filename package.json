@@ -70,7 +70,7 @@
   },
   "dependencies": {
     "apollo-client": "^1.9.2",
-    "body-parser": "^1.17.2",
+    "body-parser": "^1.18.0",
     "circular-json": "^0.3.3",
     "express": "^4.15.4",
     "express-session": "^1.15.5",
@@ -81,7 +81,7 @@
     "graphql-tools": "^1.2.2",
     "install": "^0.9.6",
     "mailgun-js": "^0.10.1",
-    "merge2": "^1.1.0",
+    "merge2": "^1.2.0",
     "moment": "^2.18.1",
     "npm": "^4.6.1",
     "pg": "^7.3.0",

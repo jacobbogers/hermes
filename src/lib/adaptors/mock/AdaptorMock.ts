@@ -2,7 +2,7 @@
 
 import * as util from 'util';
 
-import Logger from '~lib/logger';
+import { Logger } from '~lib/logger';
 const logger = Logger.getLogger();
 
 import * as UID from 'uid-safe';
