@@ -41,7 +41,6 @@
     "rootDir": "./",
     "sourceMap": true,
     "strict": true,
-    "target": "es2017",
-    "no-shadowed-variable": true
+    "target": "es2017"
   }
 }

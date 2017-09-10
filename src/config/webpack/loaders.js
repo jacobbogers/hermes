@@ -5,7 +5,10 @@ const { resolve } = require('path');
 const exclude = /node_modules/;
 // Loaders respond differently depending on the NODE_ENV environment variable
 const p = process.env.NODE_ENV === 'production';
-const fonts = { test: /(\.svg|\.woff|\.woff2|\.[ot]tf|\.eot)$/, loader: 'file-loader?name=[name].[ext]' };
+const fonts = {
+    test: /(\.svg|\.woff|\.woff2|\.[ot]tf|\.eot)$/,
+    loader: 'file-loader?name=[name].[ext]'
+};
 
 const css = {
     loader: 'css-loader',
@@ -14,14 +17,15 @@ const css = {
         modules: true,
         importLoaders: 1,
         // Mangle CSS class names
-        localIdentName: p ? '[hash:base64:5]' : '[name]__[local]__[hash:base64:5]',
+        localIdentName: p
+            ? '[hash:base64:5]'
+            : '[name]__[local]__[hash:base64:5]',
         // Minimize CSS for faster loading
         minimize: p,
         // Enable source maps if in production mode
         sourceMap: p
     }
 };
-
 
 const inliner = {
     test: /\.(js|css)$/,
@@ -33,9 +37,9 @@ const postcss = {
     loader: 'postcss-loader',
     options: {
         plugins: loader => [
-            require('postcss-cssnext')()  // Autoprefixer
+            require('postcss-cssnext')() // Autoprefixer
         ],
-        sourceMap: p    // Enable source maps if in production
+        sourceMap: p // Enable source maps if in production
     }
 };
 
@@ -44,7 +48,7 @@ const raw = {
     exclude,
     include: [],
     use: 'raw-loader'
-}
+};
 
 const scss = {
     loader: 'sass-loader',
@@ -64,11 +68,12 @@ const styles = {
     test: /\.((s[ca])|(c))ss$/,
     exclude,
     include: [],
-    use: p ? // If we're in production, extract css, if not, inline css
-        ExtractTextPlugin.extract({
-            fallback: style,
-            use: [css, postcss, scss]
-        }) : [style, css, postcss, scss]
+    use: p // If we're in production, extract css, if not, inline css
+        ? ExtractTextPlugin.extract({
+              fallback: style,
+              use: [css, postcss, scss]
+          })
+        : [style, css, postcss, scss]
 };
 
 const ts = {
@@ -81,9 +86,9 @@ const ts = {
             // Babel configuration
             babelOptions: {
                 presets: [
-                    ["env", { loose: true, modules: false }],
-                    "stage-0",
-                    "react"
+                    ['env', { loose: true, modules: false }],
+                    'stage-0',
+                    'react'
                 ]
             },
             // Tells ATL to use Babel
@@ -103,8 +108,12 @@ const tslint = {
         {
             loader: 'tslint-loader',
             options: {
-                extends: resolve('tslint.json'),
-                emitErrors: false
+                configFile: resolve('tslint.json'),
+                emitErrors: false,
+                failOnHint: false,
+                typeCheck: true,
+                fix: true,
+                tsConfigFile: resolve('tsconfig.json')
             }
         }
     ]
