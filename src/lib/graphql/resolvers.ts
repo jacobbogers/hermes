@@ -12,7 +12,7 @@ export interface IAuthenticationResult {
 }
 
 // Query
-const isEmailRegistered = (...rest: any[]) => {
+const isEmailRegistered = async(...rest: any[]) => {
   const args = rest[1];
   const context = rest[2];
   if (context.errors) {
@@ -31,7 +31,7 @@ const isEmailRegistered = (...rest: any[]) => {
   return Promise.resolve<IAuthenticationResult>(result);
 };
 
-const isUserNameRegistered = (...rest: any[]) => {
+const isUserNameRegistered = async(...rest: any[]) => {
   const args = rest[1];
   const context = rest[2];
   if (context.errors) {
@@ -51,7 +51,7 @@ const isUserNameRegistered = (...rest: any[]) => {
   return Promise.resolve<IAuthenticationResult>(result);
 };
 
-const currentUser = (...rest: any[]) => {
+const currentUser = async(...rest: any[]) => {
   const context = rest[2]; // 'obj' and 'args' are cannot be made optional
 
   if (context.errors) {
@@ -76,14 +76,14 @@ const currentUser = (...rest: any[]) => {
 
   return Promise.resolve<IAuthenticationResult>({
     user: {
-      name: userName,
       email: userEmail,
+      name: userName,
       state
     }
   });
 };
 
-const login = (
+const login =  async(
   obj: any,
   { password, email }: { password: string; email: string },
   context: any
@@ -102,9 +102,9 @@ const login = (
   return connector.save();
 };
 
-const serverInfo = () => Promise.resolve({ serverTime: new Date().toString() });
+const serverInfo =  async() => Promise.resolve({ serverTime: new Date().toString() });
 
-const logout = (...rest: any[]) => {
+const logout =  async(...rest: any[]) => {
   const context = rest[2]; // 'obj' and 'args' are cannot be made optional
 
   if (context.errors) {
@@ -118,7 +118,7 @@ const logout = (...rest: any[]) => {
   return connector.save();
 };
 
-const createUser = (...rest: any[]) => {
+const createUser =  async(...rest: any[]) => {
   const context = rest[2]; // 'obj' and 'args' are cannot be made optional
 
   if (context.errors) {
@@ -140,7 +140,7 @@ const createUser = (...rest: any[]) => {
   return connector.save();
 };
 
-const activate = (...rest: any[]) => {
+const activate =  async(...rest: any[]) => {
   const context = rest[2];
 
   if (context.errors) {
@@ -157,7 +157,7 @@ const activate = (...rest: any[]) => {
   return connector.save();
 };
 
-const requestPasswordReset = (...rest: any[]) => {
+const requestPasswordReset =  async(...rest: any[]) => {
   const context = rest[2];
 
   if (context.errors) {
@@ -171,7 +171,7 @@ const requestPasswordReset = (...rest: any[]) => {
   return connector.requestPasswordReset(email);
 };
 
-const resetPassword = (...rest: any[]) => {
+const resetPassword =  async(...rest: any[]) => {
   const context = rest[2];
 
   if (context.errors) {
@@ -184,7 +184,7 @@ const resetPassword = (...rest: any[]) => {
   return connector.resetPassword(token, password);
 };
 
-const tokenStatus = (...rest: any[]) => {
+const tokenStatus =  async(...rest: any[]) => {
   const context = rest[2];
 
   if (context.errors) {
@@ -198,7 +198,7 @@ const tokenStatus = (...rest: any[]) => {
   return connector.getTokenInfo(token);
 };
 
-const reSendActivation = (...rest: any[]) => {
+const reSendActivation =  async(...rest: any[]) => {
   const context = rest[2];
 
   if (context.errors) {
@@ -215,21 +215,23 @@ const reSendActivation = (...rest: any[]) => {
 };
 
 export const resolvers = {
+
+  Mutation: {
+    activate,
+    createUser,
+    login,
+    logout,
+    requestPasswordReset,
+    reSendActivation,
+    resetPassword
+  },
+
   Query: {
     currentUser,
     isEmailRegistered,
     isUserNameRegistered,
     serverInfo,
     tokenStatus
-  },
-
-  Mutation: {
-    login,
-    logout,
-    createUser,
-    activate,
-    requestPasswordReset,
-    resetPassword,
-    reSendActivation
   }
+
 };

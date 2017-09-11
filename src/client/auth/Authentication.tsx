@@ -32,7 +32,7 @@ export interface IAuthenticationProperties {
 
 type AllProps = RouteComponentProps<any> & IAuthenticationProperties;
 
-class Authentication extends React.Component<AllProps, IAuthStateProperties> {
+class InternalAuthentication extends React.Component<AllProps, IAuthStateProperties> {
   private goBack: string;
   private authState: AuthenticationState;
   private prevAuthState: AuthenticationState | undefined;
@@ -473,4 +473,5 @@ class Authentication extends React.Component<AllProps, IAuthStateProperties> {
 
 }
 
-export const Authentiction = withRouter<IAuthenticationProperties>(Authentication);
+const Authentication = withRouter<IAuthenticationProperties>(InternalAuthentication);
+export { Authentication };

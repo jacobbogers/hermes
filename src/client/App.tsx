@@ -7,7 +7,7 @@ import {
   Link
 } from 'react-router-dom';
 
-import Authentication from './auth/Authentication';
+import { Authentication } from './auth/Authentication';
 
 
 const styles = require('./styles');
