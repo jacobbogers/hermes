@@ -2,8 +2,8 @@
 
 import { EventEmitter } from 'events';
 
-import { Logger } from '../logger';
-const logger = Logger.getLogger();
+// Import { Logger } from '../logger';
+// Const logger = Logger.getLogger();
 
 export class EmailMailGunAdaptor extends EventEmitter {
     private constructor() {

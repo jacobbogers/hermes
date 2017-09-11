@@ -1,9 +1,8 @@
 'use strict';
 
 
-import { Logger } from '~lib/logger';
-import { SystemInfo } from '~system';
-const logger = Logger.getLogger();
+import { isString } from '~utils';
+
 
 interface IHTMLTemplateFiles {
     actionEmailContentBlockButton: string;
@@ -13,13 +12,17 @@ interface IHTMLTemplateFiles {
 }
 
 const htmlFiles: IHTMLTemplateFiles = {
+
     actionEmailContentBlockButton: require('./templates/action-email-content-block-button.html'),
     actionEmailContentBlockSimple: require('./templates/action-email-content-block.html'),
-    actionEmailMain: require('./templates/action-email-main.html'),
-    actionEmailCSS: require('./templates/emails.css')
+    actionEmailCSS: require('./templates/emails.css'),
+    actionEmailMain: require('./templates/action-email-main.html')
+
 };
 
-interface IActionEmailData {
+htmlFiles;
+
+export interface IActionEmailData {
     simpleContent: string[] | string;
     buttonContent: {
         url: string;
@@ -30,7 +33,7 @@ interface IActionEmailData {
 
 const templates = new Map<keyof IHTMLTemplateFiles, string>();
 
-class EmailRenderer {
+export class EmailRenderer {
 
 
     // R public constructor() {}
@@ -38,7 +41,7 @@ class EmailRenderer {
     public renderActionEmail(data: IActionEmailData): string {
 
 
-        if (typeof data.simpleContent === 'string') {
+        if (isString(data.simpleContent)) {
             data.simpleContent = [data.simpleContent];
         }
 
@@ -73,20 +76,4 @@ class EmailRenderer {
     }
 
 
-    private processLoadingResults(data: IHTMLTemplateFiles) {
-        const _si = SystemInfo.createSystemInfo();
-        let nrErr = 0;
-        Object.keys(data).forEach((key: keyof IHTMLTemplateFiles) => {
-            templates.set(key, data[key]);
-            if (typeof data[key] !== 'string') {
-                _si.addError(data[key]);
-                nrErr++;
-
-                return;
-            }
-            logger.trace('loaded file [%s] -> [%s]', key, htmlFiles[key]);
-        });
-
-        return nrErr;
-    }
 }

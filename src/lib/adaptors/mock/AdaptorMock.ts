@@ -46,7 +46,6 @@ import {
   IUserProperties
 } from '~hermes-props';
 
-
 export class AdaptorMock extends AdaptorBase {
   private static userPk = 333;
 
@@ -88,7 +87,7 @@ export class AdaptorMock extends AdaptorBase {
       });
   }
 
-  public init(): Promise<boolean> {
+  public async init(): Promise<boolean> {
     if (!this.transition(ADAPTOR_STATE.Initializing)) {
       this.addErr(
         'State cannot transition to [%s] from [%s]',
@@ -123,7 +122,9 @@ export class AdaptorMock extends AdaptorBase {
   }
 
   /* user */
-  public userInsert(user: IUserMessageBase): Promise<IUserMessageReturned> {
+  public async userInsert(
+    user: IUserMessageBase
+  ): Promise<IUserMessageReturned> {
     if (!this.connected) {
       return Promise.reject(
         new AdaptorError('Adaptor is in the wrong state:', this.state)
@@ -139,7 +140,7 @@ export class AdaptorMock extends AdaptorBase {
       // Username is unique
       let conflict = this.user.get({ userName: u.userName }).first;
       if (conflict) {
-        return reject(
+        reject(
           new AdaptorError(
             util.format(
               'unique key violation, [userName] already exist: %s',
@@ -152,7 +153,7 @@ export class AdaptorMock extends AdaptorBase {
       // Email is unique
       conflict = this.user.get({ userEmail: u.userEmail }).first;
       if (conflict) {
-        return reject(
+        reject(
           new AdaptorError(
             util.format(
               'unique key violation, [userEmail] already exist: %s',
@@ -165,8 +166,8 @@ export class AdaptorMock extends AdaptorBase {
       console.info('creating new user...');
       const msg: IUserMessageReturned = {
         userEmail: user.userEmail,
-        userName: user.userName,
-        userId: this.newUserPk()
+        userId: this.newUserPk(),
+        userName: user.userName
       };
       const newUser: IUserProperties = {
         ...msg,
@@ -176,11 +177,11 @@ export class AdaptorMock extends AdaptorBase {
       logger.info('success: "creating user", returned values %j', msg);
       delete newUser.userProps;
 
-      return resolve(msg);
+      resolve(msg);
     });
   }
 
-  public userInsertModifyProperty(
+  public async userInsertModifyProperty(
     userId: number,
     modifications: IPropertiesModifyMessage[]
   ): Promise<IUserPropertiesModifyMessageReturned[]> {
@@ -198,7 +199,7 @@ export class AdaptorMock extends AdaptorBase {
     >((resolve, reject) => {
       const uc = this.user.get({ userId }).first;
       if (!uc) {
-        return reject(
+        reject(
           new AdaptorError(
             util.format(
               'foreign key violation, [userId] does not exist: %d',
@@ -207,6 +208,8 @@ export class AdaptorMock extends AdaptorBase {
             this.state
           )
         );
+
+        return;
       }
       const rc: IUserPropertiesModifyMessageReturned[] = [];
 
@@ -242,9 +245,9 @@ export class AdaptorMock extends AdaptorBase {
         }
         rc.push({
           fkUserId: uc.userId,
+          invisible: mod.invisible,
           propName: mod.propName,
-          propValue: mod.propValue,
-          invisible: mod.invisible
+          propValue: mod.propValue
         });
         if (mod.invisible) {
           delete uc.userProps[mod.propName];
@@ -253,11 +256,11 @@ export class AdaptorMock extends AdaptorBase {
         uc.userProps[mod.propName] = mod.propValue;
       }
 
-      return resolve(rc);
+      resolve(rc);
     });
   }
 
-  public userSelectByFilter(): Promise<IUsersAndPropsMessage[]> {
+  public async userSelectByFilter(): Promise<IUsersAndPropsMessage[]> {
     if (!this.connected) {
       return Promise.reject(
         new AdaptorError('Adaptor is in the wrong state:', this.state)
@@ -273,11 +276,11 @@ export class AdaptorMock extends AdaptorBase {
           const pKey = propKeys.pop();
           const pValue = pKey && user.userProps[pKey];
           prev.push({
-            userId: user.userId,
-            userName: user.userName,
-            userEmail: user.userEmail,
             propName: pKey || '',
-            propValue: pValue || ''
+            propValue: pValue || '',
+            userEmail: user.userEmail,
+            userId: user.userId,
+            userName: user.userName
           });
         } while (propKeys.length);
 
@@ -293,7 +296,7 @@ export class AdaptorMock extends AdaptorBase {
   /*tokens*/
   /*tokens*/
 
-  public tokenInsertRevoke(
+  public async tokenInsertRevoke(
     fkUserId: number,
     purpose: string,
     ipAddr: string
@@ -340,17 +343,17 @@ export class AdaptorMock extends AdaptorBase {
     const tsExpire = new Date().setFullYear(9999);
     const tokenId = UID.sync(18);
     const nt: ITokenProperties = {
-      tokenId,
       fkUserId,
-      purpose,
       ipAddr,
-      tsIssuance: Date.now(),
-      tsRevoked: null,
+      purpose,
       revokeReason: null,
+      sessionProps: {},
+      templateName: 'default_token',
+      tokenId,
       tsExpire, // Never expire
       tsExpireCache: tsExpire,
-      sessionProps: {},
-      templateName: 'default_token'
+      tsIssuance: Date.now(),
+      tsRevoked: null
     };
     this.token.set(nt);
     logger.trace(
@@ -359,24 +362,24 @@ export class AdaptorMock extends AdaptorBase {
       nrRevoked
     );
     const rc: ITokenMessageReturned = {
+      fkUserId: nt.fkUserId,
+      ipAddr: nt.ipAddr,
+      purpose: nt.purpose,
+      revokeReason: null,
       templateId: 0,
       tokenId: nt.tokenId,
-      fkUserId: nt.fkUserId,
-      purpose: nt.purpose,
-      ipAddr: nt.ipAddr,
-      tsIssuance: nt.tsIssuance,
-      tsRevoked: null,
-      revokeReason: null,
       tsExpire: nt.tsExpire,
-      tsExpireCache: nt.tsExpire
+      tsExpireCache: nt.tsExpire,
+      tsIssuance: nt.tsIssuance,
+      tsRevoked: null
     };
 
     return Promise.resolve(rc);
   }
 
-  public tokenInsertModify(token: ITokenMessage):
-    Promise<ITokenMessageReturned> {
-
+  public async tokenInsertModify(
+    token: ITokenMessage
+  ): Promise<ITokenMessageReturned> {
     if (!this.connected) {
       return Promise.reject(
         new AdaptorError('Adaptor is in the wrong state:', this.state)
@@ -405,34 +408,36 @@ export class AdaptorMock extends AdaptorBase {
       }).first;
 
       if (template === undefined) {
-        return reject(
+        reject(
           new AdaptorError(
             util.format('could not find template [%s]', t.templateName),
             self.state
           )
         );
+
+        return;
       }
       // Create-update tokenProperties
       self.token.set(t); // A copy is saved!! not a reference to 't'
       // Return value is the same less for sessionprops stripped off
       logger.debug('success: "created/updated token": %j', t);
 
-      return resolve({
-        tokenId: t.tokenId,
+      resolve({
         fkUserId: t.fkUserId,
-        purpose: t.purpose,
         ipAddr: t.ipAddr,
-        tsIssuance: t.tsIssuance,
-        tsRevoked: t.tsRevoked,
+        purpose: t.purpose,
         revokeReason: t.revokeReason,
+        templateId: template.id,
+        tokenId: t.tokenId,
         tsExpire: t.tsExpire,
         tsExpireCache: t.tsExpire,
-        templateId: template.id
+        tsIssuance: t.tsIssuance,
+        tsRevoked: t.tsRevoked
       });
     });
   }
 
-  public tokenInsertModifyProperty(
+  public async tokenInsertModifyProperty(
     tokenId: string,
     modifications: IPropertiesModifyMessage[]
   ): Promise<ITokenPropertiesModifyMessageReturned[]> {
@@ -453,7 +458,7 @@ export class AdaptorMock extends AdaptorBase {
       // Check 1 user must exist
       const t = this.token.get({ tokenId }).first;
       if (!t) {
-        return reject(
+        reject(
           new AdaptorError(
             util.format(
               'foreign key violation, [tokenId] does not exist: %d',
@@ -462,6 +467,8 @@ export class AdaptorMock extends AdaptorBase {
             this.state
           )
         );
+
+        return;
       }
       const rc: ITokenPropertiesModifyMessageReturned[] = [];
       const tc = t;
@@ -494,13 +501,13 @@ export class AdaptorMock extends AdaptorBase {
             );
             break;
           default:
-          break;
+            break;
         }
         rc.push({
-          propName: mod.propName,
-          propValue: mod.propValue,
+          fkTokenId: tokenId,
           invisible: mod.invisible,
-          fkTokenId: tokenId
+          propName: mod.propName,
+          propValue: mod.propValue
         });
         if (mod.invisible) {
           delete tc.sessionProps[mod.propName];
@@ -508,12 +515,13 @@ export class AdaptorMock extends AdaptorBase {
         }
         tc.sessionProps[mod.propName] = mod.propValue;
       }
+      resolve(rc);
 
-      return resolve(rc);
+      return;
     });
   }
 
-  public tokenAssociateWithUser(
+  public async tokenAssociateWithUser(
     tokenId: string,
     userId: number
   ): Promise<boolean> {
@@ -543,7 +551,7 @@ export class AdaptorMock extends AdaptorBase {
     return Promise.resolve(true); //
   }
 
-  public tokenDoRevoke(
+  public async tokenDoRevoke(
     tokenId: string,
     revokeReason: string,
     _revokeTime?: number | null
@@ -556,7 +564,7 @@ export class AdaptorMock extends AdaptorBase {
       );
     }
 
-    const revokeTime = _revokeTime ||  Date.now();
+    const revokeTime = _revokeTime || Date.now();
 
     //
     // Token exist?
@@ -571,7 +579,7 @@ export class AdaptorMock extends AdaptorBase {
     return Promise.resolve(true);
   }
 
-  public tokenGC(deleteOlderThen: number): Promise<number> {
+  public async tokenGC(deleteOlderThen: number): Promise<number> {
     if (!this.connected) {
       return Promise.reject(
         new AdaptorError('Adaptor is in the wrong state:', this.state)
@@ -587,7 +595,7 @@ export class AdaptorMock extends AdaptorBase {
     return Promise.resolve(rc.length);
   }
 
-  public tokenSelectAllByFilter(
+  public async tokenSelectAllByFilter(
     timestampExpire: number | null,
     startTimestampRevoked: number,
     endTimestampRevoked: number
@@ -612,7 +620,7 @@ export class AdaptorMock extends AdaptorBase {
     return Promise.resolve(result);
   }
 
-  public tokenSelectAllByUserIdOrName(
+  public async tokenSelectAllByUserIdOrName(
     userId: number | null,
     userName: string | null
   ): Promise<ITokensAndPropsMessage[]> {
@@ -629,7 +637,7 @@ export class AdaptorMock extends AdaptorBase {
       return Promise.reject(
         new AdaptorError(
           'wrong input, userId and userName cannot' +
-          ' be both non null or both null.',
+            ' be both non null or both null.',
           this.state
         )
       );
@@ -654,7 +662,7 @@ export class AdaptorMock extends AdaptorBase {
   }
 
   /* templates */
-  public templateSelectAll(): Promise<ITemplatePropsMessage[]> {
+  public async templateSelectAll(): Promise<ITemplatePropsMessage[]> {
     if (!this.connected) {
       this.addErr('Adaptor is not connected');
 
@@ -663,15 +671,15 @@ export class AdaptorMock extends AdaptorBase {
 
     const result = this.template.values().map(temp => {
       const rc: ITemplatePropsMessage = {
-        id: temp.id,
         cookieName: temp.cookieName,
-        path: temp.path,
-        maxAge: temp.maxAge,
-        httpOnly: temp.httpOnly,
-        secure: temp.secure,
         domain: temp.domain,
-        sameSite: temp.sameSite,
+        httpOnly: temp.httpOnly,
+        id: temp.id,
+        maxAge: temp.maxAge,
+        path: temp.path,
         rolling: temp.rolling,
+        sameSite: temp.sameSite,
+        secure: temp.secure,
         templateName: temp.templateName
       };
 
@@ -689,11 +697,9 @@ export class AdaptorMock extends AdaptorBase {
     return AdaptorMock.userPk;
   }
 
-
   private getTokensByFilter(
     filter: (xyz: ITokenProperties) => boolean
   ): ITokensAndPropsMessage[] {
-
     const result: ITokensAndPropsMessage[] = [];
 
     this.token
@@ -713,24 +719,24 @@ export class AdaptorMock extends AdaptorBase {
           const uPropName = uPropKeys.pop();
           const tPropName = tPropKeys.pop();
           prev.push({
-            tokenId: _token.tokenId,
-            fkUserId: u.userId,
-            usrName: u.userName,
-            usrEmail: u.userEmail,
             blackListed,
-            purpose: _token.purpose,
+            fkUserId: u.userId,
             ipAddr: _token.ipAddr,
-            tsIssuance: _token.tsIssuance,
-            tsRevoked: _token.tsRevoked,
-            tsExpire: _token.tsExpire,
-            tsExpireCache: _token.tsExpire,
+            propName: uPropName || null,
+            propValue: (uPropName && u.userProps[uPropName]) || null,
+            purpose: _token.purpose,
             revokeReason: _token.revokeReason,
-            templateName: _token.templateName,
             sessionPropName: tPropName || null,
             sessionPropValue:
               (tPropName && _token.sessionProps[tPropName]) || null,
-            propName: uPropName || null,
-            propValue: (uPropName && u.userProps[uPropName]) || null
+            templateName: _token.templateName,
+            tokenId: _token.tokenId,
+            tsExpire: _token.tsExpire,
+            tsExpireCache: _token.tsExpire,
+            tsIssuance: _token.tsIssuance,
+            tsRevoked: _token.tsRevoked,
+            usrEmail: u.userEmail,
+            usrName: u.userName
           });
         }
 
@@ -740,27 +746,27 @@ export class AdaptorMock extends AdaptorBase {
     return result;
   }
 
-
   private populateMaps() {
     // Users
     const users: IUserProperties[] = [
       {
+
+        userEmail: 'vdingbats@gmail.com',
         userId: 1,
         userName: 'Lucifer696',
-        userEmail: 'vdingbats@gmail.com',
         userProps: {}
       },
       {
+        userEmail: 'vdwingbats@gmail.com',
         userId: 7,
         userName: 'lucifer69c6',
-        userEmail: 'vdwingbats@gmail.com',
         userProps: {}
       },
       { userId: 15, userName: 'anonymous', userEmail: '', userProps: {} },
       {
+        userEmail: 'change@me.lu',
         userId: 18,
         userName: 'lucife696x',
-        userEmail: 'change@me.lu',
         userProps: {}
       },
       { userId: 23, userName: 'jacobot', userEmail: 'email', userProps: {} }
@@ -776,63 +782,67 @@ export class AdaptorMock extends AdaptorBase {
     const userProps = [
       {
         fk_user_id: 23,
+        invisible: false,
         prop_name: 'LAST_NAME',
-        prop_value: 'Bovors',
-        invisible: false
+        prop_value: 'Bovors'
       },
       {
         fk_user_id: 23,
+        invisible: false,
         prop_name: 'AUTH',
-        prop_value: 'admin',
-        invisible: false
+        prop_value: 'admin'
       },
       {
         fk_user_id: 23,
+        invisible: false,
         prop_name: 'zipcode',
-        prop_value: 'L1311',
-        invisible: false
+        prop_value: 'L1311'
       },
       {
         fk_user_id: 1,
+        invisible: false,
         prop_name: 'LAST_NAME',
-        prop_value: 'Bovors',
-        invisible: false
+        prop_value: 'Bovors'
       },
       {
         fk_user_id: 1,
+        invisible: false,
         prop_name: 'AUTH',
-        prop_value: 'admin',
-        invisible: false
+        prop_value: 'admin'
       },
       {
         fk_user_id: 1,
+        invisible: true,
         prop_name: 'phoneNr',
-        prop_value: '+352621630973',
-        invisible: true
+        prop_value: '+352621630973'
+
       },
       {
         fk_user_id: 1,
+        invisible: false,
         prop_name: 'blacklisted',
-        prop_value: '',
-        invisible: false
+        prop_value: ''
+
       },
       {
         fk_user_id: 1,
+        invisible: false,
         prop_name: 'password',
-        prop_value: 'itsme',
-        invisible: false
+        prop_value: 'itsme'
       },
       {
         fk_user_id: 18,
+        invisible: false,
         prop_name: 'password',
-        prop_value: 'dingbats',
-        invisible: false
+        prop_value: 'dingbats'
+
       },
       {
         fk_user_id: 23,
+        invisible: false,
         prop_name: 'password',
-        prop_value: 'jacobot',
-        invisible: false
+        prop_value: 'jacobot'
+
       }
       /* {
          fk_user_id: 23,
@@ -840,7 +850,7 @@ export class AdaptorMock extends AdaptorBase {
          prop_value: 'tokenbladibla:0',
          invisible: false
         }
-        */
+      */
       /*{
         fk_user_id: 15,
         prop_name: 'await-activation',
@@ -861,54 +871,54 @@ export class AdaptorMock extends AdaptorBase {
 
     const templates = [
       {
-        id: 0,
         cookie_name: '',
-        path: null,
-        max_age: 86400000,
-        http_only: null,
-        secure: null,
         domain: null,
-        same_site: null,
+        http_only: null,
+        id: 0,
+        max_age: 86400000,
+        path: null,
         rolling: null,
+        same_site: null,
+        secure: null,
         template_name: 'default_token'
       },
       {
-        id: 1,
         cookie_name: 'hermes.session',
-        path: '/',
-        max_age: 10800000,
-        http_only: true,
-        secure: false,
         domain: null,
-        same_site: true,
+        http_only: true,
+        id: 1,
+        max_age: 10800000,
+        path: '/',
         rolling: true,
+        same_site: true,
+        secure: false,
         template_name: 'default_cookie'
       },
       {
-        id: 3,
         cookie_name: 'hermes.session',
-        path: '/',
-        max_age: 10800000,
-        http_only: true,
-        secure: false,
         domain: null,
-        same_site: true,
+        http_only: true,
+        id: 3,
+        max_age: 10800000,
+        path: '/',
         rolling: true,
+        same_site: true,
+        secure: false,
         template_name: 'secure_cookie'
       }
     ];
 
     templates.forEach(t => {
       this.template.set({
-        id: t.id,
         cookieName: t.cookie_name.toLocaleLowerCase(),
-        path: t.path,
-        maxAge: t.max_age,
-        httpOnly: t.http_only,
-        secure: t.secure,
         domain: t.domain,
-        sameSite: t.same_site,
+        httpOnly: t.http_only,
+        id: t.id,
+        maxAge: t.max_age,
+        path: t.path,
         rolling: t.rolling,
+        sameSite: t.same_site,
+        secure: t.secure,
         templateName: t.template_name.toLocaleLowerCase()
       });
     });

@@ -4,14 +4,12 @@ import * as React from 'react';
 
 import {
   BrowserRouter as Router,
-  //Route,
-  //Redirect,
   Link
 } from 'react-router-dom';
 
 import Authentication from './auth/Authentication';
 
-//styles for app
+
 const styles = require('./styles');
 require('./fonts/junction');
 require('../lib/vendor/cdn/fetch.min.js');

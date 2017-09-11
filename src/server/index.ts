@@ -49,11 +49,11 @@ app.use(
 
 app.use(
     bodyParser.urlencoded({
-        type: 'application/x-www-form-urlencoded',
         extended: true,
         inflate: true,
-        parameterLimit: 1000,
         limit: '100kb',
+        parameterLimit: 1000,
+        type: 'application/x-www-form-urlencoded',
         verify: (req, buf, encoding) => {
             req;
             buf;
@@ -64,10 +64,10 @@ app.use(
 
 app.use(
     bodyParser.text({
-        type: 'text/html',
         defaultCharset: 'utf-8',
         inflate: true,
         limit: '100kb',
+        type: 'text/html',
         verify: (req, buf, encoding) => {
             req;
             buf;
@@ -77,9 +77,9 @@ app.use(
 );
 
 app.use(bodyParser.raw({
-    type: 'application/vnd.custom-type',
     inflate: true,
-    limit: '100kb'
+    limit: '100kb',
+    type: 'application/vnd.custom-type'
 }));
 
 const adaptor = new Adaptor({
@@ -87,8 +87,8 @@ const adaptor = new Adaptor({
 });
 
 const props: IHermesStoreProperties = {
-    defaultCookieOptionsName: 'default_cookie',
-    adaptor
+    adaptor,
+    defaultCookieOptionsName: 'default_cookie'
 };
 
 
@@ -108,14 +108,15 @@ hermesStore.once('connect', () => {
 function init() {
 
     app.use(session({
-        secret: 'the fox jumps over the lazy dog',
+        cookie: hermesStore.getDefaultCookieOptions(),
         name: 'hermes.id',
-        store: hermesStore,
-        saveUninitialized: false,
         resave: false,
         rolling: false,
-        unset: 'destroy',
-        cookie: hermesStore.getDefaultCookieOptions()
+        saveUninitialized: false,
+        secret: 'the fox jumps over the lazy dog',
+        store: hermesStore,
+        unset: 'destroy'
+
     }));
 
     /* fake middleware */
@@ -126,7 +127,7 @@ function init() {
     app.get(/.*/, (req, res) => {
        req;
        res.set({'Content-Type': 'text/html'});
-       res.sendfile(path.resolve('dist/client/index.html'));
+       res.sendFile(path.resolve('dist/client/index.html'));
     });
 
 }
@@ -137,5 +138,7 @@ process.on('exit', () => {
 
 process.on('SIGINT', () => {
     logger.warn('Caught [SIGINT] interrupt signal');
-    adaptor.shutDown().then(() => process.exit(0));
+    adaptor.shutDown()
+        .then(() => process.emit('exit', 0))
+        .catch(() => process.emit('exit', 1));
 });
