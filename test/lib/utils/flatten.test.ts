@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 
-import { flatten } from '~lib/utils/flatten';
+import { flattenMerge } from '~lib/utils/flatten';
 
 describe('~lib/utils/flatten', () => {
     it('Should flatten an object, given it is an array', () => {
@@ -16,17 +16,17 @@ describe('~lib/utils/flatten', () => {
         ];
 
         for (let i = 0; i < input.length; i++) {
-            expect(flatten(input[i])).to.deep.equal(output[i]);
+            expect(flattenMerge(input[i])).to.deep.equal(output[i]);
         }
     });
 
     it('Should throw a TypeError when provided invalid arguments', () => {
-        expect(flatten).to.throw(TypeError, 'Invalid Type');
+        expect(flattenMerge).to.throw(TypeError, 'Invalid Type');
 
         const testTypes = ['string', 1, undefined, null];
 
         for (const item of testTypes) {
-            expect(() => flatten(item)).to.throw(TypeError, 'Invalid Type');
+            expect(() => flattenMerge(item)).to.throw(TypeError, 'Invalid Type');
         }
     });
 });

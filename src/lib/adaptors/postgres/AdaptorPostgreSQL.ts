@@ -20,8 +20,7 @@ import {
 import { Logger } from '~lib/logger';
 const logger = Logger.getLogger();
 
-import { GraphQLStatusCodes } from '~graphql/GraphQLStatusCodes';
-import { makeObjectNull, MapWithIndexes } from '~lib/utils';
+import { makeObjectNull } from '~lib/utils';
 
 // State
 import { ADAPTOR_STATE } from '~states/adaptor_state';
@@ -55,11 +54,6 @@ import {
 // Templates
 import { ITemplatePropsMessage } from '~templates';
 
-import {
-  ITemplateProperties,
-  ITokenProperties,
-  IUserProperties
-} from '~hermes-props';
 
 import {
     IAdaptorPostgreSQLProperties
@@ -185,9 +179,8 @@ export class AdaptorPostgreSQL extends AdaptorBase {
             ssl: qry['sslmode'] !== 'disable',
             max: 30, // Set pool max size
             min: 20, // Set min pool size
-            idleTimeoutMillis: 1000 * 3600 * 24, // Ms
+            idleTimeoutMillis: 1000 * 3600 * 24 // Ms
 
-            refreshIdle: true
         };
         pg.defaults.parseInt8 = true; // Use bigint datatype
         // Create the pool
