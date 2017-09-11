@@ -6,7 +6,7 @@ import { AuthenticationError } from '~graphql/AuthenticationError';
 import { GraphQLStatusCodes } from '~graphql/GraphQLStatusCodes';
 import { ITokenProperties, IUserProperties } from '~hermes-props';
 import { HermesStore } from '~lib/HermesStore';
-import { deepClone } from '~utils';
+import { deepClone, isNumber } from '~utils';
 
 const PASSWORD: GraphQLStatusCodes = 'password';
 // R const BLACKLISTED: Constants = 'blacklisted';
@@ -94,7 +94,7 @@ export class HermesGraphQLConnector {
     );
   }
 
-  public resendActivationEmail(email?: string): Promise<IAuthenticationResult> {
+  public async resendActivationEmail(email?: string): Promise<IAuthenticationResult> {
     const sessUser = this.getUser();
     const eUser = email ? this.store.getUserByEmail(email) : undefined;
     const anon = this.store.getAnonymousUser();
@@ -140,7 +140,7 @@ export class HermesGraphQLConnector {
     return Promise.resolve(rc);
   }
 
-  public getTokenInfo(tokenId?: string): Promise<IAuthenticationResult> {
+  public async getTokenInfo(tokenId?: string): Promise<IAuthenticationResult> {
     // If token is undefined,
     // Then currentuser must have 'ADMIN' user property set
     const user = this.getUser();
@@ -175,11 +175,13 @@ export class HermesGraphQLConnector {
       const issued: string = new Date(token.tsIssuance).toISOString();
       const expired: string = new Date(token.tsExpire).toISOString();
       rc.token = {
-        tokenId: id,
+        expired,
+        issued,
         purpose: token.purpose as any,
         revoked,
-        issued,
-        expired
+        tokenId: id
+
+
       };
     } else {
       errors.push(new AuthenticationError('token-invalid', 'Token is unknown'));
@@ -191,7 +193,7 @@ export class HermesGraphQLConnector {
     return Promise.resolve(rc);
   }
 
-  public resetPassword(
+  public async resetPassword(
     token: string,
     password: string
   ): Promise<IAuthenticationResult> {
@@ -238,6 +240,7 @@ export class HermesGraphQLConnector {
     }
 
     const pw: GraphQLStatusCodes = 'password';
+    let state: GraphQLStatusCodes;
 
     if (
       rstToken &&
@@ -253,14 +256,15 @@ export class HermesGraphQLConnector {
       const up = this.store.updateUserProperties(user);
       const tp = this.store.updateToken(rstToken);
 
+
       return Promise.all([up, tp])
         .then(([u]) => {
-          const statev: GraphQLStatusCodes = 'ok-password-reset';
+          state = 'ok-password-reset';
           rc = {
             errors,
             user: {
               email: u.userEmail,
-              state: statev
+              state
             }
           };
 
@@ -268,19 +272,19 @@ export class HermesGraphQLConnector {
         })
         .catch(err => {
           errors.push(new AuthenticationError('err-auxiliary', err.toString()));
-
+          state = 'err-password-reset';
           rc = {
             errors,
             user: {
               email: user && user.userEmail,
-              state: 'err-password-reset'
+              state
             }
           };
 
           return rc;
         });
     }
-    const state: GraphQLStatusCodes = 'err-password-reset';
+    state = 'err-password-reset';
     rc = {
       errors,
       user: {
@@ -353,17 +357,17 @@ export class HermesGraphQLConnector {
     console.log('authKey:', authKey);
 
     const newUser: IUserProperties = {
-      userName: name,
       userEmail: email,
       userId: -1, // Non existant user id
+      userName: name,
       userProps: {
-        password,
-        'await-activation': `${authKey}:${Date.now()}`
+        'await-activation': `${authKey}:${Date.now()}`,
+        password
       }
     };
     this.user = newUser;
 
-    return;
+    return undefined;
   }
 
   public hasSessionExpired(): boolean {
@@ -395,7 +399,8 @@ export class HermesGraphQLConnector {
   public getExpiredAsNumber(): number | undefined {
     let rc: number;
     switch (true) {
-      case typeof this.session.cookie.expires === 'number':
+      // TODO: Did i forget to make expires "union type with number"????
+      case isNumber(this.session.cookie.expires):
         rc = this.session.cookie.expires as any;
         break;
       case this.session.cookie.expires instanceof Date:
@@ -407,7 +412,7 @@ export class HermesGraphQLConnector {
         break;
     }
 
-    return Number.isNaN(rc) ? undefined : rc;
+    return isNumber(rc) ? rc : undefined;
   }
 
   public getExpiredAsDate(): Date {
@@ -480,7 +485,7 @@ export class HermesGraphQLConnector {
 
     this.user = pUser;
 
-    return;
+    return undefined;
   }
 
   public emailExist(userEmail: string): string | undefined {
@@ -544,7 +549,7 @@ export class HermesGraphQLConnector {
     this.user = fu;
   }
 
-  public requestPasswordReset(_email: string): Promise<IAuthenticationResult> {
+  public async requestPasswordReset(_email: string): Promise<IAuthenticationResult> {
     const email = _email.toLocaleLowerCase().trim();
 
     return this.store
@@ -574,7 +579,7 @@ export class HermesGraphQLConnector {
       });
   }
 
-  public save(): Promise<IAuthenticationResult> {
+  public async save(): Promise<IAuthenticationResult> {
     return new Promise<IAuthenticationResult>(resolve => {
       this.session['_user'] = this.user;
       this.session['_hermes'] = this.token;
@@ -584,7 +589,7 @@ export class HermesGraphQLConnector {
 
       this.session.save(err => {
         if (err) {
-          return resolve({
+          resolve({
             errors: [
               new AuthenticationError(
                 'err-session-save',
@@ -593,11 +598,13 @@ export class HermesGraphQLConnector {
               new AuthenticationError('err-auxiliary', String(err))
             ],
             user: {
-              name: usrName,
               email: usrEmail,
+              name: usrName,
               state: 'err-session-save'
             }
           });
+
+          return;
         }
         this.user = this.session['_user'];
         this.token = this.session['_hermes'];
@@ -624,13 +631,15 @@ export class HermesGraphQLConnector {
             break;
         }
 
-        return resolve({
+        resolve({
           user: {
-            name: userName,
             email: userEmail,
+            name: userName,
             state
           }
         });
+
+        return;
       });
     });
   }

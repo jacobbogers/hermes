@@ -38,3 +38,4 @@ export {
 export * from './copyProperties';
 export * from './cssAccessor';
 export * from './isString';
+export * from './isNumber';
