@@ -3,11 +3,18 @@ function isString(value: any): value is string {
     return (typeof value === 'string');
 }
 
-export function makeValueslowerCase<I>(obj: I, ...props: (keyof I)[]) {
+/**
+ * Makes specified values lowercase in a given object.
+ *
+ * @export
+ * @template I An object of type I.
+ * @param {I} obj The object that needs to have its values lowercased.
+ * @param {...(keyof I)[]} props The properties to be lowercased.
+ */
+export function makeValuesLowerCase<I>(obj: I, ...props: (keyof I)[]) {
     for (const prop of props) {
-        const interm = obj[prop];
-        if (isString(interm)) {
-            const value: string = obj[prop] as any;
+        const value: any = obj[prop];
+        if (isString(value)) {
             obj[prop] = value.toLocaleLowerCase() as any;
         }
     }
