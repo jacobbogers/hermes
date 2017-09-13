@@ -5,38 +5,21 @@ K extends keyof T
 >(o: T): [keyof T, T[K]][];
 */
 
-import { deepClone } from './deepClone';
-import { flatMap } from './flatMap';
-import { flattenMerge } from './flatten';
-import { ifEmptyString } from './ifEmptyString';
-import { ifInvalidPortString } from './ifInvalidPortString';
-import { ifNull } from './ifNull';
-import { ifUndefined } from './ifUndefined';
-import { IAnyObjProps } from './interfaces';
-import { makeObjectNull } from './makeObjectNull';
-import { makeValuesLowerCase } from './makeValuesLowerCase';
-import { MapWithIndexes } from './MapWithIndexes';
-import { OperationResult } from './OperationResult';
-import { validationFactory } from './validationFactory';
-
-export {
-  deepClone,
-  flatMap,
-  flattenMerge,
-  ifEmptyString,
-  ifInvalidPortString,
-  ifNull,
-  ifUndefined,
-  IAnyObjProps,
-  makeObjectNull,
-  makeValuesLowerCase,
-  MapWithIndexes,
-  OperationResult,
-  validationFactory
-};
-
 export * from './copyProperties';
 export * from './cssAccessor';
-export * from './isString';
-export * from './isNumber';
+export * from './deepClone';
+export * from './flatMap';
+export * from './flatten';
+export * from './ifEmptyString';
+export * from './ifInvalidPortString';
+export * from './ifNull';
+export * from './ifUndefined';
+export * from './interfaces';
 export * from './isFunction';
+export * from './isNumber';
+export * from './isString';
+export * from './makeObjectNull';
+export * from './makeValuesLowerCase';
+export * from './MapWithIndexes';
+export * from './OperationResult';
+export * from './validationFactory';
