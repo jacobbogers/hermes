@@ -1,10 +1,8 @@
 {
     "all": true,
-    "cache": true,
-    "check-coverage": false,
-    "exclude": ["**/*.d.ts", "test/**/*"],
+    "exclude": ["**/*.d.ts"],
     "extension": [".ts", ".tsx"],
     "include": ["src/**/*.ts", "src/**/*.tsx"],
-    "per-file": true,
-    "reporter": ["html", "text-summary"]
+    "require": ["ts-node/register"],
+    "reporter": ["text-summary", "html"]
 }
