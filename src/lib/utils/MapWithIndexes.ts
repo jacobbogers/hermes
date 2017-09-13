@@ -22,9 +22,11 @@ export class MapWithIndexes<
         for (const firstKey in this.access) {
             if (this.access.hasOwnProperty(firstKey)) {
                 const objs = this.flatMap(this.access[firstKey] as Mc);
+
                 return objs.map(obj => obj.obj);
             }
         }
+
         return [];
     }
 
@@ -36,7 +38,7 @@ export class MapWithIndexes<
         }
     }
 
-    // store a copy
+    // Store a copy
 
     public set(data: T, readOnly: boolean = false): OperationResult<T> {
         let inserted = 0;
@@ -63,13 +65,13 @@ export class MapWithIndexes<
                     const keyValue = dataCopy[keyName];
                     const peek = currentMap.get(keyValue);
 
-                    // premature termination of structure , composite key larger then structure
+                    // Premature termination of structure , composite key larger then structure
                     if (path.length === 0 && peek instanceof Map) {
                         errors++;
                         break;
                     }
 
-                    // premature termination of key, structure extends beyond key
+                    // Premature termination of key, structure extends beyond key
                     if (
                         peek !== undefined &&
                         !(peek instanceof Map) &&
@@ -78,23 +80,23 @@ export class MapWithIndexes<
                         errors++;
                         break;
                     }
-                    // walk up the tree
+                    // Walk up the tree
                     if (peek instanceof Map && path.length > 0) {
                         currentMap = peek;
                         continue;
                     }
                     // "peek" variable is either undefined or NOT a Map object
                     switch (true) {
-                        // set new
-                        // dont even try (!peek && !path.length) seriously!!
+                        // Set new
+                        // Dont even try (!peek && !path.length) seriously!!
                         case peek === undefined && path.length === 0:
                             // = { readOnly: true, obj: data };
-                            const newRecord = { readOnly, obj: dataCopy } as F;
+                            const newRecord: F = { readOnly, obj: dataCopy } as any;
                             currentMap.set(keyValue, newRecord);
                             inserted++;
                             break;
-                        // set replace
-                        // previous inserted object found, optionally override
+                        // Set replace
+                        // Previous inserted object found, optionally override
                         case peek !== undefined && path.length === 0:
                             const finalObj = peek as F;
                             if (!finalObj.readOnly) {
@@ -104,8 +106,8 @@ export class MapWithIndexes<
                                 inserted++;
                             }
                             break;
-                        // set add path
-                        case peek === undefined && path.length > 0: // create extra path (inserting new objects)
+                        // Set add path
+                        case peek === undefined && path.length > 0: // Create extra path (inserting new objects)
                             const map = new Map() as Mc;
                             currentMap.set(keyValue, map);
                             currentMap = map;
@@ -117,7 +119,8 @@ export class MapWithIndexes<
                 } while (path.length && currentMap);
             }
         }
-        return new OperationResult<T>({ errors, inserted });
+
+        return new OperationResult<T>({ inserted, errors });
     }
 
     public delete(data: T): OperationResult<T> {
@@ -147,12 +150,12 @@ export class MapWithIndexes<
                     }
                     const keyValue = dataCopy[keyName];
                     const peek = currentMap.get(keyValue);
-                    // premature termination of structure , composite key larger then structure
+                    // Premature termination of structure , composite key larger then structure
                     if (path.length && peek && !(peek instanceof Map)) {
                         errors++;
                         break;
                     }
-                    // premature termination of path, composite key shorter then structure
+                    // Premature termination of path, composite key shorter then structure
                     if (peek instanceof Map && !path.length) {
                         errors++;
                         break;
@@ -161,7 +164,7 @@ export class MapWithIndexes<
                         currentMap = peek;
                         continue;
                     } //
-                    // found something to delete
+                    // Found something to delete
                     if (peek) {
                         currentMap.delete(keyValue);
                         deleted++;
@@ -169,6 +172,7 @@ export class MapWithIndexes<
                 } while (path.length && currentMap);
             }
         }
+
         return new OperationResult<T>({ errors, deleted });
     }
 
@@ -187,12 +191,12 @@ export class MapWithIndexes<
             if (this.access.hasOwnProperty(composites)) {
                 const paths = composites.split('#');
 
-                paths.reverse(); // because i want to ise "fromIndex" argument in [].findIndex(..);
+                paths.reverse(); // Because i want to ise "fromIndex" argument in [].findIndex(..);
 
                 if (paths.length < qNames.length) {
                     continue;
                 }
-                // contains at least all MY names
+                // Contains at least all MY names
                 if (
                     qNames
                         .slice(0)
@@ -204,7 +208,7 @@ export class MapWithIndexes<
                                 ) >= 0
                         ).length === qNames.length
                 ) {
-                    // the shortest one
+                    // The shortest one
                     selected = selected || composites;
                     if (paths.length < selected.split('#').length) {
                         selected = composites;
@@ -212,7 +216,7 @@ export class MapWithIndexes<
                 }
             }
         }
-        // so after all this we have the composite path that is the best fit or no fit at all
+        // So after all this we have the composite path that is the best fit or no fit at all
         if (!selected) {
             throw new Error(
                 util.format(
@@ -225,43 +229,43 @@ export class MapWithIndexes<
         let currentMap = this.access[selected];
 
         const spath: (keyof T)[] = selected.split('#') as any;
-        // let parentMap = currentMap; // init dummy value
+        // Let parentMap = currentMap; // init dummy value
         do {
-            const keyName = spath.shift(); // pop
+            const keyName = spath.shift(); // Pop
             if (!keyName) {
-                // very bad
+                // Very bad
                 errors++;
                 break;
             }
             if (!(keyName in query)) {
-                // the rest is *wildcard*
-                spath.unshift(keyName); // put it back to be processed later;
-                // currentMap = parentMap;
+                // The rest is *wildcard*
+                spath.unshift(keyName); // Put it back to be processed later;
+                // CurrentMap = parentMap;
                 break;
             }
             const keyValue = query[keyName] as T[K];
             const peek = currentMap.get(keyValue);
             if (!peek) {
-                // not found regardless
+                // Not found regardless
                 errors++;
                 break;
             }
-            // premature termination of structure , composite key larger then structure
+            // Premature termination of structure , composite key larger then structure
             if (spath.length && peek && !(peek instanceof Map)) {
                 errors++;
                 break;
             }
-            // premature termination of path, composite key shorter then structure
+            // Premature termination of path, composite key shorter then structure
             if (peek instanceof Map && !spath.length) {
                 errors++;
                 break;
             }
             if (peek instanceof Map) {
-                // parentMap = currentMap;
+                // ParentMap = currentMap;
                 currentMap = peek;
                 continue;
             } //
-            // at the end
+            // At the end
             if (peek && !spath.length) {
                 collected.push(deepClone(peek.obj));
             }
@@ -269,10 +273,11 @@ export class MapWithIndexes<
         if (spath.length === 0) {
             return new OperationResult<T>({ errors, collected });
         }
-        // wildcard search from here collect everything in this map
+        // Wildcard search from here collect everything in this map
 
-        const rc = flatMap(currentMap).map(itm => deepClone(itm.obj)) as T[];
+        const rc: T[] = flatMap(currentMap).map(itm => deepClone(itm.obj));
         collected.push(...rc);
+
         return new OperationResult({ errors, collected });
     }
 
@@ -282,6 +287,7 @@ export class MapWithIndexes<
                 return this.access[firstPick].size;
             }
         }
+
         return 0;
     }
 
@@ -295,6 +301,7 @@ export class MapWithIndexes<
             }
             rc.push(itm);
         }
+
         return rc;
     }
 }

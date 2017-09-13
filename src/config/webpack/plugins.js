@@ -1,7 +1,6 @@
 const { resolve } = require('path');
 const webpack = require('webpack');
 const CleanWebpackPlugin = require('clean-webpack-plugin');
-
 const { flatten } = require('./tools');
 
 const p = process.env.NODE_ENV === 'production';
@@ -97,8 +96,6 @@ clientProd = !p ? [] : [
         name: 'webpackManifest'
     })
 ];
-
-
 
 const client = flatten(cleanClient, sharedProd, html, clientProd);
 const server = flatten(cleanServer, sharedProd);
