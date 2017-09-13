@@ -3,3 +3,4 @@
 --recursive
 --require source-map-support/register
 --require tsconfig-paths/register
+--sort
