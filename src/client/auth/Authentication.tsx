@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { RouteComponentProps, withRouter } from 'react-router-dom';
-import { cssAccessor } from '~utils';
+import { cssAccessor } from '~lib/utils';
 
 require('../fonts/myfont');
 

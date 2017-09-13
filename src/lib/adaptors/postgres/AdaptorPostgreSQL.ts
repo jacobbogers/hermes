@@ -9,13 +9,11 @@ import * as URL from 'url';
 import * as util from 'util';
 
 // App
+import { IAnyObjProps, ifInvalidPortString, ifNull, makeObjectNull } from '~lib/utils';
 import { SystemInfo } from '~system';
-import { IAnyObjProps, ifInvalidPortString, ifNull } from '~utils';
 
 import { Logger } from '~lib/logger';
 const logger = Logger.getLogger();
-
-import { makeObjectNull } from '~lib/utils';
 
 // State
 import { ADAPTOR_STATE } from '~states/adaptor_state';

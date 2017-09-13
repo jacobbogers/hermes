@@ -1,7 +1,7 @@
 'use strict';
 
 
-import { isString } from '~utils';
+import { isString } from '~lib/utils';
 
 
 interface IHTMLTemplateFiles {

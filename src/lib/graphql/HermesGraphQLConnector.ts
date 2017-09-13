@@ -6,7 +6,7 @@ import { GraphQLStatusCodes } from '~graphql/GraphQLStatusCodes';
 import { IAuthenticationResult } from '~graphql/interfaces';
 import { ITokenProperties, IUserProperties } from '~hermes-props';
 import { HermesStore } from '~lib/HermesStore';
-import { deepClone, isNumber } from '~utils';
+import { deepClone, isNumber } from '~lib/utils';
 
 const PASSWORD: GraphQLStatusCodes = 'password';
 // R const BLACKLISTED: Constants = 'blacklisted';

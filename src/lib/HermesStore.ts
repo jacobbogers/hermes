@@ -53,7 +53,7 @@ import {
   isFunction,
   makeValuesLowerCase,
   MapWithIndexes
-} from '~utils';
+} from '~lib/utils';
 
 import { GraphQLStatusCodes } from '~graphql/GraphQLStatusCodes';
 import { HermesStoreError } from './HermesStoreError';
