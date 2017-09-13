@@ -14,7 +14,7 @@ import { ifNull } from './ifNull';
 import { ifUndefined } from './ifUndefined';
 import { IAnyObjProps } from './interfaces';
 import { makeObjectNull } from './makeObjectNull';
-import { makeValueslowerCase } from './makeValueslowerCase';
+import { makeValuesLowerCase } from './makeValuesLowerCase';
 import { MapWithIndexes } from './MapWithIndexes';
 import { OperationResult } from './OperationResult';
 import { validationFactory } from './validationFactory';
@@ -29,7 +29,7 @@ export {
   ifUndefined,
   IAnyObjProps,
   makeObjectNull,
-  makeValueslowerCase,
+  makeValuesLowerCase,
   MapWithIndexes,
   OperationResult,
   validationFactory

@@ -51,7 +51,7 @@ import {
   deepClone,
   IAnyObjProps,
   isFunction,
-  makeValueslowerCase,
+  makeValuesLowerCase,
   MapWithIndexes
 } from '~utils';
 
@@ -507,7 +507,7 @@ export class HermesStore extends Store {
   private processUsersSelectAll(data: IUsersAndPropsMessage[]) {
     this.userMaps.clear();
     for (const userR of data) {
-      makeValueslowerCase(userR, 'userEmail', 'userName', 'propName');
+      makeValuesLowerCase(userR, 'userEmail', 'userName', 'propName');
       let uf = this.userMaps.get({ userId: userR.userId }).first;
       if (uf === undefined) {
         uf = {
