@@ -13,6 +13,7 @@ describe('~lib/utils/deepClone', () => {
             name: string;
         }
 
+        // tslint:disable:object-literal-sort-keys
         const original: IUser = {
             name: 'Chris',
             address: {
@@ -23,6 +24,7 @@ describe('~lib/utils/deepClone', () => {
             enemies: [],
             friends: ['Santa', 'Easter Bunny', 'Cupid']
         };
+        // tslint:enable:object-literal-sort-keys
 
         const copy: IUser = deepClone(original);
 
