@@ -4,3 +4,4 @@
 --require source-map-support/register
 --require tsconfig-paths/register
 --sort
+test/**/*.test.ts test/**/*.test.tsx
