@@ -1,0 +1,10 @@
+{
+    "all": true,
+    "cache": true,
+    "check-coverage": false,
+    "exclude": ["**/*.d.ts", "test/**/*"],
+    "extension": [".ts", ".tsx"],
+    "include": ["src/**/*.ts", "src/**/*.tsx"],
+    "per-file": true,
+    "reporter": ["html", "text-summary"]
+}

@@ -13,6 +13,7 @@ npm-debug.log*
 .*
 !/.gitignore
 !/.editorconfig
+!/.nycrc
 report.txt
 
 # Runtime data
