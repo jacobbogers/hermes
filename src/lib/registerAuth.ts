@@ -1,5 +1,5 @@
 'use strict';
-// tslint:disable:typedef
+
 import { Application, NextFunction, Request, Response, Router } from 'express';
 
 import { GraphQLOptions } from 'graphql-server-core';

@@ -44,7 +44,7 @@ const postcss = {
 };
 
 const raw = {
-    test: /\.sql/,
+    test: /\.(sql|gql)/,
     exclude,
     include: [],
     use: 'raw-loader'
