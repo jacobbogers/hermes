@@ -1,7 +1,6 @@
 const { resolve } = require('path');
 const webpack = require('webpack');
 const CleanWebpackPlugin = require('clean-webpack-plugin');
-const {TsConfigPathsPlugin} = require('awesome-typescript-loader');
 const { flatten } = require('./tools');
 
 const p = process.env.NODE_ENV === 'production';
@@ -98,14 +97,8 @@ clientProd = !p ? [] : [
     })
 ];
 
-const tsconfigPaths = new TsConfigPathsPlugin('./tsconfig.json');
-
-
-
-
-
-const client = flatten(cleanClient, sharedProd, html, clientProd, tsconfigPaths);
-const server = flatten(cleanServer, sharedProd, tsconfigPaths);
+const client = flatten(cleanClient, sharedProd, html, clientProd);
+const server = flatten(cleanServer, sharedProd);
 
 
 module.exports = { client, server };

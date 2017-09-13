@@ -12,7 +12,7 @@
     "moduleResolution": "node",
     "outDir": "dist" /*outDir is overriden in the gulp file*/,
     "paths": {
-      "~*": ["src/*"],
+    //   "~*": ["src/*"],
       "~tokens/*": ["src/lib/adaptors/interfaces/tokens/*"],
       "~users/*": ["src/lib/adaptors/interfaces/users/*"],
       "~templates/*": ["src/lib/adaptors/interfaces/templates/*"],
@@ -27,8 +27,8 @@
       "~templates": ["src/lib/adaptors/interfaces/templates/index.ts"],
       "~adaptors/*": ["src/lib/adaptors/*"],
       "~adpators": ["src/lib/adaptors/index.ts"],
-      "~graphql/*": ["src/lib/graphql/interfaces/*", "src/lib/graphql/*"],
-      "~graphql": ["src/lib/graphql/interfaces/index.ts"],
+      "~graphql/*": ["src/lib/graphql/*"],
+    //   "~graphql": ["src/lib/graphql/interfaces/index.ts"],
       "~hermes/*": [
         "src/lib/hermes/interfaces/*",
         "src/lib/hermes/interfaces/properties/*",

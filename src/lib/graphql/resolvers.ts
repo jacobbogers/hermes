@@ -1,7 +1,6 @@
 // tslint:disable:typedef
-import { ITokenInfo, IUserInfo } from '~graphql';
 import { GraphQLStatusCodes } from '~graphql/GraphQLStatusCodes';
-import { IAuthenticationResult } from '~graphql/IAuthenticationResult';
+import { IAuthenticationResult, ITokenInfo, IUserInfo } from '~graphql/interfaces';
 import { AuthenticationError } from './AuthenticationError';
 import { HermesGraphQLConnector } from './HermesGraphQLConnector';
 
