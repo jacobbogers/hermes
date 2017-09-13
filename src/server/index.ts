@@ -1,36 +1,37 @@
 'use strict';
 
+import * as bodyParser from 'body-parser';
 import * as  express from 'express';
 import * as session from 'express-session';
-import * as bodyParser from 'body-parser';
 import * as path from 'path';
 
-import { SystemInfo } from '../lib/system';
-import { registerAuth } from '../lib/authentication';
+import { registerAuth } from '~lib/registerAuth';
+import { SystemInfo } from '~system';
 
 import {
     AdaptorPostgreSQL as Adaptor
-} from '../lib/db_adaptor_postgresql';
+} from '~adaptors/postgres';
 
 import {
-    //AdaptorMock as Adaptor
-} from '../lib/db_adaptor_mock';
+    // AdaptorMock as Adaptor
+} from '~adaptors/mock';
 
-import Logger from '../lib/logger';
+import { Logger } from '~lib/logger';
 
 const logger = Logger.getLogger();
 
 import {
-    HermesStore,
-    HermesStoreProperties,
-} from '../lib/hermes_store';
+    IHermesStoreProperties
+} from '~hermes-props';
+
+import { HermesStore } from '~lib/HermesStore';
 
 /* init */
 /* init */
 
 SystemInfo.createSystemInfo({ maxErrors: 5000, maxWarnings: 5000 });
 
-let app = express();
+const app = express();
 
 app.use(
     bodyParser.json({
@@ -48,11 +49,11 @@ app.use(
 
 app.use(
     bodyParser.urlencoded({
-        type: 'application/x-www-form-urlencoded',
         extended: true,
         inflate: true,
-        parameterLimit: 1000,
         limit: '100kb',
+        parameterLimit: 1000,
+        type: 'application/x-www-form-urlencoded',
         verify: (req, buf, encoding) => {
             req;
             buf;
@@ -63,10 +64,10 @@ app.use(
 
 app.use(
     bodyParser.text({
-        type: 'text/html',
         defaultCharset: 'utf-8',
         inflate: true,
         limit: '100kb',
+        type: 'text/html',
         verify: (req, buf, encoding) => {
             req;
             buf;
@@ -76,27 +77,27 @@ app.use(
 );
 
 app.use(bodyParser.raw({
-    type: 'application/vnd.custom-type',
     inflate: true,
     limit: '100kb',
+    type: 'application/vnd.custom-type'
 }));
 
-let adaptor = new Adaptor({
+const adaptor = new Adaptor({
     url: 'postgresql://bookbarter:bookbarter@jacob-bogers.com:443/bookbarter?sslmode=allow'
 });
 
-let props: HermesStoreProperties = {
-    defaultCookieOptionsName: 'default_cookie',
-    adaptor
+const props: IHermesStoreProperties = {
+    adaptor,
+    defaultCookieOptionsName: 'default_cookie'
 };
 
 
-let hermesStore = new HermesStore(props);
+const hermesStore = new HermesStore(props);
 hermesStore.once('connect', () => {
 
     logger.info('store is initialized');
 
-    true && init();
+    init();
 
     app.listen(8080, () => {
         logger.warn('app is listening on 8080');
@@ -107,14 +108,15 @@ hermesStore.once('connect', () => {
 function init() {
 
     app.use(session({
-        secret: 'the fox jumps over the lazy dog',
+        cookie: hermesStore.getDefaultCookieOptions(),
         name: 'hermes.id',
-        store: hermesStore,
-        saveUninitialized: false,
         resave: false,
         rolling: false,
-        unset: 'destroy',
-        cookie: hermesStore.getDefaultCookieOptions()
+        saveUninitialized: false,
+        secret: 'the fox jumps over the lazy dog',
+        store: hermesStore,
+        unset: 'destroy'
+
     }));
 
     /* fake middleware */
@@ -122,12 +124,12 @@ function init() {
     app.use('/', express.static(path.resolve('dist/client')));
 
 
-    app.get(/.*/, ( req, res ) => {
+    app.get(/.*/, (req, res) => {
        req;
-       res.set({'Content-Type':'text/html'});
-       res.sendfile(path.resolve('dist/client/index.html'));      
+       res.set({'Content-Type': 'text/html'});
+       res.sendFile(path.resolve('dist/client/index.html'));
     });
-    
+
 }
 
 process.on('exit', () => {
@@ -136,5 +138,7 @@ process.on('exit', () => {
 
 process.on('SIGINT', () => {
     logger.warn('Caught [SIGINT] interrupt signal');
-    adaptor.shutDown().then(() => process.exit(0));
+    adaptor.shutDown()
+        .then(() => process.emit('exit', 0))
+        .catch(() => process.emit('exit', 1));
 });

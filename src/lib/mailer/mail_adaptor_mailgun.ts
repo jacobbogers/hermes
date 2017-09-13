@@ -1,16 +1,13 @@
 'use strict';
 
-import {EventEmitter} from 'events';
+import { EventEmitter } from 'events';
 
-import Logger from '../logger';
-const logger = Logger.getLogger();
-logger;
-//import { load } from './email_templates';
+// Import { Logger } from '../logger';
+// Const logger = Logger.getLogger();
 
 export class EmailMailGunAdaptor extends EventEmitter {
     private constructor() {
         super();
     }
 }
-
 

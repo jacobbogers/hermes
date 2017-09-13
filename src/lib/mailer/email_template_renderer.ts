@@ -1,31 +1,28 @@
 'use strict';
-//node
-import * as path from 'path';
-//vender
 
 
-//app
-import { loadFiles, deepClone } from '../utils';
-import { SystemInfo } from '../system';
+import { isString } from '~utils';
 
-import Logger from '../logger';
-const logger = Logger.getLogger();
 
-interface HTMLTemplateFiles {
+interface IHTMLTemplateFiles {
     actionEmailContentBlockButton: string;
     actionEmailContentBlockSimple: string;
     actionEmailMain: string;
     actionEmailCSS: string;
 }
 
-const htmlFiles: HTMLTemplateFiles = {
-    actionEmailContentBlockButton: './templates/action-email-content-block-button.html',
-    actionEmailContentBlockSimple: './templates/action-email-content-block.html',
-    actionEmailMain: './templates/action-email-main.html',
-    actionEmailCSS: './templates/emails.css'
+const htmlFiles: IHTMLTemplateFiles = {
+
+    actionEmailContentBlockButton: require('./templates/action-email-content-block-button.html'),
+    actionEmailContentBlockSimple: require('./templates/action-email-content-block.html'),
+    actionEmailCSS: require('./templates/emails.css'),
+    actionEmailMain: require('./templates/action-email-main.html')
+
 };
 
-export interface ActionEmailData {
+htmlFiles;
+
+export interface IActionEmailData {
     simpleContent: string[] | string;
     buttonContent: {
         url: string;
@@ -33,61 +30,23 @@ export interface ActionEmailData {
     };
 }
 
-export class EmailTemplateError extends Error {
-    constructor(message: string) {
-        super(message);
-    }
-}
 
-const templates = new Map<keyof HTMLTemplateFiles, string>();
+const templates = new Map<keyof IHTMLTemplateFiles, string>();
 
 export class EmailRenderer {
 
-    private renderContentBlockSimple(text: string): string {
-        let temp = templates.get('actionEmailContentBlockSimple');
-        return typeof temp === 'string' ? temp.replace('${TEXT}', text) : '<p>error rendering content</p>';
-    }
 
-    private renderContentBlockButton(text: string, url: string): string {
-        let temp = templates.get('actionEmailContentBlockButton');
-        return typeof temp === 'string' ? temp.replace('${URL}', url).replace('${TEXT}', text) : '<p>error rendering button content</p>';
-    }
+    // R public constructor() {}
 
-    private renderEmailMain(css: string, contentBlocks: string[]): string {
-        let temp = templates.get('actionEmailMain');
-        return typeof temp === 'string' ? temp.replace('/*${EMBED_STYLESHEET}*/', css).replace('${CONTENT_BLOCK_ARRAY}', contentBlocks.join('')) : '<p>error rendering main-content</p>';
-    }
+    public renderActionEmail(data: IActionEmailData): string {
 
 
-    private processLoadingResults(data: HTMLTemplateFiles) {
-        let _si = SystemInfo.createSystemInfo();
-        let nrErr = 0;
-        Object.keys(data).forEach((key: keyof HTMLTemplateFiles) => {
-            templates.set(key, data[key]);
-            if (typeof data[key] !== 'string') {
-                _si.addError(data[key]);
-                nrErr++;
-                return;
-            }
-            logger.trace('loaded file [%s] -> [%s]', key, htmlFiles[key]);
-        });
-        return nrErr;
-    }
-
-    constructor() {
-
-    }
-
-    public renderActionEmail(data: ActionEmailData): string {
-
-
-        if (typeof data.simpleContent === 'string') {
+        if (isString(data.simpleContent)) {
             data.simpleContent = [data.simpleContent];
         }
 
-        let content = data.simpleContent.map((text) => {
-            return this.renderContentBlockSimple(text);
-        });
+        const content = data.simpleContent.map(text =>
+            this.renderContentBlockSimple(text));
 
         content.push(
             this.renderContentBlockButton(data.buttonContent.text, data.buttonContent.url)
@@ -96,17 +55,25 @@ export class EmailRenderer {
         return this.renderEmailMain(templates.get('actionEmailCSS') || '', content);
     }
 
-    public init(): Promise<boolean> {
 
-        let filesFullPath = deepClone(htmlFiles);
-        let _file: keyof HTMLTemplateFiles;
-        for (_file in htmlFiles) {
-            filesFullPath[_file] = path.join(__dirname, htmlFiles[_file]);
-        }
+    private renderContentBlockSimple(text: string): string {
+        const temp = templates.get('actionEmailContentBlockSimple');
 
-        return loadFiles<HTMLTemplateFiles>(filesFullPath).then((templ) => {
-            //logger.info('result of loading html templates %j', templ);
-            return this.processLoadingResults(templ) > 0 ? Promise.reject(false) : Promise.resolve(true);
-        });
+        return typeof temp === 'string' ? temp.replace('%TEXT%', text) : '<p>error rendering content</p>';
     }
+
+    private renderContentBlockButton(text: string, url: string): string {
+        const temp = templates.get('actionEmailContentBlockButton');
+
+        return typeof temp === 'string' ? temp.replace('%URL%', url).replace('%TEXT%', text) : '<p>error rendering button content</p>';
+    }
+
+    private renderEmailMain(css: string, contentBlocks: string[]): string {
+        const temp = templates.get('actionEmailMain');
+
+        return typeof temp === 'string' ? temp.replace('/*%EMBED_STYLESHEET}%*/', css)
+        .replace('%CONTENT_BLOCK_ARRAY%', contentBlocks.join('')) : '<p>error rendering main-content</p>';
+    }
+
+
 }

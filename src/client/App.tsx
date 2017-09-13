@@ -4,14 +4,12 @@ import * as React from 'react';
 
 import {
   BrowserRouter as Router,
-  //Route,
-  //Redirect,
   Link
 } from 'react-router-dom';
 
-import Authentication from './auth/Authentication';
+import { Authentication } from './auth/Authentication';
 
-//styles for app
+
 const styles = require('./styles');
 require('./fonts/junction');
 require('../lib/vendor/cdn/fetch.min.js');
@@ -20,15 +18,15 @@ require('../lib/vendor/cdn/react-dom.min.js');
 require('../lib/vendor/cdn/react.min.js');
 const a = require('../lib/vendor/cdn/graphiql.css');
 console.log(a);
-export class App extends React.Component<{}, {}> {
+export class App extends React.Component {
 
-  constructor(props: any) {
+  public constructor(props: any) {
     super(props);
 
   }
 
-  render() {
-    
+  public render() {
+
     return (
       <Router>
         <div className={styles.main}>
@@ -44,5 +42,4 @@ export class App extends React.Component<{}, {}> {
 
 
 }
-
 

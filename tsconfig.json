@@ -1,31 +1,46 @@
 {
-  "include": [
-    "src/**/*.ts",
-    "src/**/*.tsx",
-    "tests/**/*.ts",
-    "tests/**/*.tsx"
-  ],
-  "exclude": [
-    "node_modules"
-  ],
+  "include": ["src/**/*.ts", "src/**/*.tsx", "test/**/*.ts", "test/**/*.tsx"],
+  "exclude": ["node_modules"],
   "compilerOptions": {
-    "strict": true,
+    "allowUnreachableCode": true,
+    "baseUrl": ".",
     "declaration": true,
-    "target": "es2017",
-    "jsx": "react",
-    "lib": [
-      "es6",
-      "dom"
-    ],
-    "module": "commonjs",
-    "sourceMap": true,
-    "rootDir": "./",
-    "moduleResolution": "node",
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
     "experimentalDecorators": true,
-    "allowUnreachableCode":true,
-    /*outDir is overriden in the gulp file*/
-    "outDir": "dist"
+    "jsx": "react",
+    "lib": ["es6", "dom" ,"esnext.asynciterable" ],
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "outDir": "dist" /*outDir is overriden in the gulp file*/,
+    "paths": {
+    //   "~*": ["src/*"],
+      "~tokens/*": ["src/lib/adaptors/interfaces/tokens/*"],
+      "~users/*": ["src/lib/adaptors/interfaces/users/*"],
+      "~templates/*": ["src/lib/adaptors/interfaces/templates/*"],
+      "~states/*": ["src/lib/adaptors/interfaces/states/*"],
+      "~properties/*": [
+        "src/lib/adaptors/interfaces/properties/*",
+        "src/lib/hermes/interfaces/properties/*"
+      ],
+      "~lib/*": ["src/lib/*"],
+      "~tokens": ["src/lib/adaptors/interfaces/tokens/index.ts"],
+      "~users": ["src/lib/adaptors/interfaces/users/index.ts"],
+      "~templates": ["src/lib/adaptors/interfaces/templates/index.ts"],
+      "~adaptors/*": ["src/lib/adaptors/*"],
+      "~adpators": ["src/lib/adaptors/index.ts"],
+      "~graphql/*": ["src/lib/graphql/*"],
+    //   "~graphql": ["src/lib/graphql/interfaces/index.ts"],
+      "~hermes/*": [
+        "src/lib/hermes/interfaces/*",
+        "src/lib/hermes/interfaces/properties/*",
+        "src/lib/hermes/*"
+      ],
+      "~hermes-props": ["src/lib/hermes/interfaces/properties/index.ts"],
+      "~utils": ["src/lib/utils/index.ts"],
+      "~system": ["src/lib/system/index.ts"]
+    },
+    "rootDir": "./",
+    "sourceMap": true,
+    "strict": true,
+    "target": "es2017"
   }
 }
