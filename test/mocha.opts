@@ -1,4 +1,5 @@
 --compilers ts:ts-node/register
+--full-trace
 --growl
 --recursive
 --require source-map-support/register
