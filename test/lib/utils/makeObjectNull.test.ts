@@ -40,10 +40,12 @@ describe('~lib/utils/makeObjectNull', () => {
         ];
         // tslint:enable:object-literal-sort-keys
 
+        // tslint:disable:no-for-in-array
         for (const i in tests) {
             makeObjectNull(tests[i]);
             expect(tests[i]).to.eql(expected[i]);
         }
+        // tslint:enable:no-for-in-array
 
     });
     it('Should not touch other fields', () => {
@@ -71,9 +73,11 @@ describe('~lib/utils/makeObjectNull', () => {
         ];
         // tslint:enable:object-literal-sort-keys
 
+        // tslint:disable:no-for-in-array
         for (const i in tests) {
             makeObjectNull(tests[i]);
             expect(tests[i]).to.eql(expected[i]);
         }
+        // tslint:enable:no-for-in-array
     });
 });
