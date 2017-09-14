@@ -19,14 +19,4 @@ describe('~lib/utils/flatten', () => {
             expect(flattenMerge(input[i])).to.deep.equal(output[i]);
         }
     });
-
-    it.skip('Should throw a TypeError when provided invalid arguments', () => {
-        expect(flattenMerge).to.throw(TypeError, 'Invalid Type');
-
-        const testTypes = ['string', 1, undefined, null];
-
-        for (const item of testTypes) {
-            expect(() => flattenMerge(item)).to.throw(TypeError, 'Invalid Type');
-        }
-    });
 });
