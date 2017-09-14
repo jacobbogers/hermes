@@ -1,7 +1,4 @@
-
-function isString(value: any): value is string {
-    return (typeof value === 'string');
-}
+import { isString } from '~lib/utils/isString';
 
 /**
  * Makes specified values lowercase in a given object.
