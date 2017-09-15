@@ -1,46 +1,83 @@
 {
-  "include": ["src/**/*.ts", "src/**/*.tsx", "test/**/*.ts", "test/**/*.tsx"],
-  "exclude": ["node_modules"],
   "compilerOptions": {
     "allowUnreachableCode": true,
     "baseUrl": ".",
     "declaration": true,
     "experimentalDecorators": true,
     "jsx": "react",
-    "lib": ["es6", "dom" ,"esnext.asynciterable" ],
+    "lib": [
+      "es6",
+      "dom",
+      "esnext.asynciterable"
+    ],
     "module": "commonjs",
     "moduleResolution": "node",
-    "outDir": "dist" /*outDir is overriden in the gulp file*/,
+    "outDir": "dist",
     "paths": {
-    //   "~*": ["src/*"],
-      "~tokens/*": ["src/lib/adaptors/interfaces/tokens/*"],
-      "~users/*": ["src/lib/adaptors/interfaces/users/*"],
-      "~templates/*": ["src/lib/adaptors/interfaces/templates/*"],
-      "~states/*": ["src/lib/adaptors/interfaces/states/*"],
-      "~properties/*": [
-        "src/lib/adaptors/interfaces/properties/*",
-        "src/lib/hermes/interfaces/properties/*"
+      "~adaptors/*": [
+        "src/lib/adaptors/*"
       ],
-      "~lib/*": ["src/lib/*"],
-      "~tokens": ["src/lib/adaptors/interfaces/tokens/index.ts"],
-      "~users": ["src/lib/adaptors/interfaces/users/index.ts"],
-      "~templates": ["src/lib/adaptors/interfaces/templates/index.ts"],
-      "~adaptors/*": ["src/lib/adaptors/*"],
-      "~adpators": ["src/lib/adaptors/index.ts"],
-      "~graphql/*": ["src/lib/graphql/*"],
-    //   "~graphql": ["src/lib/graphql/interfaces/index.ts"],
+      "~adpators": [
+        "src/lib/adaptors/index.ts"
+      ],
+      "~graphql/*": [
+        "src/lib/graphql/*"
+      ],
+      "~hermes-props": [
+        "src/lib/hermes/interfaces/properties/index.ts"
+      ],
       "~hermes/*": [
         "src/lib/hermes/interfaces/*",
         "src/lib/hermes/interfaces/properties/*",
         "src/lib/hermes/*"
       ],
-      "~hermes-props": ["src/lib/hermes/interfaces/properties/index.ts"],
-      "~utils": ["src/lib/utils/index.ts"],
-      "~system": ["src/lib/system/index.ts"]
+      "~lib/*": [
+        "src/lib/*"
+      ],
+      "~properties/*": [
+        "src/lib/adaptors/interfaces/properties/*",
+        "src/lib/hermes/interfaces/properties/*"
+      ],
+      "~states/*": [
+        "src/lib/adaptors/interfaces/states/*"
+      ],
+      "~system": [
+        "src/lib/system/index.ts"
+      ],
+      "~templates": [
+        "src/lib/adaptors/interfaces/templates/index.ts"
+      ],
+      "~templates/*": [
+        "src/lib/adaptors/interfaces/templates/*"
+      ],
+      "~tokens": [
+        "src/lib/adaptors/interfaces/tokens/index.ts"
+      ],
+      "~tokens/*": [
+        "src/lib/adaptors/interfaces/tokens/*"
+      ],
+      "~users": [
+        "src/lib/adaptors/interfaces/users/index.ts"
+      ],
+      "~users/*": [
+        "src/lib/adaptors/interfaces/users/*"
+      ],
+      "~utils": [
+        "src/lib/utils/index.ts"
+      ]
     },
     "rootDir": "./",
     "sourceMap": true,
     "strict": true,
     "target": "es2017"
-  }
+  },
+  "exclude": [
+    "node_modules"
+  ],
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "test/**/*.ts",
+    "test/**/*.tsx"
+  ]
 }
