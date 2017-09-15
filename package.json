@@ -31,7 +31,7 @@
         "build:client:prod": "cross-env NODE_ENV=production webpack --config src/config/webpack/client.config",
         "build:server:dev": "cross-env NODE_ENV=development webpack --config src/config/webpack/server.config",
         "build:server:prod": "cross-env NODE_ENV=production webpack --config src/config/webpack/server.config",
-        "clear": "rimraf ./dist ./.nyc_output ./coverage",
+        "cleanup": "rimraf ./dist ./.nyc_output ./coverage ./.awcache",
         "coverage:report": "nyc report --reporter=text",
         "coverage:test": "cross-env TS_NODE_DISABLE_WARNINGS=true nyc mocha",
         "coverage:view": "opn coverage/index.html",
