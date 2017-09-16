@@ -133,10 +133,7 @@
     "no-duplicate-imports": true,
     "no-mergeable-namespace": false,
     "no-require-imports": false,
-    "object-literal-sort-keys": [
-      true,
-      "ignore-case"
-    ],
+    "object-literal-sort-keys": false,
     "prefer-const": true,
     "trailing-comma": [
       true,
