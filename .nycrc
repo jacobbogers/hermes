@@ -1,6 +1,6 @@
 {
     "all": true,
-    "exclude": ["**/*.d.ts"],
+    "exclude": ["**/*.d.ts", "**/index.ts", "**/interfaces.ts"],
     "extension": [".ts", ".tsx"],
     "include": ["src/**/*.ts", "src/**/*.tsx"],
     "require": ["ts-node/register"],
