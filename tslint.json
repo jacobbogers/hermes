@@ -154,7 +154,7 @@
     "binary-expression-operand-order": true,
     "callable-types": false,
     "class-name": true,
-    "comment-format": [true, "check-space", "check-uppercase"],
+    "comment-format": [true, "check-space"],
     "completed-docs": [
       true,
       {
