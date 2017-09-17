@@ -275,7 +275,7 @@ export class MapWithIndexes<
         }
         // Wildcard search from here collect everything in this map
 
-        const rc: T[] = flatMap(currentMap).map(itm => deepClone(itm.obj));
+        const rc = flatMap<T, { obj: T }, any >(currentMap).map(itm => deepClone(itm.obj));
         collected.push(...rc);
 
         return new OperationResult({ errors, collected });
