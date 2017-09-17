@@ -11,3 +11,8 @@ export function validationFactory(testFunction: validation) {
         }
     };
 }
+
+export const ifNull = validationFactory((s: any) => s === null);
+export const ifEmptyString = validationFactory((s: any) => s === '');
+export const ifInvalidPortString = validationFactory((s: any) => !(s && /^[0-9]+$/.test(s) && Number.parseInt(s) > 0));
+export const ifUndefined = validationFactory((s: any) => s === undefined);
