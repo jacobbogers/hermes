@@ -4,7 +4,7 @@ import { Application, NextFunction, Request, Response, Router } from 'express';
 
 import { GraphQLOptions } from 'graphql-server-core';
 import { graphiqlExpress, graphqlExpress } from 'graphql-server-express';
-import { makeExecutableSchema } from 'graphql-tools';
+import { makeExecutableSchema   } from 'graphql-tools';
 
 import { AuthenticationError } from '~graphql/AuthenticationError';
 import { HermesGraphQLConnector } from '~graphql/HermesGraphQLConnector';
@@ -34,7 +34,7 @@ export function registerAuth(
   });
 
   // Register graphQL stuff
-  const schema = makeExecutableSchema({ typeDefs, resolvers });
+  const schema: any = makeExecutableSchema({ typeDefs, resolvers });
   const graphQLOptions: GraphQLOptions = {
     debug: true,
     schema
@@ -56,7 +56,8 @@ export function registerAuth(
   // }
   app.use(
     options.graphQL_url,
-    graphqlExpress((req: Request): GraphQLOptions => {
+    /* fucking messy typescript in modules, hope they will correct in future */
+    graphqlExpress((req: Request): any => {
       const asset = HermesGraphQLConnector.createHermesGraphQLConnector(req);
 
       let errors: AuthenticationError[] = null as any;
@@ -67,7 +68,7 @@ export function registerAuth(
         connector = asset;
       }
 
-      return { ...graphQLOptions, context: { connector, errors } };
+      return Promise.resolve({ ...graphQLOptions, context: { connector, errors } });
     })
   );
 
