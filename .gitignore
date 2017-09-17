@@ -15,6 +15,7 @@ npm-debug.log*
 !/.editorconfig
 !/.nycrc
 report.txt
+package-lock.json
 
 # Runtime data
 pids
