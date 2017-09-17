@@ -54,8 +54,4 @@ describe('~lib/utils/deepClone', () => {
         expect(original).to.eql([]);
         expect(copy).to.eql([1, 2, 3, 4, 5]);
     });
-
-    it('Should throw an error if given invalid arguments', () => {
-        expect(() => deepClone(() => '')).to.throw();
-    });
 });
