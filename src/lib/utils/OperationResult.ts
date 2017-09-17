@@ -30,7 +30,6 @@ export class OperationResult<I> {
         this._inserted = props.inserted;
         this._errors = props.errors;
         this._deleted = props.deleted;
-        // this._collected = props.collected && props.collected.splice(0); ???
-        this._collected = props.collected;
+        if (props.collected) this._collected = props.collected.slice(0);
     }
 }
