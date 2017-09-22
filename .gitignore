@@ -11,8 +11,9 @@ npm-debug.log*
 
 
 .*
-!/.gitignore
+!/.codecov.yml
 !/.editorconfig
+!/.gitignore
 !/.nycrc
 !/.travis.yml
 report.txt
