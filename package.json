@@ -54,6 +54,7 @@
     "babel-preset-stage-0": "^6.24.1",
     "chai": "^4.1.2",
     "clean-webpack-plugin": "^0.1.16",
+    "codecov": "^2.3.0",
     "cpr": "^2.2.0",
     "cross-env": "^5.0.5",
     "css-loader": "^0.28.7",
@@ -113,7 +114,8 @@
     "build:server:prod": "cross-env NODE_ENV=production webpack --config src/config/webpack/server.config",
     "cleanup": "rimraf ./dist ./.nyc_output ./coverage ./.awcache ./report.txt",
     "coverage:report": "nyc report --reporter=text",
-    "coverage:test": "cross-env TS_NODE_DISABLE_WARNINGS=true nyc mocha",
+    "coverage:test": "cross-env NODE_ENV=test TS_NODE_DISABLE_WARNINGS=true nyc mocha",
+    "coverage:codecov": "nyc report --reporter=text-lcov > coverage.lcov && codecov",
     "coverage:view": "opn coverage/index.html",
     "coverage": "npm run coverage:test && npm run coverage:view",
     "DISABLEDinstall": "echo install",
@@ -150,7 +152,7 @@
     "start:server": "cross-env DEBUGx=express-session,cookie node dist/server/server.js",
     "start": "cross-env DEBUGx=express-session,cookie node dist/server/server.js",
     "test:w": "npm run test -- -w",
-    "test": "cross-env TS_NODE_DISABLE_WARNINGS=true mocha"
+    "test": "cross-env NODE_ENV=test TS_NODE_DISABLE_WARNINGS=true mocha"
   },
   "version": "1.0.0"
 }
