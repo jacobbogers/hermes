@@ -1,5 +1,4 @@
 'use strict';
-// tslint:disable:typedef
 
 // Vendor
 import {  CookieOptions } from 'express';

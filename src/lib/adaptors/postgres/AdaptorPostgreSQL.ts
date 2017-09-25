@@ -1,6 +1,5 @@
 'use strict';
 
-// tslint:disable:typedef
 // tslint:disable:object-literal-sort-keys
 // Vendor
 import * as pg from 'pg';

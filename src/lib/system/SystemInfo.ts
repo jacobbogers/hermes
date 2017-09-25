@@ -1,5 +1,4 @@
 'use strict';
-// tslint:disable:typedef
 
 import { EventEmitter } from 'events';
 import { ISystemInfoOptions } from './ISystemInfoOptions';

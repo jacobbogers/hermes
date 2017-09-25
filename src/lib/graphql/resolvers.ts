@@ -1,4 +1,3 @@
-// tslint:disable:typedef
 import { GraphQLStatusCodes } from '~graphql/GraphQLStatusCodes';
 import { IAuthenticationResult, ITokenInfo, IUserInfo } from '~graphql/interfaces';
 import { AuthenticationError } from './AuthenticationError';

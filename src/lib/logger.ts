@@ -1,5 +1,4 @@
 'use strict';
-// tslint:disable:typedef
 
 const _tracer = require('tracer');
 

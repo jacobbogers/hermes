@@ -1,5 +1,3 @@
-// tslint:disable:typedef
-
 import * as util from 'util';
 
 import { Logger } from '~lib/logger';
