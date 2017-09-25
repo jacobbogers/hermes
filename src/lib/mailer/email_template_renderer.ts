@@ -1,6 +1,3 @@
-'use strict';
-
-
 import { isString } from '~lib/utils';
 
 

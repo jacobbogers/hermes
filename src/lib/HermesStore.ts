@@ -1,5 +1,3 @@
-'use strict';
-
 // Vendor
 import {  CookieOptions } from 'express';
 import { Store } from 'express-session';

@@ -1,5 +1,3 @@
-'use strict';
-
 import { Application, NextFunction, Request, Response, Router } from 'express';
 
 import { GraphQLOptions } from 'graphql-server-core';

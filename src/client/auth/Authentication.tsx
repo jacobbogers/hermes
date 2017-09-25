@@ -1,5 +1,3 @@
-'use strict';
-
 import * as React from 'react';
 import { RouteComponentProps, withRouter } from 'react-router-dom';
 import { cssAccessor } from '~lib/utils';
