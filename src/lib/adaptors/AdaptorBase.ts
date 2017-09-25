@@ -1,30 +1,24 @@
-'use strict';
-
 import * as EventEmitter from 'events';
 import * as util from 'util';
-import { AdaptorError } from './AdaptorError';
-import { AdaptorWarning } from './AdaptorWarning';
 
 import { Logger } from '~lib/logger';
-const logger = Logger.getLogger();
-
 import { IPropertiesModifyMessage } from '~properties/IPropertiesModifyMessage';
+import { ADAPTOR_STATE } from '~states/adaptor_state';
 import { IStateTransition } from '~states/IStateTransition.ts';
 import { ITemplatePropsMessage } from '~templates/ITemplatePropsMessage';
 import { ITokenMessage } from '~tokens/ITokenMessage';
 import { ITokenMessageReturned } from '~tokens/ITokenMessageReturned';
-import { SystemInfo } from '../system';
-
 import { ITokenPropertiesModifyMessageReturned } from '~tokens/ITokenPropertiesModifyMessageReturned';
-
 import { ITokensAndPropsMessage } from '~tokens/ITokensAndPropsMessage';
 import { IUserMessageBase } from '~users/IUserMessageBase';
 import { IUserMessageReturned } from '~users/IUserMessageReturned';
 import { IUserPropertiesModifyMessageReturned } from '~users/IUserPropertiesModifyMessageReturned';
-
 import { IUsersAndPropsMessage } from '~users/IUsersAndPropsMessage';
+import { SystemInfo } from '../system';
+import { AdaptorError } from './AdaptorError';
+import { AdaptorWarning } from './AdaptorWarning';
 
-import { ADAPTOR_STATE } from '~states/adaptor_state';
+const logger = Logger.getLogger();
 
 const transitions: IStateTransition[] = [
     {
@@ -184,7 +178,7 @@ export abstract class AdaptorBase extends EventEmitter {
         revokeReason: string
     ): Promise<ITokenMessageReturned>;
 
-    public abstract tokenGC(deleteOlderThen: number): Promise<number>;
+    public abstract tokenGC(deleteOlderThan: number): Promise<number>;
 
     public abstract tokenSelectAllByFilter(
         timestampExpire: number | null,
