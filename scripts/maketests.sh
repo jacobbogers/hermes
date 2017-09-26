@@ -3,11 +3,23 @@
 shopt -s globstar
 
 make_file() {
-    dest_directory="test/$(dirname ${1#src/})"
+    directory=$(dirname ${1#src/})
+    filename="$(basename -s ${2} ${1##*/})"
+    dest_directory="test/${directory}"
     dest_file="${dest_directory}/$(basename -s ${2} ${1#src/}).test${2}"
 
-    mkdir -p ${dest_directory}
-    touch ${dest_file}
+    if [[ ! -f "${dest_file}" ]]; then
+        mkdir -p "${dest_directory}"
+        cat <<-EOF >> "${dest_file}"
+		import { expect } from 'chai';
+
+		import { ${filename} } from '~${directory}/${filename}';
+
+		describe('~${directory}/${filename}', () => {
+		    it('');
+		});
+		EOF
+    fi
 }
 
 export -f make_file
