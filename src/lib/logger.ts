@@ -1,6 +1,5 @@
 const _tracer = require('tracer');
 
-
 export type LogMethod = (...rest: any[]) => void;
 
 export interface ITracer {
@@ -13,7 +12,6 @@ export interface ITracer {
 }
 
 export class Logger implements ITracer {
-
     public log: LogMethod;
     public trace: LogMethod;
     public debug: LogMethod;
@@ -32,7 +30,6 @@ export class Logger implements ITracer {
         this.warn = tr.warn.bind(tr);
         this.error = tr.error.bind(tr);
     }
-
 
     public static getLogger(logger?: ITracer) {
         if (Logger.tracer) {
