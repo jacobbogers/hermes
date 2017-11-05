@@ -1,10 +1,19 @@
 WITH token_template AS (
+    /*
+           If $9 is 'default_token' then select default_token
+           If $9 is a empty select 'default_token'
+           If $9 is non existant template name select 'default_token'
+           If $9 is a VALID existing template_name select this template_name
+    
+    */
+    
+    
     SELECT s2.id, s2.template_name, s2.max_age
     FROM auth.session_cookies_template AS s2
     WHERE s2.template_name = 'default_token' AND NOT EXISTS (
         SELECT 1
         FROM auth.session_cookies_template AS s3
-        WHERE s3.template_name = $9::TEXT
+        WHERE s3.template_name = $9::TEXT 
     )
 
     UNION ALL
