@@ -1,4 +1,4 @@
-import { ADAPTOR_STATE } from '~states/adaptor_state';
+import { ADAPTOR_STATE } from '~states';
 import { AdaptorError } from './AdaptorError';
 /* make it a warning */
 export class AdaptorWarning extends AdaptorError {

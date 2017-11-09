@@ -14,14 +14,11 @@
     "moduleResolution": "node",
     "outDir": "dist",
     "paths": {
-      "~adaptors/*": [
-        "src/lib/adaptors/*"
-      ],
-      "~adpators": [
+      "~adaptors": [
         "src/lib/adaptors/index.ts"
       ],
-      "~graphql/*": [
-        "src/lib/graphql/*"
+      "~graphql": [
+        "src/lib/graphql/index.ts"
       ],
       "~hermes-props": [
         "src/lib/hermes/interfaces/properties/index.ts"
@@ -38,8 +35,11 @@
         "src/lib/adaptors/interfaces/properties/*",
         "src/lib/hermes/interfaces/properties/*"
       ],
-      "~states/*": [
-        "src/lib/adaptors/interfaces/states/*"
+      "~server": [
+        "src/server/index.ts"
+      ],
+      "~states": [
+        "src/lib/adaptors/interfaces/states/index.ts"
       ],
       "~system": [
         "src/lib/system/index.ts"

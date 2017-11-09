@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 
-import { adaptor_state } from '~lib/adaptors/interfaces/states/adaptor_state';
+import { ADAPTOR_STATE } from '~states';
 
-describe('~lib/adaptors/interfaces/states/adaptor_state', () => {
+describe('~lib/adaptors/interfaces/states', () => {
     it('');
 });

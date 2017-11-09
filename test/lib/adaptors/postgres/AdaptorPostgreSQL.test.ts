@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 
-import { AdaptorPostgreSQL } from '~lib/adaptors/postgres/AdaptorPostgreSQL';
+import { AdaptorPostgreSQL } from '~adaptors';
 
 describe('~lib/adaptors/postgres/AdaptorPostgreSQL', () => {
     it('');

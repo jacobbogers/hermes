@@ -19,7 +19,7 @@ describe('~lib/adaptors/AdaptorWarning', () => {
         expect(AdaptorWarning.prototype.getStateStr).to.exist;
     });
     it('Should return the proper data from its #getStateStr method', () => {
-        const states = [
+        const : ADAPTOR_STATE[] = [
             'UnInitialized',
             'Initializing',
             'Initialized',
