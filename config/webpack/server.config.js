@@ -4,7 +4,7 @@
 
 const { resolve } = require('path');
 
-const { flatten } = require('./tools');
+// const { flatten } = require('./tools');
 
 module.exports = {
     target: 'node',
@@ -15,11 +15,11 @@ module.exports = {
         path: resolve('dist/server'),
         filename: '[name].js'
     },
-    node: {
-        __dirname: false,
-        __filename: false,
-    },
-    devtool: require('./devtool'),
+    /* node: {
+         __dirname: false,
+         __filename: false,
+     },*/
+    devtool: false,
     externals: require('./externals'),
     module: require('./module'),
     plugins: require('./plugins').server,
@@ -27,7 +27,7 @@ module.exports = {
 };
 
 // Server files live in <projectRoot>/src/{server,lib}
-for (const rule of module.exports.module.rules){
+for (const rule of module.exports.module.rules) {
     rule.include = rule.include || [];
     rule.include.push(resolve('src/server'), resolve('src/lib'));
 }

@@ -12,7 +12,7 @@ const proto = {
         })(o)
     }),
     load_as_string: () => ({
-        use: 'raw-loader' // no options
+        loader: 'raw-loader' // no options
     }),
     scss: o => ({
         // info:
@@ -22,7 +22,7 @@ const proto = {
             precision: 5
         })(o)
     }),
-    css_loader: o => ({
+    css_dependencies: o => ({
         // info: https://github.com/webpack-contrib/css-loader#options
         loader: 'css-loader',
         options: fp.merge({
@@ -58,7 +58,7 @@ const proto = {
             sourceMap: true
         })(o)
     }),
-    tslint: o => ({
+    tslinter: o => ({
         loader: 'tslint-loader',
         options: fp.merge({
             configFile: resolve('tslint.json'),
@@ -86,4 +86,4 @@ const proto = {
     })
 };
 
-module.exports = Object.freeze(proto);
+module.exports = proto;

@@ -1,25 +1,28 @@
 const { resolve } = require('path');
 
-const p = process.env.NODE_ENV === 'production';
+const { clean, html } = require('./plugins/proto');
+const { fonts, embed_sql_gql, css_files, tslinter, tsc } = require('./modules/rules');
 
-module.exports = {
+const config = {
     entry: {
         app: resolve('src/client/Main.tsx')
     },
     output: {
         path: resolve('dist/client'),
-        filename: p ? '[name].[chunkhash].js' : '[name].js'
+        filename: '[name].js'
     },
-    devtool: require('./devtool'),
-    module: require('./module'), // loaders go here
-    plugins: require('./plugins').client,
-    resolve: require('./resolve'),
+    devtool: false, //pretty fast
+    module: {
+        rules: [fonts(), embed_sql_gql(), css_files(), tslinter(), tsc()]
+    },
+    plugins: [clean('client'), html({ title: 'hermes' })],
+    resolve: require('./resolve')
 };
 
-// Client files live in <projectRoot>/src/client
-for (const rule of module.exports.module.rules) {
-    rule.include = rule.include || [];
-    rule.include.push(resolve('src/client'), resolve('src/lib'));
+const includes_additions = [resolve('src/client'), resolve('src/lib')];
+
+for (const rule of config.module.rules) {
+    rule.include = [...(rule.include || []), ...includes_additions];
 }
 
-//console.log(require('util').inspect(module.exports, { depth: null }));
+module.exports = config;

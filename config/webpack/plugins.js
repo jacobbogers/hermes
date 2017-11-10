@@ -14,16 +14,15 @@ new CleanWebpackPlugin(['dist', 'build'], {
 })
 */
 
-const cleanClient = new (require('clean-webpack-plugin'))(['client'], {
+const cleanClient = new CleanWebpackPlugin(['client'], {
     root: resolve('dist'),
     verbose: true
 });
 
-const cleanServer = new (require('clean-webpack-plugin'))(['server'], {
+const cleanServer = new CleanWebpackPlugin(['server'], {
     root: resolve('dist'),
     verbose: true,
     dry: false,
-    /* exclude: ['client']*/
 });
 
 const sharedProd = !p ? [] : [
@@ -35,7 +34,7 @@ const sharedProd = !p ? [] : [
     })
 ];
 
-const html = new (require('html-webpack-plugin'))({
+const html = new(require('html-webpack-plugin'))({
     title: 'BookBarter',
     filename: 'index.html',
     template: require('html-webpack-template'),
@@ -62,24 +61,22 @@ const html = new (require('html-webpack-plugin'))({
     links: [
         'https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css',
         'https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700',
-        /*'https://s3-us-west-2.amazonaws.com/s.cdpn.io/594328/fonts.css'*/
+        'https://s3-us-west-2.amazonaws.com/s.cdpn.io/594328/fonts.css'
     ],
-    meta: [
-        {
-            name: 'description',
-            content: 'Book/DVD/Blue-ray trading club, don\'t copy but trade your second hand movies/books for others you haven\'t seen.'
-        }
-    ]
+    meta: [{
+        name: 'description',
+        content: 'Book/DVD/Blue-ray trading club, don\'t copy but trade your second hand movies/books for others you haven\'t seen.'
+    }]
 });
 
 clientProd = !p ? [] : [
     // Extract CSS from bundled JS
-    new (require('extract-text-webpack-plugin'))('styles.css'),
+    new(require('extract-text-webpack-plugin'))('styles.css'),
     // Extract external code into a separate "vendor" bundle
     new webpack.optimize.CommonsChunkPlugin({
         name: "vendor",
         // Create implicit vendor bundle
-        minChunks: function (module) {
+        minChunks: function(module) {
             // Prevent vendor CSS/SASS from being bundled into "vendor.js"
             if (module.resource && (/^.*\.(css|scss)$/).test(module.resource)) {
                 return false;
@@ -92,7 +89,7 @@ clientProd = !p ? [] : [
         name: "manifest",
         minChunks: Infinity
     }),
-    new (require('inline-manifest-webpack-plugin'))({
+    new(require('inline-manifest-webpack-plugin'))({
         name: 'webpackManifest'
     })
 ];
