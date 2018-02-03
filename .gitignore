@@ -2,12 +2,14 @@
 
 dist/
 TODO
+*.pdf
 
 # Logs
 logs
 *.log
 TODO
-npm-debug.log*
+npm-debug.log
+./docs
 
 
 .*
