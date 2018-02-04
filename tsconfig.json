@@ -17,6 +17,9 @@
       "~adaptors": [
         "src/lib/adaptors/index.ts"
       ],
+      "~adaptors/*": [
+        "src/lib/adaptors/*"
+      ],
       "~graphql": [
         "src/lib/graphql/index.ts"
       ],
@@ -76,8 +79,6 @@
   ],
   "include": [
     "src/**/*.ts",
-    "src/**/*.tsx",
-    "test/**/*.ts",
-    "test/**/*.tsx"
+    "src/**/*.tsx"
   ]
 }
