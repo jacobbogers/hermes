@@ -21,8 +21,8 @@
         "noUnusedLocals": true,
         "outDir": "dist",
         "paths": {
-            "~adaptors/*":[
-               "src/lib/adaptors/*" 
+            "~adapters/*":[
+               "src/lib/adapters/*" 
             ],
             "~utils": [
                 "src/lib/utils/index.ts"

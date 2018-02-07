@@ -1,0 +1,8 @@
+import { AdapterMock } from '~adapters/mock/AdapterMock';
+let am = new AdapterMock();
+
+am.on('connected',()=> console.log('connected'));
+am.on('disconnected',()=> console.log('disconnected'));
+
+let am2 = new AdapterMock();
+

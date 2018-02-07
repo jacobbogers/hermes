@@ -1,11 +1,11 @@
 import { expect } from 'chai';
 
 
-import { AdaptorMock } from '~adaptors/mock/AdaptorMock';
+import { AdapterMock } from '~adaptors/mock/AdapterMock';
 
-describe('AdaptorMock', () => {
+describe('AdapterMock', () => {
 
-    const am = new AdaptorMock();
+    const am = new AdapterMock();
 
     before('some before text', async function() {
         await am.init();

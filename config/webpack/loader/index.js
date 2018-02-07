@@ -15,13 +15,13 @@ const proto = {
             //https://github.com/wbuchwalter/tslint-loader/issues/76
             typeCheck: false,
             fix: true,
-            tsConfigFile: resolve('tsconfig.json')
+            tsConfigFile: resolve('tsconfig.webpack.json')
         }, o)
     }),
     atl: o => ({
         loader: 'awesome-typescript-loader',
         options: merge({
-            configFileName: resolve('tsconfig.json'),
+            configFileName: resolve('tsconfig.webpack.json'),
             // Babel configuration
             babelOptions: {
                 babelrc: false,
@@ -48,10 +48,7 @@ const proto = {
             transpileOnly: false,
             happyPackMode: false, //set this to true later, see doc,
             logInfoToStdOut: true, //stderr to stdout
-            configFile: resolve('tsconfig.json'),
-            compilerOptions: {
-
-            }
+            configFile: resolve('tsconfig.webpack.json'),
         }, o)
     })
 };

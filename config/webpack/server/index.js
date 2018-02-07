@@ -11,8 +11,8 @@ module.exports = function(env) {
     const config = {
         target: "node",
         entry: {
-            'hermes-mw': resolve('src/lib/adaptors/mock/AdaptorMock.ts'),
-            'hermes-mw.min': resolve('src/lib/adaptors/mock/AdaptorMock.ts')
+            'hermes-mw': resolve('src/lib/adapters/mock/AdapterMock.ts'),
+            'hermes-mw.min': resolve('src/lib/adapters/mock/AdapterMock.ts')
         },
         output: {
             path: resolve('dist/lib'),
@@ -29,7 +29,7 @@ module.exports = function(env) {
         module: {
             rules: [
                 lintmw(),
-                tscmw( /*{ declaration: true }*/ ),
+                tscmw({ configFile: resolve('tsconfig.webpack.json') }),
                 sql()
             ]
         },

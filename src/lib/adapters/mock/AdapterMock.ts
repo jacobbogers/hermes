@@ -6,9 +6,9 @@ import * as  moment from 'moment';
 import * as UID from 'uid-safe';
 
 import { index, undefinedToNull } from '../../utils';
-import { AdaptorBase } from '../AdaptorBase';
-import { AdaptorError } from '../AdaptorError';
-import { ADAPTOR_STATE } from '../state';
+import { AdapterBase } from '../AdapterBase';
+import { AdapterError } from '../AdapterError';
+import { ADAPTER_STATE } from '../state';
 
 const fixture = require('./fixture.json');
 
@@ -20,9 +20,9 @@ import {
   UserProp
 } from '../types';
 
-const printer = debug('AdaptorMock');
+const printer = debug('AdapterMock');
 
-export class AdaptorMock extends AdaptorBase {
+export class AdapterMock extends AdapterBase {
 
   private user = index<User>(
     ['id'],
@@ -43,7 +43,7 @@ export class AdaptorMock extends AdaptorBase {
   );
 
   public adaptorName() {
-    return 'AdaptorMock';
+    return 'AdapterMock';
   }
 
   public constructor() {
@@ -71,9 +71,11 @@ export class AdaptorMock extends AdaptorBase {
 
 
   public async shutDown() {
+    if (!this.inError && !this.isConnected){
+      return;
+    }
     try {
-      await this.transition(ADAPTOR_STATE.Disconnecting);
-      await this.transition(ADAPTOR_STATE.Disconnected);
+      this.setState(ADAPTER_STATE.Disconnected);
       this.user.clear();
       this.userProp.clear();
       this.tokenProp.clear();
@@ -81,18 +83,19 @@ export class AdaptorMock extends AdaptorBase {
       this.template.clear();
     }
     finally {
-      await this.emit('disconnect');
-      this.unRegister();
+      this.emit('disconnected');
     }
     return;
   }
+
   public async init() {
+    if (this.isConnected){
+      return;
+    }
     try {
-      this.transition(ADAPTOR_STATE.Initializing);
-      this.register();
-      this.transition(ADAPTOR_STATE.Initialized);
       await this.populateMaps();
-      this.transition(ADAPTOR_STATE.Connected);
+      this.setState(ADAPTER_STATE.Connected);
+      this.emit('connected');
     }
     catch (e) {
       await this.shutDown();
@@ -103,7 +106,7 @@ export class AdaptorMock extends AdaptorBase {
   public async userUpsert(user: User) {
 
     if (!this.isConnected) {
-      throw new AdaptorError('Adaptor is not connected:', this.state);
+      throw new AdapterError('Adaptor is not connected:', this.state);
     }
 
     const u = { ...user }; //copy
@@ -113,7 +116,7 @@ export class AdaptorMock extends AdaptorBase {
     // Username is unique
     let conflict = this.user.get({ name: u.name }).first;
     if (conflict) {
-      throw new AdaptorError(
+      throw new AdapterError(
         `unique key violation, userName:[${u.name}] already exist`,
         this.state
       );
@@ -121,7 +124,7 @@ export class AdaptorMock extends AdaptorBase {
     // Email is unique
     conflict = this.user.get({ email: u.email }).first;
     if (conflict) {
-      throw new AdaptorError(
+      throw new AdapterError(
         `unique key violation, [userEmail:${u.email}] already exist`,
         this.state
       );
@@ -138,7 +141,7 @@ export class AdaptorMock extends AdaptorBase {
     modifications: UserProp[]
   ) {
     if (!this.isConnected) {
-      throw new AdaptorError('Adaptor is not connected:', this.state);
+      throw new AdapterError('Adaptor is not connected:', this.state);
     }
 
     if (!modifications.length) {
@@ -187,14 +190,14 @@ export class AdaptorMock extends AdaptorBase {
     printer('assoiate token %s with user %s', tokenId, userId);
 
     if (!this.isConnected) {
-      throw new AdaptorError('Adaptor is in the wrong state:', this.state);
+      throw new AdapterError('Adaptor is in the wrong state:', this.state);
     }
 
     const t = this.token.get({ id: tokenId }).first;
     if (t) {
       const u = this.user.get({ id: userId }).first;
       if (!u) {
-        throw new AdaptorError(`User with Id: ${userId} doesnt exist!`, this.state);
+        throw new AdapterError(`User with Id: ${userId} doesnt exist!`, this.state);
       }
       t.userId = u.id;
       this.token.set(t);
@@ -204,7 +207,7 @@ export class AdaptorMock extends AdaptorBase {
 
   public async templateSelectAll() {
     if (!this.isConnected) {
-      throw new AdaptorError('Adaptor is not connected', this.state);
+      throw new AdapterError('Adaptor is not connected', this.state);
     }
     return this.template.values();
   }
@@ -212,7 +215,7 @@ export class AdaptorMock extends AdaptorBase {
   // we expect tokens to have a lot of retired id's
   public async tokenGC(deleteOlderThen: string) {
     if (!this.isConnected) {
-      throw new AdaptorError('Adaptor is in the wrong state:', this.state);
+      throw new AdapterError('Adaptor is in the wrong state:', this.state);
     }
 
     const toDelete = await this.token.values().filter(
@@ -227,7 +230,7 @@ export class AdaptorMock extends AdaptorBase {
   public async tokenUpsert(token: Token) {
 
     if (!this.isConnected) {
-      throw new AdaptorError('Adaptor is not connected:', this.state);
+      throw new AdapterError('Adaptor is not connected:', this.state);
     }
     token.template = token.template || 'hermes';
     token.userId = token.userId || '0000-0000-0000-0000';
@@ -249,14 +252,14 @@ export class AdaptorMock extends AdaptorBase {
     await !!(user) && !!(template);
 
     if (!template) {
-      throw new AdaptorError(
+      throw new AdapterError(
         `could not find for token, the template: [${token.template}]`,
         this.state
       );
     }
 
     if (!user) {
-      throw new AdaptorError(
+      throw new AdapterError(
         `could not find (non-anonymous) user for this token, not even anonymous: [${token.userId}]`,
         this.state
       );
@@ -276,7 +279,7 @@ export class AdaptorMock extends AdaptorBase {
     revokeReason: string
   ) {
     if (!this.isConnected) {
-      throw new AdaptorError('Adaptor is not connected:', this.state);
+      throw new AdapterError('Adaptor is not connected:', this.state);
     }
     const t = this.token.get({ id }).first;
     if (!t) {
@@ -294,12 +297,12 @@ export class AdaptorMock extends AdaptorBase {
   public async tokenSelectAllByUser({ id, name, email }:
     { id?: string, name?: string, email?: string }) {
     if (!this.isConnected) {
-      throw new AdaptorError('Adaptor is not connected', this.state);
+      throw new AdapterError('Adaptor is not connected', this.state);
     }
     let cnt = map({ id, name, email }, (v, k) => v && k).length;
 
     if (cnt !== 1) {
-      throw new AdaptorError('Specifiy only one of `id`, `name` and `email` props', this.state);
+      throw new AdapterError('Specifiy only one of `id`, `name` and `email` props', this.state);
     }
 
     let nId;
@@ -336,7 +339,7 @@ export class AdaptorMock extends AdaptorBase {
     modifications: TokenProp[]
   ) {
     if (!this.isConnected) {
-      throw new AdaptorError('Adaptor is in the wrong state:', this.state);
+      throw new AdapterError('Adaptor is in the wrong state:', this.state);
     }
 
     if (!modifications.length) {
@@ -376,7 +379,7 @@ export class AdaptorMock extends AdaptorBase {
 
   public async tokenSelectAll(includeInValid?: boolean) {
     if (!this.isConnected) {
-      throw new AdaptorError('Adaptor is in the wrong state:', this.state);
+      throw new AdapterError('Adaptor is in the wrong state:', this.state);
     }
     const found = await this.token.values();
     const now = moment().toISOString();
