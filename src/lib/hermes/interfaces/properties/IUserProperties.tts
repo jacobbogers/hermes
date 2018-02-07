@@ -1,0 +1,7 @@
+import { IUserMessageReturned } from '../../../adaptors/types/users';
+
+export interface IUserProperties extends IUserMessageReturned {
+    userProps: {
+        [name: string]: string;
+    };
+}

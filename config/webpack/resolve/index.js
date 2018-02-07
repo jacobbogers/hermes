@@ -2,11 +2,13 @@ const { TsConfigPathsPlugin } = require('awesome-typescript-loader');
 
 module.exports = {
     // List of extensions that webpack should resolve to
-    extensions: [
-        '.js',
-        '.ts',
+    extensionsCient: [
         '.jsx',
         '.tsx',
+    ],
+    extensionsMw: [
+        '.js',
+        '.ts',
         //'.scss',
         //'.sass',
         //'.css',

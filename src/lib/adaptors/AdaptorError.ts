@@ -1,4 +1,4 @@
-import { ADAPTOR_STATE } from '~states/adaptor_state';
+import { ADAPTOR_STATE } from './state';
 
 export class AdaptorError extends Error {
     private _adaptorState: ADAPTOR_STATE;

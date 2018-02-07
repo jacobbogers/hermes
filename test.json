@@ -1,0 +1,145 @@
+{
+    "template": [
+        {
+            "name": "hermes",
+            "path": "/",
+            "maxAge": 86400000,
+            "httpOnly": true,
+            "secure": false,
+            "domain": "",
+            "sameSite": true,
+            "rolling": true,
+            "lastUpdated": "20180201134510",
+            "created": "20180201134510"
+        }
+    ],
+    "token": [],
+    "tokenProp": [],
+    "user": [
+        {
+            "email": "vdingbats@gmail.com",
+            "id": "1",
+            "name": "lucifer696",
+            "lastUpdated": "20180201134510",
+            "created": "20180201134510"
+        },
+        {
+            "email": "vdwingbats@gmail.com",
+            "id": "7",
+            "name": "lucifer69c6",
+            "lastUpdated": "20180201134510",
+            "created": "20180201134510"
+        },
+        {
+            "email": "change@me.lu",
+            "id": "18",
+            "name": "lucife696x",
+            "lastUpdated": "20180201134510",
+            "created": "20180201134510"
+        },
+        {
+            "id": "23",
+            "name": "jacobot",
+            "email": "email",
+            "lastUpdated": "20180201134510",
+            "created": "20180201134510"
+        },
+        {
+            "id": "0000-0000-0000-0000",
+            "name": "anonymous",
+            "email": "",
+            "lastUpdated": "20180201134510",
+            "created": "20180201134510"
+        }
+    ],
+    "userProp": [
+        {
+            "userId": "23",
+            "invisible": false,
+            "propName": "LAST_NAME",
+            "propValue": "Bovors",
+            "lastUpdated": "20180201134510",
+            "created": "20180201134510"
+        },
+        {
+            "userId": "23",
+            "invisible": false,
+            "propName": "AUTH",
+            "propValue": "admin",
+            "lastUpdated": "20180201134510",
+            "created": "20180201134510"
+        },
+        {
+            "userId": "23",
+            "invisible": false,
+            "propName": "ZIPCODE",
+            "propValue": "L1311",
+            "lastUpdated": "20180201134510",
+            "created": "20180201134510"
+        },
+        {
+            "userId": "23",
+            "invisible": false,
+            "propName": "PASSWORD",
+            "propValue": "jacobot",
+            "lastUpdated": "20180201134510",
+            "created": "20180201134510"
+        },
+        {
+            "userId": "23",
+            "propName": "NO-ACL",
+            "propValue": "tokenbladibla:0",
+            "invisible": false,
+            "lastUpdated": "20180201134510",
+            "created": "20180201134510"
+        },
+        {
+            "userId": "1",
+            "invisible": false,
+            "propName": "LAST_NAME",
+            "propValue": "Bovors",
+            "lastUpdated": "20180201134510",
+            "created": "20180201134510"
+        },
+        {
+            "userId": "1",
+            "invisible": false,
+            "propName": "AUTH",
+            "propValue": "admin",
+            "lastUpdated": "20180201134510",
+            "created": "20180201134510"
+        },
+        {
+            "userId": "1",
+            "invisible": true,
+            "propName": "PHONENR",
+            "propValue": "+352621630973",
+            "lastUpdated": "20180201134510",
+            "created": "20180201134510"
+        },
+        {
+            "userId": "1",
+            "invisible": false,
+            "propName": "BLACKLISTED",
+            "propValue": "",
+            "lastUpdated": "20180201134510",
+            "created": "20180201134510"
+        },
+        {
+            "userId": "1",
+            "invisible": false,
+            "propName": "PASSWORD",
+            "propValue": "itsme",
+            "lastUpdated": "20180201134510",
+            "created": "20180201134510"
+        },
+        {
+            "userId": "18",
+            "invisible": false,
+            "propName": "PASSWORD",
+            "propValue": "dingbats",
+            "lastUpdated": "20180201134510",
+            "created": "20180201134510"
+        }
+    ]
+}

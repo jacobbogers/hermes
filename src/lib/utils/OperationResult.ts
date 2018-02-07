@@ -5,6 +5,9 @@ export class OperationResult<I> {
     private _collected: I[] | undefined;
     private _deleted: number | undefined;
 
+    public get deleted() {
+        return this._deleted;
+    }
     public get inserted() {
         return this._inserted;
     }

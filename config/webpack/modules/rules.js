@@ -2,7 +2,6 @@
 
 const { resolve } = require('path');
 
-const fp = require('lodash/fp');
 
 const {
     // misc

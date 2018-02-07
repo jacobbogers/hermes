@@ -1,6 +1,11 @@
+import { cloneDeep } from 'lodash';
 import * as util from 'util';
 
-import { deepClone, flatMap, OperationResult } from '~lib/utils';
+import { flatMap, OperationResult } from './';
+
+export function index<T>(...composites: ((keyof T)[])[]) {
+    return new MapWithIndexes<T, any, any, any, any>(...composites);
+}
 
 export class MapWithIndexes<
     T,
@@ -8,7 +13,7 @@ export class MapWithIndexes<
     F extends { readOnly: boolean; obj: T },
     Me extends Map<T[K], F>,
     Mc extends Map<T[K], Mc | Me>
-> {
+    > {
     private access: { [index: string]: Map<T[K], F | Mc | Me> } = {};
 
     public constructor(...composites: ((keyof T)[])[]) {
@@ -51,7 +56,7 @@ export class MapWithIndexes<
         for (const composite in this.access) {
             if (this.access.hasOwnProperty(composite)) {
                 let currentMap = this.access[composite];
-                const path: (keyof T)[] = composite.split('#') as any;
+                const path: (K)[] = composite.split('#') as any;
                 nextComposite: do {
                     const keyName = path.shift();
                     if (!keyName) {
@@ -136,7 +141,7 @@ export class MapWithIndexes<
         for (const composite in this.access) {
             if (this.access.hasOwnProperty(composite)) {
                 let currentMap = this.access[composite];
-                const path: (keyof T)[] = composite.split('#') as any;
+                const path: (K)[] = composite.split('#') as any;
 
                 do {
                     const keyName = path.shift();
@@ -201,11 +206,11 @@ export class MapWithIndexes<
                     qNames
                         .slice(0)
                         .filter(
-                            name =>
-                                paths.indexOf(
-                                    name,
-                                    paths.length - qNames.length
-                                ) >= 0
+                        name =>
+                            paths.indexOf(
+                                name,
+                                paths.length - qNames.length
+                            ) >= 0
                         ).length === qNames.length
                 ) {
                     // The shortest one
@@ -228,7 +233,7 @@ export class MapWithIndexes<
 
         let currentMap = this.access[selected];
 
-        const spath: (keyof T)[] = selected.split('#') as any;
+        const spath: (K)[] = selected.split('#') as any;
         // Let parentMap = currentMap; // init dummy value
         do {
             const keyName = spath.shift(); // Pop
@@ -267,7 +272,7 @@ export class MapWithIndexes<
             } //
             // At the end
             if (peek && !spath.length) {
-                collected.push(deepClone(peek.obj));
+                collected.push(cloneDeep(peek.obj));
             }
         } while (spath.length && currentMap);
         if (spath.length === 0) {
@@ -275,7 +280,7 @@ export class MapWithIndexes<
         }
         // Wildcard search from here collect everything in this map
 
-        const rc = flatMap<T, { obj: T }, any >(currentMap).map(itm => deepClone(itm.obj));
+        const rc = flatMap<T, { obj: T }, any>(currentMap).map(itm => cloneDeep(itm.obj));
         collected.push(...rc);
 
         return new OperationResult({ errors, collected });
@@ -292,7 +297,7 @@ export class MapWithIndexes<
     }
 
     private flatMap(map: Mc): { readOnly: boolean; obj: T }[] {
-        const rc = [];
+        const rc: { readOnly: boolean; obj: T }[] = [];
         for (const itm of map.values()) {
             if (itm instanceof Map) {
                 const rc2 = this.flatMap(itm as Mc);

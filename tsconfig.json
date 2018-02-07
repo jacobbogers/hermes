@@ -1,84 +1,47 @@
 {
-  "compilerOptions": {
-    "allowUnreachableCode": true,
-    "baseUrl": ".",
-    "declaration": true,
-    "experimentalDecorators": true,
-    "jsx": "react",
-    "lib": [
-      "es6",
-      "dom",
-      "esnext.asynciterable"
-    ],
-    "module": "commonjs",
-    "moduleResolution": "node",
-    "outDir": "dist",
-    "paths": {
-      "~adaptors": [
-        "src/lib/adaptors/index.ts"
-      ],
-      "~adaptors/*": [
-        "src/lib/adaptors/*"
-      ],
-      "~graphql": [
-        "src/lib/graphql/index.ts"
-      ],
-      "~hermes-props": [
-        "src/lib/hermes/interfaces/properties/index.ts"
-      ],
-      "~hermes/*": [
-        "src/lib/hermes/interfaces/*",
-        "src/lib/hermes/interfaces/properties/*",
-        "src/lib/hermes/*"
-      ],
-      "~lib/*": [
-        "src/lib/*"
-      ],
-      "~properties/*": [
-        "src/lib/adaptors/interfaces/properties/*",
-        "src/lib/hermes/interfaces/properties/*"
-      ],
-      "~server": [
-        "src/server/index.ts"
-      ],
-      "~states": [
-        "src/lib/adaptors/interfaces/states/index.ts"
-      ],
-      "~system": [
-        "src/lib/system/index.ts"
-      ],
-      "~templates": [
-        "src/lib/adaptors/interfaces/templates/index.ts"
-      ],
-      "~templates/*": [
-        "src/lib/adaptors/interfaces/templates/*"
-      ],
-      "~tokens": [
-        "src/lib/adaptors/interfaces/tokens/index.ts"
-      ],
-      "~tokens/*": [
-        "src/lib/adaptors/interfaces/tokens/*"
-      ],
-      "~users": [
-        "src/lib/adaptors/interfaces/users/index.ts"
-      ],
-      "~users/*": [
-        "src/lib/adaptors/interfaces/users/*"
-      ],
-      "~utils": [
-        "src/lib/utils/index.ts"
-      ]
+    "compilerOptions": {
+        "allowUnreachableCode": true,
+        "baseUrl": "./",
+        "declaration": true,
+        "declarationDir": "types",
+        "experimentalDecorators": true,
+        "jsx": "react",
+        "lib": [
+            "es6",
+            "dom",
+            "esnext.asynciterable"
+        ],
+        "listEmittedFiles": true,
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "newLine": "LF",
+        "noEmit": false,
+        "noImplicitAny": false,
+        "noLib": false,
+        "noUnusedLocals": true,
+        "outDir": "dist",
+        "paths": {
+            "~adaptors/*":[
+               "src/lib/adaptors/*" 
+            ],
+            "~utils": [
+                "src/lib/utils/index.ts"
+            ],
+            "~utils/*": [
+                "src/lib/utils/*"
+            ]
+        },
+        "removeComments": true,
+        "rootDir": "./",
+        "sourceMap": true,
+        "strict": true,
+        "target": "es2016"
     },
-    "rootDir": "./",
-    "sourceMap": true,
-    "strict": true,
-    "target": "es2017"
-  },
-  "exclude": [
-    "node_modules"
-  ],
-  "include": [
-    "src/**/*.ts",
-    "src/**/*.tsx"
-  ]
+    "exclude": [
+        "node_modules"
+    ],
+    "include": [
+        "src/**/*.ts",
+        "test/**/*.ts"
+    ]
 }

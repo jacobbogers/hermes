@@ -1,8 +1,7 @@
 const { resolve } = require('path');
 const webpack = require('webpack');
 const CleanWebpackPlugin = require('clean-webpack-plugin');
-const defaults = require('lodash.defaults');
-const defaultsDeep = require('lodash.defaultsdeep');
+const { defaults, defaultsDeep } = require('lodash');
 const UglifyJsPlugin = require('uglifyjs-webpack-plugin')
 
 const plugins = {

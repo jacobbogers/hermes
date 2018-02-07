@@ -1,7 +1,11 @@
 const { resolve } = require('path');
-const merge = require('lodash.merge');
+const { merge } = require('lodash');
 
 const proto = {
+    raw: o => ({
+        loader: 'raw-loader',
+        options: merge({}, o)
+    }),
     tslint: o => ({
         loader: 'tslint-loader',
         options: merge({
@@ -34,12 +38,22 @@ const proto = {
             },
             // Tells ATL to use Babel
             useBabel: false,
-            // Cache output for quicker compilation
+            // Cache output for quicker compilation WHEN using babel
             useCache: true
+        }, o)
+    }),
+    tsl: (o) => ({
+        loader: 'ts-loader',
+        options: merge({
+            transpileOnly: false,
+            happyPackMode: false, //set this to true later, see doc,
+            logInfoToStdOut: true, //stderr to stdout
+            configFile: resolve('tsconfig.json'),
+            compilerOptions: {
+
+            }
         }, o)
     })
 };
-
-
 
 module.exports = proto;

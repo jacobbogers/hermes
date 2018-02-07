@@ -1,8 +1,8 @@
 const { resolve } = require('path');
 const { wPackN_Ext } = require('../externals');
-const { lint, tsc } = require('../module/rules');
-const { extensions, plugins } = require('../resolve');
-const { rm, defines } = require('../plugins');
+const { lintmw, tscmw, sql } = require('../module/rules');
+const { extensionsMw, plugins } = require('../resolve');
+const { rm, defines, uglify } = require('../plugins');
 
 
 module.exports = function(env) {
@@ -11,7 +11,8 @@ module.exports = function(env) {
     const config = {
         target: "node",
         entry: {
-            'hermes-mw': resolve('src/server/index.ts')
+            'hermes-mw': resolve('src/lib/adaptors/mock/AdaptorMock.ts'),
+            'hermes-mw.min': resolve('src/lib/adaptors/mock/AdaptorMock.ts')
         },
         output: {
             path: resolve('dist/lib'),
@@ -27,15 +28,17 @@ module.exports = function(env) {
         externals: [wPackN_Ext()], // add more external module filter functions, if needed
         module: {
             rules: [
-                lint(),
-                tsc({ declaration: true })
+                lintmw(),
+                tscmw( /*{ declaration: true }*/ ),
+                sql()
             ]
         },
         plugins: [
-            rm({ paths: ['lib'] })
+            rm({ paths: ['lib'] }),
+            uglify(),
         ],
         resolve: {
-            extensions, //array of file extentions to resolve '*js,*ts,..' etc 
+            extensions: extensionsMw, //array of file extentions to resolve '*js,*ts,..' etc 
             plugins // only 1 for now , to resolve tsconfig paths aka "~whatever"
         },
     };
