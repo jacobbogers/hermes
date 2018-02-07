@@ -120,7 +120,8 @@
         "start": "cross-env DEBUGx=express-session,cookie node dist/server/server.js",
         "start:server": "cross-env DEBUGx=express-session,cookie node dist/server/server.js",
         "stop": "echo stop",
-        "test": "cross-env NODE_ENV=test TS_NODE_DISABLE_WARNINGS=true mocha",
+        "test": "cross-env  TS_NODE_DISABLE_WARNINGS=true mocha",
+        "testvc": "mocha --inspect-brk",
         "test:w": "npm run test -- -w",
         "uninstall": "echo uninstall",
         "version": "echo version"

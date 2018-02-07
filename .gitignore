@@ -1,19 +1,16 @@
 #this section added by J. Bogers
 
 dist/
-TODO
-*.pdf
+docs/parked
 
 # Logs
 logs
 *.log
-TODO
 npm-debug.log
-docs
 
-
+# all dotfiles except:
 .*
-!/.codecov.yml
+.codecov.yml
 !/.editorconfig
 !/.gitignore
 !/.nycrc

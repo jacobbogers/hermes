@@ -72,6 +72,14 @@
         {
             "userId": "23",
             "invisible": false,
+            "propName": "BANNED",
+            "propValue": "",
+            "lastUpdated": "20180201134510",
+            "created": "20180201134510"
+        },
+        {
+            "userId": "23",
+            "invisible": false,
             "propName": "ZIPCODE",
             "propValue": "L1311",
             "lastUpdated": "20180201134510",

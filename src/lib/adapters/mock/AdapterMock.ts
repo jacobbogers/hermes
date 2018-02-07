@@ -395,8 +395,13 @@ export class AdapterMock extends AdapterBase {
 
   public async userSelectByFilter(p: { tokenUpdatedAfter: string, includeBanned: boolean }) {
     //for now brute force approach
-    const bannedProps: UserProp[] | boolean | undefined
+    let bannedProps: UserProp[] | boolean | undefined
       = p.includeBanned && this.userProp.get({ propName: 'BANNED' }).collected;
+
+
+    if (bannedProps && Array.isArray(bannedProps)){
+       bannedProps = bannedProps.filter(f => !f.invisible);  
+    }
 
     const allTokens = this.token.values();
 
