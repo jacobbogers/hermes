@@ -8,7 +8,11 @@
 		"uuid":"*",
 		"@types/uuid":"*",
 		"bluebird":"*",
-		"@types/bluebird":"*"
+		"@types/bluebird":"*",
+		"express":"",
+		"@types/express":"",
+		"express-session":"",
+		"@types/express-session":""
 	},
 	"babel": {
 		"babel-core": "^6.24.1",
