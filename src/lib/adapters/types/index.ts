@@ -33,7 +33,6 @@ export interface Token {
   userId: string;
   purpose: string;
   ip: string;
-  issued: string;
   revoked: string;
   revokeReason: string;
   expire: string;

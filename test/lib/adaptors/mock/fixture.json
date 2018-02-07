@@ -1,0 +1,30 @@
+{
+   "tokens":{
+       "nonExistToken":{
+
+       },
+       "expiredToken":{
+
+       },
+       "tokenForBannedUser":{
+
+       },
+       "signUpToken":{
+
+       },
+       "resetPasswordToken":{
+           "userById":"",
+           "userByName":"",
+           "userByEmail":""
+       },
+       "retiredAccountToken":{
+           
+       },
+       "retireUsers:":{
+
+       }
+   },
+   "users":{
+       
+   }
+}

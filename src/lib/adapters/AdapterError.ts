@@ -1,6 +1,7 @@
 import { ADAPTER_STATE } from './state';
 
 export class AdapterError extends Error {
+    
     private _adaptorState: ADAPTER_STATE;
 
     public constructor(message: string, code: ADAPTER_STATE) {

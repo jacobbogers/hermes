@@ -5,6 +5,8 @@
 		"@types/moment":"",
 		"moment": "^2.20.1",
 		"uid-safe": "^2.1.5",
+		"uuid":"*",
+		"@types/uuid":"*",
 		"bluebird":"*",
 		"@types/bluebird":"*"
 	},
@@ -30,10 +32,11 @@
 		"uid-safe": "^2.1.5"
 	},
 	"test": {
-    "@types/chai": "^3.5.2",
+		"@types/chai": "^3.5.2",
+		"@types/chai-as-promised":"*",
 		"chai": "^3.5.0",
 		"codecov": "^2.3.1",
-	
+	  "chai-as-promised":"*",
 	  "mocha": "^4.1.0",
 		"nyc": "^11.4.1",
 		"source-map-support": "^0.4.18",

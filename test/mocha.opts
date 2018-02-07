@@ -4,5 +4,5 @@
 --require source-map-support/register
 --require tsconfig-paths/register
 --sort
---timeout 20000
+--timeout 1073741824
 test/**/*.test.ts test/**/*.test.tsx

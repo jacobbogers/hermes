@@ -26,7 +26,7 @@ export abstract class AdapterBase extends EventEmitter {
     }
 
     public get inError() {
-        
+
         return includes([
             ADAPTER_STATE.ERR_Connecting,
             ADAPTER_STATE.ERR_Initializing
@@ -38,8 +38,7 @@ export abstract class AdapterBase extends EventEmitter {
     public constructor() {
         super();
     }
-
-
+    
     public abstract adaptorName(): string;
     public abstract init(): Promise<any>;
     public abstract shutDown(): Promise<any>;
@@ -53,14 +52,15 @@ export abstract class AdapterBase extends EventEmitter {
         modifications: UserProp[]
     ): Promise<UserProp[]>;
 
-    public abstract userSelectByFilter(p: { tokenUpdatedAfter: string, includeBanned: boolean }): Promise<User[]>;
+    public abstract userSelectByFilter(
+        p: { tokenUpdatedAfter: string, includeBanned: boolean }): Promise<User[]>;
 
     /*Tokens*/
     public abstract tokenUpsert(token: Token): Promise<Token>;
 
     public abstract async tokenPropertyUpsert(
         modifications: TokenProp[]
-    ): Promise<TokenProp[]>;
+    ): Promise<(TokenProp | undefined)[]>;
 
     public abstract tokenAssociateWithUser(
         tokenId: string,
@@ -72,6 +72,8 @@ export abstract class AdapterBase extends EventEmitter {
         ipAddr: string,
         revokeReason: string
     ): Promise<any>;
+
+    public abstract async tokenSelectById(id: string): Promise<Token|undefined>;
 
     public abstract tokenGC(deleteOlderThan: string): Promise<number>;
 

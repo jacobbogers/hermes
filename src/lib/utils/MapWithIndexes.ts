@@ -52,77 +52,77 @@ export class MapWithIndexes<
             const err = 'data argument is undefined';
             throw new Error(err);
         }
-        const dataCopy = JSON.parse(JSON.stringify(data)) as T;
+        const dataCopy = cloneDeep(data) as T;
         for (const composite in this.access) {
-            if (this.access.hasOwnProperty(composite)) {
-                let currentMap = this.access[composite];
-                const path: (K)[] = composite.split('#') as any;
-                nextComposite: do {
-                    const keyName = path.shift();
-                    if (!keyName) {
-                        errors++;
-                        break;
-                    }
-                    if (!(keyName in dataCopy)) {
-                        errors++;
-                        break;
-                    }
-                    const keyValue = dataCopy[keyName];
-                    const peek = currentMap.get(keyValue);
 
-                    // Premature termination of structure , composite key larger then structure
-                    if (path.length === 0 && peek instanceof Map) {
-                        errors++;
-                        break;
-                    }
+            let currentMap = this.access[composite];
+            const path: (K)[] = composite.split('#') as any;
+            nextComposite: do {
+                const keyName = path.shift();
+                if (!keyName) {
+                    errors++;
+                    break;
+                }
+                if (!(keyName in dataCopy)) {
+                    errors++;
+                    break;
+                }
+                const keyValue = dataCopy[keyName];
+                const peek = currentMap.get(keyValue);
 
-                    // Premature termination of key, structure extends beyond key
-                    if (
-                        peek !== undefined &&
-                        !(peek instanceof Map) &&
-                        path.length > 0
-                    ) {
-                        errors++;
+                // Premature termination of structure , composite key larger then structure
+                if (path.length === 0 && peek instanceof Map) {
+                    errors++;
+                    break;
+                }
+
+                // Premature termination of key, structure extends beyond key
+                if (
+                    peek !== undefined &&
+                    !(peek instanceof Map) &&
+                    path.length > 0
+                ) {
+                    errors++;
+                    break;
+                }
+                // Walk up the tree
+                if (peek instanceof Map && path.length > 0) {
+                    currentMap = peek;
+                    continue;
+                }
+                // "peek" variable is either undefined or NOT a Map object
+                switch (true) {
+                    // Set new
+                    // Dont even try (!peek && !path.length) seriously!!
+                    case peek === undefined && path.length === 0:
+                        // = { readOnly: true, obj: data };
+                        const newRecord: F = { readOnly, obj: dataCopy } as any;
+                        currentMap.set(keyValue, newRecord);
+                        inserted++;
                         break;
-                    }
-                    // Walk up the tree
-                    if (peek instanceof Map && path.length > 0) {
-                        currentMap = peek;
-                        continue;
-                    }
-                    // "peek" variable is either undefined or NOT a Map object
-                    switch (true) {
-                        // Set new
-                        // Dont even try (!peek && !path.length) seriously!!
-                        case peek === undefined && path.length === 0:
-                            // = { readOnly: true, obj: data };
-                            const newRecord: F = { readOnly, obj: dataCopy } as any;
-                            currentMap.set(keyValue, newRecord);
+                    // Set replace
+                    // Previous inserted object found, optionally override
+                    case peek !== undefined && path.length === 0:
+                        const finalObj = peek as F;
+                        if (!finalObj.readOnly) {
+                            finalObj.readOnly = readOnly;
+                            finalObj.obj = dataCopy;
+                            currentMap.set(keyValue, finalObj);
                             inserted++;
-                            break;
-                        // Set replace
-                        // Previous inserted object found, optionally override
-                        case peek !== undefined && path.length === 0:
-                            const finalObj = peek as F;
-                            if (!finalObj.readOnly) {
-                                finalObj.readOnly = readOnly;
-                                finalObj.obj = dataCopy;
-                                currentMap.set(keyValue, finalObj);
-                                inserted++;
-                            }
-                            break;
-                        // Set add path
-                        case peek === undefined && path.length > 0: // Create extra path (inserting new objects)
-                            const map = new Map() as Mc;
-                            currentMap.set(keyValue, map);
-                            currentMap = map;
-                            break;
-                        default:
-                            errors++;
-                            break nextComposite;
-                    }
-                } while (path.length && currentMap);
-            }
+                        }
+                        break;
+                    // Set add path
+                    case peek === undefined && path.length > 0: // Create extra path (inserting new objects)
+                        const map = new Map() as Mc;
+                        currentMap.set(keyValue, map);
+                        currentMap = map;
+                        break;
+                    default:
+                        errors++;
+                        break nextComposite;
+                }
+            } while (path.length && currentMap);
+
         }
 
         return new OperationResult<T>({ inserted, errors });
@@ -133,7 +133,7 @@ export class MapWithIndexes<
             const err = 'data argument is undefined';
             throw new Error(err);
         }
-        const dataCopy = JSON.parse(JSON.stringify(data)) as T;
+        const dataCopy = cloneDeep(data) as T;
 
         let deleted = 0;
         let errors = 0;
@@ -186,40 +186,39 @@ export class MapWithIndexes<
             const err = 'data argument is undefined';
             throw new Error(err);
         }
-        const query = JSON.parse(JSON.stringify(queryObject)) as Partial<T>;
+        const query = cloneDeep(queryObject) as Partial<T>;
         const qNames = Object.getOwnPropertyNames(query);
         let errors = 0;
         const collected: T[] = [];
 
         let selected: string | undefined;
         for (const composites in this.access) {
-            if (this.access.hasOwnProperty(composites)) {
-                const paths = composites.split('#');
 
-                paths.reverse(); // Because i want to ise "fromIndex" argument in [].findIndex(..);
+            const paths = composites.split('#');
 
-                if (paths.length < qNames.length) {
-                    continue;
-                }
-                // Contains at least all MY names
-                if (
-                    qNames
-                        .slice(0)
-                        .filter(
-                        name =>
-                            paths.indexOf(
-                                name,
-                                paths.length - qNames.length
-                            ) >= 0
-                        ).length === qNames.length
-                ) {
-                    // The shortest one
-                    selected = selected || composites;
-                    if (paths.length < selected.split('#').length) {
-                        selected = composites;
-                    }
+            paths.reverse(); // Because i want to ise "fromIndex" argument in [].findIndex(..);
+
+            if (paths.length < qNames.length) {
+                continue;
+            }
+            // Contains at least all MY names
+            if (
+                qNames
+                    .filter(
+                    name =>
+                        paths.indexOf(
+                            name,
+                            paths.length - qNames.length
+                        ) >= 0
+                    ).length === qNames.length
+            ) {
+                // The shortest one
+                selected = selected || composites;
+                if (paths.length < selected.split('#').length) {
+                    selected = composites;
                 }
             }
+
         }
         // So after all this we have the composite path that is the best fit or no fit at all
         if (!selected) {
