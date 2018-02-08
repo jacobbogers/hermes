@@ -1,10 +1,6 @@
 // Vendor
 
-<<<<<<< HEAD
 //import { CookieOptions } from 'express';
-=======
-import { CookieOptions } from 'express';
->>>>>>> a84f109358699b9094deb9aea9611c02d41c0d18
 import { Store } from 'express-session';
 
 /* how to use this store;
@@ -13,13 +9,8 @@ import { Store } from 'express-session';
  *
 */ 
 
-<<<<<<< HEAD
 //const defer = (func) => process.nextTick(func, 0);
 //const dud = () => {};
-=======
-const defer = (func) => process.nextTick(func, 0);
-const dud = () => {};
->>>>>>> a84f109358699b9094deb9aea9611c02d41c0d18
 
 
 export class HermesStore extends Store {
