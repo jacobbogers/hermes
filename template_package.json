@@ -12,7 +12,11 @@
 		"express":"",
 		"@types/express":"",
 		"express-session":"",
-		"@types/express-session":""
+		"@types/express-session":"",
+		"jsonwebtoken":"",
+		"@types/jsonwebtoken":"",
+		"bcrypt":"",
+		"@types/bcrypt":""
 	},
 	"babel": {
 		"babel-core": "^6.24.1",
