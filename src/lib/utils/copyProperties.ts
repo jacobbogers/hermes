@@ -15,4 +15,5 @@ export function copyProperties<T, S>(target: T, source: S) {
             target[p1] = (source as any)[p1];
         }
     }
+    return target;
 }

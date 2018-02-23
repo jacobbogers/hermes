@@ -3,7 +3,7 @@
  *
  * @export
  * @param {[index: String]: String} cssObject The imported css object.
- * @returns An accessor function that maps its parameters to cssObject's keys.
+ * @returns An accessor function that maps its arguments to cssObject's keys.
  */
 export function cssAccessor(cssObject: { [index: string]: string }) {
     /**
