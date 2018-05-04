@@ -13,6 +13,8 @@ Showing off some build in screens  _(ReactJs, GraphQL client Apollo)_
 
  1. [Installing/Configuration of PostgreSQL back-end and DB objects creation](docs/installing-postgresql96-centos7.md)
 
+https://github.com/deepstreamIO/ds-tutorial-dynamic-permissions.git
+
  Simple usage
 
  ```javascript
