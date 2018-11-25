@@ -1,8 +1,23 @@
 const { resolve } = require('path');
-const { wPackN_Ext } = require('../externals');
-const { lintmw, tscmw, sql } = require('../module/rules');
-const { extensionsMw, plugins } = require('../resolve');
-const { rm, defines, uglify } = require('../plugins');
+const {
+    external: {
+        wPackNodeExternals
+    },
+    rule: {
+        tscMw,
+        tsLintMw,
+        sql
+    },
+    plugin: {
+        rm,
+        uglify
+    },
+    resolve: {
+        extensionsMw,
+        plugins
+    }
+
+} = require('webpack-helpers');
 
 
 module.exports = function(env) {
@@ -25,11 +40,11 @@ module.exports = function(env) {
             __filename: false,
         },*/
         devtool: 'source-map',
-        externals: [wPackN_Ext()], // add more external module filter functions, if needed
+        externals: [wPackNodeExternals()], // add more external module filter functions, if needed
         module: {
             rules: [
-                lintmw(),
-                tscmw({ configFile: resolve('tsconfig.webpack.json') }),
+                tsLintMw(),
+                tscMw({ configFile: resolve('tsconfig.webpack.json') }),
                 sql()
             ]
         },
@@ -38,7 +53,7 @@ module.exports = function(env) {
             uglify(),
         ],
         resolve: {
-            extensions: extensionsMw, //array of file extentions to resolve '*js,*ts,..' etc 
+            extensions: extensionsMw, //array of file extentions to resolve '*js,*ts,..' etc
             plugins // only 1 for now , to resolve tsconfig paths aka "~whatever"
         },
     };

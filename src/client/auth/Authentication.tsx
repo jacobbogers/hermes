@@ -54,10 +54,7 @@ class InternalAuthentication extends React.Component<AllProps, IAuthStatePropert
   }
 
   public render() {
-    const map = [];
 
-    map[AuthenticationState.register] = 'register';
-    map[AuthenticationState.forgot] = 'forgot';
 
     console.log('%c render', 'color:green');
     let classN = '';
@@ -106,6 +103,7 @@ class InternalAuthentication extends React.Component<AllProps, IAuthStatePropert
     const passw = this.state.password;
     const passw2 = this.state.password2;
     const userName = this.state.userName;
+
 
     return (
       <div

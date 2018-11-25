@@ -2,7 +2,7 @@ language: node_js
 node_js:
     - "node"
 branches:
-    only:
+     only:
         - testing
 cache:
     directories:
